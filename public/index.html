@@ -737,7 +737,14 @@ function openSettings(){
       '<button class="btn sm" onclick="sendTgTest()"><i class="ti ti-send"></i> Send test</button>'+
       '<button class="btn sm" onclick="sendTgDaily()"><i class="ti ti-calendar-day"></i> Send today</button>'+
       '<button class="btn sm" onclick="sendTgWeekly()"><i class="ti ti-calendar-week"></i> Send weekly</button>'+
+      '<button class="btn sm" onclick="activateTwoWayBot()" style="background:#29b6f620;color:#29b6f6;border-color:#29b6f640"><i class="ti ti-brand-telegram"></i> Activate 2-way bot</button>'+
     '</div>'+
+    '<div id="tgStatus" style="font-size:11px;margin-top:6px;min-height:16px"></div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-top:8px;line-height:1.6;background:var(--bg2);padding:8px;border-radius:var(--r)">'+
+      '💡 <b>Two-way bot:</b> after clicking "Activate 2-way bot", you can write commands directly to your Telegram bot:<br>'+
+      '<code style="background:var(--bg3);padding:1px 4px;border-radius:3px">add task dentist tomorrow at 10:00</code><br>'+
+      '<code style="background:var(--bg3);padding:1px 4px;border-radius:3px">today</code> · <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">week</code> · <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">done dentist</code> · <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">delete dentist</code>'+
+    '</div>',
     '<div id="tgStatus" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px"></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
 }
@@ -960,7 +967,32 @@ function scheduleTgMessages(){
   },weeklyDelay);
 }
 
-// ─── CHATBOT ──────────────────────────────────────────────
+async function activateTwoWayBot(){
+  const el=document.getElementById('tgStatus');
+  if(!S.tgToken||!S.tgChatId){
+    if(el){el.style.color='var(--red)';el.textContent='❌ Save your token and chat ID first!';}
+    return;
+  }
+  if(el){el.style.color='var(--txt2)';el.textContent='Registering webhook…';}
+  try{
+    const r=await fetch('/api/telegram/register-webhook',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:S.tgToken,chatId:S.tgChatId})
+    });
+    const d=await r.json();
+    if(d.ok){
+      if(el){el.style.color='var(--green)';el.textContent='✅ Two-way bot activated! Write to your bot on Telegram now.';}
+      // Send confirmation to Telegram
+      await tgSend('🤖 Two-way bot activated! Send /help to see available commands.');
+    } else {
+      if(el){el.style.color='var(--red)';el.textContent='❌ Failed: '+(d.err||'Check APP_URL environment variable on Railway');}
+    }
+  }catch(e){
+    if(el){el.style.color='var(--red)';el.textContent='❌ Error: '+e.message;}
+  }
+  setTimeout(()=>{if(el)el.textContent='';},5000);
+}
 function addChatMsg(text,role){
   const el=document.getElementById('chatMsgs');
   const div=document.createElement('div');
