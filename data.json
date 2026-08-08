@@ -1,0 +1,18 @@
+{
+  "tasks": [],
+  "sportEvents": [],
+  "groups": [
+    {"id":"g_pers","name":"Personal","color":"#a78bfa"},
+    {"id":"g_home","name":"Home","color":"#4f8ef7"},
+    {"id":"g_car","name":"Car","color":"#94a3b8"},
+    {"id":"g_work","name":"Work","color":"#34d399"},
+    {"id":"g_sport","name":"Sport","color":"#f97316"}
+  ],
+  "settings": {
+    "tgToken": "",
+    "tgChatId": "",
+    "tgMorningHour": "08",
+    "tgMorningMin": "00",
+    "tgWeeklyDay": "1"
+  }
+}
