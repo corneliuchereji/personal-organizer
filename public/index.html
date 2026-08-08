@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Personal Organizer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#0a0d14;--bg1:#111520;--bg2:#181d2e;--bg3:#1f2540;
+  --border:#2a3050;--border2:#374068;
+  --txt:#e2e8f8;--txt2:#7d8ab0;--txt3:#3d4870;
+  --accent:#4f8ef7;--accent2:#7c3aed;
+  --green:#34d399;--yellow:#fbbf24;--red:#f87171;--orange:#fb923c;--pink:#e879a0;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+.app{display:grid;height:100vh;
+  grid-template-rows:64px 1fr 200px;
+  grid-template-columns:280px 1fr;
+  grid-template-areas:"wx top top""lp cal cal""bot bot bot";
+}
+@media(max-width:900px){
+  .app{display:flex;flex-direction:column;height:auto}
+  html,body{overflow:auto}
+  #chatbot{height:240px}
+}
+/* TOP */
+#wx{grid-area:wx;background:var(--bg1);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px;cursor:pointer;position:relative;z-index:60;display:flex;flex-direction:column;justify-content:space-between}
+#topbar{grid-area:top;background:var(--bg1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px}
+#topbar h1{font-size:15px;font-weight:700;flex:1;text-align:center;background:linear-gradient(90deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#cr{display:none}
+/* WEATHER */
+.wx-main{display:flex;align-items:center;gap:10px}
+.wx-icon{font-size:36px;line-height:1}
+.wx-data{display:flex;flex-direction:column;gap:1px}
+.wx-temp{font-size:26px;font-weight:700;line-height:1;letter-spacing:-1px}
+.wx-mm{font-size:11px;color:var(--txt2)}
+.wx-cond{font-size:11px;color:var(--txt2)}
+.wx-loc-row{font-size:10px;color:var(--txt3);display:flex;align-items:center;gap:3px;margin-top:2px}
+.wx-hint{font-size:9px;color:var(--txt3);text-align:center}
+.wx-drop{display:none;position:absolute;top:100%;left:0;width:340px;background:var(--bg1);border:1px solid var(--border2);border-radius:0 0 var(--rl) var(--rl);z-index:200;box-shadow:0 20px 60px #000a}
+.wx-drop.open{display:block}
+.wx-drop-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.wx-drop-head h3{font-size:13px;font-weight:600}
+.wx-loc-bar{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.wx-loc-bar input{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;color:var(--txt);font-size:12px;font-family:inherit;outline:none}
+.wx-days{display:flex;gap:8px;padding:12px 14px;overflow-x:auto}
+.wx-day{flex-shrink:0;width:66px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 5px;text-align:center}
+.wx-day-n{font-size:10px;color:var(--txt2);font-weight:600;margin-bottom:4px}
+.wx-day-i{font-size:20px;margin-bottom:3px}
+.wx-day-h{font-size:13px;font-weight:700}
+.wx-day-l{font-size:10px;color:var(--txt2)}
+.wx-day-r{font-size:9px;color:#60a5fa;margin-top:2px}
+.wx-windy{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 14px;padding:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;color:var(--accent);text-decoration:none}
+.wx-windy:hover{background:var(--bg3)}
+/* CRYPTO */
+.cr-row{display:flex;gap:10px;align-items:stretch}
+.cr-coin{flex:1;display:flex;flex-direction:column;gap:2px}
+.cr-label{font-size:9px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:4px}
+.cr-price{font-size:16px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.cr-chg{font-size:10px}
+.cr-chg.up{color:var(--green)}.cr-chg.dn{color:var(--red)}
+.cr-pnl{font-size:10px;color:var(--txt2);margin-top:1px}
+.cr-hint{font-size:9px;color:var(--txt3);text-align:center;margin-top:5px}
+.cr-sep{width:1px;background:var(--border);flex-shrink:0}
+.cr-panel{display:none;position:absolute;top:0;right:0;width:400px;max-width:95vw;background:var(--bg1);border:1px solid var(--border2);border-radius:var(--rl);z-index:200;box-shadow:0 24px 64px #000c;padding:16px;max-height:90vh;overflow-y:auto}
+.cr-panel.open{display:block}
+.cr-panel h3{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center}
+.ptable{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px}
+.ptable th{color:var(--txt2);font-weight:500;text-align:left;padding:4px 6px;border-bottom:1px solid var(--border);font-size:10px}
+.ptable td{padding:5px 6px;border-bottom:1px solid var(--border)}
+.ptable tr:last-child td{border-bottom:none}
+.pnl-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-top:1px solid var(--border);margin-top:2px}
+.tv-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:10px;min-height:200px}
+/* LEFT PANEL */
+#lp{grid-area:lp;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.lp-head{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.lp-head h2{font-size:13px;font-weight:600}
+.day-nav{display:flex;align-items:center;gap:4px}
+.day-nav .dl{font-size:10px;color:var(--txt2);min-width:72px;text-align:center}
+.lp-body{flex:1;overflow-y:auto;padding:8px}
+/* CALENDAR */
+#cal{grid-area:cal;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.cal-head{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg1);flex-shrink:0}
+.cal-head h2{font-size:14px;font-weight:700;flex:1;text-align:center}
+.cal-body{flex:1;overflow-y:auto;padding:8px 10px}
+.month-grid{display:flex;flex-direction:column;gap:1px}
+.month-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:2px}
+.month-dow{text-align:center;font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;padding:4px 0}
+.month-week{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.month-day{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:4px 5px;min-height:74px;cursor:pointer;transition:border-color .15s,background .15s;overflow:hidden}
+.month-day:hover{border-color:var(--border2);background:var(--bg2)}
+.month-day.today{border-color:var(--accent);background:var(--bg2)}
+.month-day.today .mday-num{color:var(--accent);font-weight:700}
+.month-day.other-month{opacity:.25}
+.month-day.selected{border-color:var(--accent);background:#4f8ef712}
+.mday-num{font-size:11px;font-weight:500;margin-bottom:3px;line-height:1}
+.mday-chips{display:flex;flex-direction:column;gap:1px}
+.chip{display:block;border-radius:3px;padding:1px 4px;font-size:9px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid transparent;font-weight:500}
+.mday-more{font-size:9px;color:var(--txt3);margin-top:1px}
+#rp{display:none}
+/* EVENT CARDS */
+.ecard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px;margin-bottom:7px}
+.ecard.done{opacity:.4}
+.ec-top{display:flex;align-items:flex-start;gap:7px}
+.ec-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:14px}
+.ec-body{flex:1;min-width:0}
+.ec-title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ec-meta{font-size:10px;color:var(--txt2);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ec-notes{font-size:10px;color:var(--txt2);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ec-actions{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap}
+.ea{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;font-size:10px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--txt2);cursor:pointer;font-family:inherit;transition:background .12s,color .12s}
+.ea:hover{background:var(--bg3);color:var(--txt)}
+.ea.red:hover{background:#f8717120;color:var(--red)}
+.ea.grn:hover{background:#34d39920;color:var(--green)}
+.ea.ylw:hover{background:#fbbf2420;color:var(--yellow)}
+/* PRIORITY */
+.plabel{font-size:9px;padding:1px 5px;border-radius:10px;font-weight:700}
+.plabel.low{background:#64748b30;color:#94a3b8}
+.plabel.normal{background:#4f8ef720;color:var(--accent)}
+.plabel.high{background:#fb923c20;color:var(--orange)}
+.plabel.very{background:#f8717120;color:var(--red)}
+/* CHATBOT */
+#chatbot{grid-area:bot;background:var(--bg1);border-top:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.chat-msgs{flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:6px}
+.cmsg{max-width:78%;padding:8px 12px;border-radius:var(--r);font-size:12px;line-height:1.5}
+.cmsg.u{background:var(--accent);color:#fff;align-self:flex-end;border-radius:12px 12px 4px 12px}
+.cmsg.b{background:var(--bg2);border:1px solid var(--border);color:var(--txt);align-self:flex-start;border-radius:12px 12px 12px 4px}
+.chat-row{display:flex;gap:8px;padding:8px 16px;border-top:1px solid var(--border);flex-shrink:0;align-items:flex-end}
+.chat-inp{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:8px 14px;color:var(--txt);font-size:12px;font-family:inherit;resize:none;outline:none;max-height:80px;line-height:1.4}
+.chat-inp:focus{border-color:var(--accent)}
+.chat-send{width:36px;height:36px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-send:hover{background:#3a7de8}
+/* MODAL */
+.mbg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px}
+.mbg.open{display:flex}
+.mbox{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--rl);padding:20px;width:400px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 32px 80px #000c}
+.mbox h2{font-size:15px;font-weight:700;margin-bottom:14px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--txt);font-size:13px;font-family:inherit;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:68px;line-height:1.5}
+.field select option{background:var(--bg2)}
+.macts{display:flex;align-items:center;gap:8px;margin-top:16px}
+.msp{flex:1}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;font-size:12px;font-family:inherit;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg2);color:var(--txt);cursor:pointer;white-space:nowrap;transition:background .15s}
+.btn:hover{background:var(--bg3)}
+.btn.acc{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.acc:hover{background:#3a7de8}
+.btn.red{color:var(--red);border-color:transparent}
+.btn.red:hover{background:#f8717120}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--bg2)}
+.btn.sm{padding:4px 9px;font-size:11px}
+.btn.ico{padding:5px 8px;border-radius:6px}
+/* SPORT DETAIL */
+.sd-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.sd-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+.sd-label{font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.sd-val{font-size:12px;font-weight:600}
+/* STANDINGS */
+.stand-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:2px}
+.stand-table th{color:var(--txt3);font-weight:700;text-align:left;padding:4px 5px;border-bottom:1px solid var(--border);font-size:9px;text-transform:uppercase}
+.stand-table td{padding:4px 5px;border-bottom:1px solid var(--border)}
+.stand-table tr:last-child td{border-bottom:none}
+.stand-p1{background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:9px;font-weight:700}
+.stand-p{color:var(--txt3);font-size:10px}
+/* BADGES */
+.badge-live{display:inline-block;background:#f8717130;color:var(--red);border:1px solid #f8717150;border-radius:10px;font-size:9px;padding:1px 6px;font-weight:700}
+.badge-soon{display:inline-block;background:#fbbf2430;color:var(--yellow);border:1px solid #fbbf2450;border-radius:10px;font-size:9px;padding:1px 6px;font-weight:700}
+.slabel{font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;padding:6px 0 4px;border-bottom:1px solid var(--border);margin-bottom:6px}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- WEATHER -->
+<div id="wx" onclick="toggleWx(event)">
+  <div class="wx-main">
+    <div class="wx-icon"><i id="wxi" class="ti ti-sun" style="color:#fbbf24"></i></div>
+    <div class="wx-data">
+      <div class="wx-temp" id="wxT">—</div>
+      <div class="wx-mm" id="wxMM"></div>
+      <div class="wx-cond" id="wxC"></div>
+      <div class="wx-loc-row"><i class="ti ti-map-pin" style="font-size:9px"></i><span id="wxLoc">Lugoj, RO</span></div>
+    </div>
+  </div>
+  <div class="wx-hint">tap for forecast ↓</div>
+  <div class="wx-drop" id="wxDrop">
+    <div class="wx-drop-head">
+      <h3><i class="ti ti-cloud-sun" style="color:var(--accent)"></i> 7-day forecast</h3>
+      <button class="btn ghost ico sm" onclick="closeWx(event)"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="wx-loc-bar">
+      <input id="wxLI" value="Lugoj, Romania" placeholder="Change location…" onkeydown="if(event.key==='Enter'){changeWxLoc();event.stopPropagation()}">
+      <button class="btn sm acc" onclick="changeWxLoc()">Go</button>
+    </div>
+    <div class="wx-days" id="wxDays"></div>
+    <a class="wx-windy" href="https://www.windy.com/45.689/21.903?45.689,21.903,10" target="_blank" onclick="event.stopPropagation()">
+      <i class="ti ti-wind"></i> Open Windy interactive forecast
+    </a>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <h1><i class="ti ti-layout-dashboard" style="font-size:16px"></i> Personal Organizer</h1>
+  <button class="btn acc sm" onclick="openAddTask()"><i class="ti ti-plus"></i> Add event</button>
+  <button class="btn sm" onclick="openSettings()"><i class="ti ti-settings"></i></button>
+</div>
+
+<!-- crypto removed -->
+
+<!-- LEFT PANEL -->
+<div id="lp">
+  <div class="lp-head">
+    <h2 id="lpTitle">Today</h2>
+    <div class="day-nav">
+      <button class="btn ghost ico sm" onclick="shiftDay(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span class="dl" id="lpLabel"></span>
+      <button class="btn ghost ico sm" onclick="shiftDay(1)"><i class="ti ti-chevron-right"></i></button>
+    </div>
+  </div>
+  <div class="lp-body" id="lpBody"></div>
+</div>
+
+<!-- CALENDAR -->
+<div id="cal">
+  <div class="cal-head">
+    <button class="btn ghost ico sm" onclick="shiftMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+    <h2 id="calLabel"></h2>
+    <button class="btn ghost ico sm" onclick="shiftMonth(1)"><i class="ti ti-chevron-right"></i></button>
+    <button class="btn sm" onclick="gotoToday()">Today</button>
+  </div>
+  <div class="cal-body"><div class="month-grid" id="cgrid"></div></div>
+</div>
+
+<!-- right panel removed -->
+
+<!-- CHATBOT -->
+<div id="chatbot">
+  <div class="chat-msgs" id="chatMsgs">
+    <div class="cmsg b">👋 Hi! I'm your assistant. Try: <em>"add task dentist tomorrow at 10am"</em>, <em>"delete dentist"</em>, <em>"what do I have today?"</em> or type <em>"help"</em>.</div>
+  </div>
+  <div class="chat-row">
+    <textarea class="chat-inp" id="chatIn" placeholder="Add tasks, ask about your schedule…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+    <button class="chat-send" onclick="sendChat()"><i class="ti ti-send"></i></button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="mbg" id="modal">
+  <div class="mbox">
+    <h2 id="mTitle">Event</h2>
+    <div id="mBody"></div>
+    <div class="macts" id="mActs"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────
+const TODAY = (()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')})();
+const PAL = ['#4f8ef7','#34d399','#f97316','#e879a0','#fbbf24','#a78bfa','#60a5fa','#f87171','#94a3b8','#2dd4bf'];
+const FREQS = ['none','daily','weekly','monthly','yearly'];
+const PRIS = ['low','normal','high','very'];
+const ALLH = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
+const WXI = {sunny:'ti-sun',partly_cloudy:'ti-cloud-sun',cloudy:'ti-cloud',rainy:'ti-cloud-rain',snow:'ti-snowflake',storm:'ti-storm',fog:'ti-mist',windy:'ti-wind'};
+const WXC = {sunny:'#fbbf24',partly_cloudy:'#60a5fa',cloudy:'#94a3b8',rainy:'#60a5fa',snow:'#bae6fd',storm:'#818cf8',fog:'#94a3b8',windy:'#34d399'};
+const BTC_HOLD=0.00359, BTC_RON=1800, USD_RON=4.65;
+const SPORT_COLORS = {f1:'#e879a0',motogp:'#f97316',tdf:'#fbbf24',giro:'#f87171',ucl:'#4f8ef7',seriea:'#34d399',bundesliga:'#fb923c',snooker:'#a78bfa',n24h:'#2dd4bf',wec:'#60a5fa',cycling:'#fbbf24',football:'#4f8ef7',romania:'#f87171'};
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ─── STATE ───────────────────────────────────────────────
+function uid(){return 'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+
+const DFLT = {
+  weekOffset:0, dayOffset:0, ftKey:'', tgToken:'', tgChatId:'', tgMorningHour:'08',
+  wx:{cond:'partly_cloudy',text:'Partly sunny',tempC:34,high:38,low:24,
+    forecast:[
+      {dow:'Sat',high:34,low:24,rain:5,cond:'partly_cloudy'},
+      {dow:'Sun',high:36,low:25,rain:0,cond:'sunny'},
+      {dow:'Mon',high:38,low:26,rain:0,cond:'sunny'},
+      {dow:'Tue',high:38,low:25,rain:20,cond:'partly_cloudy'},
+      {dow:'Wed',high:32,low:22,rain:40,cond:'cloudy'},
+      {dow:'Thu',high:28,low:20,rain:65,cond:'rainy'},
+      {dow:'Fri',high:26,low:19,rain:70,cond:'rainy'},
+    ]
+  },
+  tasks:[], sportEvents:[],
+  groups:[
+    {id:'g_pers',name:'Personal',color:'#a78bfa'},
+    {id:'g_home',name:'Home',color:'#4f8ef7'},
+    {id:'g_car',name:'Car',color:'#94a3b8'},
+    {id:'g_work',name:'Work',color:'#34d399'},
+    {id:'g_sport',name:'Sport',color:'#f97316'},
+  ]
+};
+
+// ── SERVER-BACKED STATE ──────────────────────────────────
+let S = {...DFLT}; // will be overwritten from server on boot
+let _saveTimer = null;
+
+function saveState(){
+  // Debounce saves — wait 500ms after last change
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>{
+    fetch('/api/data',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        tasks: S.tasks,
+        sportEvents: S.sportEvents,
+        groups: S.groups,
+        settings:{
+          tgToken: S.tgToken||'',
+          tgChatId: S.tgChatId||'',
+          tgMorningHour: S.tgMorningHour||'08',
+          tgMorningMin: S.tgMorningMin||'00',
+        }
+      })
+    }).catch(e=>console.log('Save error:',e));
+  },500);
+}
+
+async function loadFromServer(){
+  try{
+    const r = await fetch('/api/data');
+    const d = await r.json();
+    S = {
+      ...DFLT,
+      tasks: d.tasks||[],
+      sportEvents: d.sportEvents||[],
+      groups: d.groups&&d.groups.length ? d.groups : DFLT.groups,
+      tgToken: d.settings?.tgToken||'',
+      tgChatId: d.settings?.tgChatId||'',
+      tgMorningHour: d.settings?.tgMorningHour||'08',
+      tgMorningMin: d.settings?.tgMorningMin||'00',
+      weekOffset:0, dayOffset:0
+    };
+  }catch(e){ console.log('Load error:',e); }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function getGroup(id){return S.groups.find(g=>g.id===id)||{name:'?',color:'#888'}}
+function parseD(s){return new Date(s+'T00:00:00')}
+function fmtD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fmtShort(d){return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+function fmtTime(t){if(!t)return'00:00';const p=String(t);return p.includes(':')?p:p.padStart(2,'0')+':00'}
+function fmtLong(d){return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function sportColor(sp,ev){return(ev&&ev.color)||SPORT_COLORS[sp]||'#94a3b8'}
+function currentDay(){const d=parseD(TODAY);d.setDate(d.getDate()+S.dayOffset);return d}
+
+function matchesDate(ev,ds){
+  if(!ev.date)return false;
+  const freq=ev.freq||'none';
+  if(freq==='none')return ev.date===ds;
+  const base=parseD(ev.date),tgt=parseD(ds);
+  if(tgt<base)return false;
+  if(freq==='daily')return true;
+  if(freq==='weekly')return base.getDay()===tgt.getDay();
+  if(freq==='monthly')return base.getDate()===tgt.getDate();
+  if(freq==='yearly')return base.getMonth()===tgt.getMonth()&&base.getDate()===tgt.getDate();
+  return false;
+}
+
+function eventsOnDay(ds){
+  return[
+    ...S.tasks.map(t=>({...t,_type:'task'})),
+    ...(S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'}))
+  ].filter(ev=>matchesDate(ev,ds)).sort((a,b)=>parseInt(a.time||0)-parseInt(b.time||0));
+}
+
+// ─── MODAL ───────────────────────────────────────────────
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+function showModal(title,body,acts){
+  document.getElementById('mTitle').textContent=title;
+  document.getElementById('mBody').innerHTML=body;
+  document.getElementById('mActs').innerHTML=acts;
+  document.getElementById('modal').classList.add('open');
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+// ─── WEATHER ─────────────────────────────────────────────
+function renderWx(){
+  const wx=S.wx;
+  const ic=document.getElementById('wxi');
+  ic.className='ti '+(WXI[wx.cond]||'ti-cloud');
+  ic.style.color=WXC[wx.cond]||'#94a3b8';
+  document.getElementById('wxT').textContent=wx.tempC+'°C';
+  document.getElementById('wxMM').textContent='↑ '+wx.high+'° · ↓ '+wx.low+'°';
+  document.getElementById('wxC').textContent=wx.text;
+  document.getElementById('wxDays').innerHTML=wx.forecast.map(d=>
+    '<div class="wx-day">'+
+    '<div class="wx-day-n">'+d.dow+'</div>'+
+    '<div class="wx-day-i"><i class="ti '+(WXI[d.cond]||'ti-cloud')+'" style="color:'+(WXC[d.cond]||'#888')+'"></i></div>'+
+    '<div class="wx-day-h">'+d.high+'°</div>'+
+    '<div class="wx-day-l">'+d.low+'°</div>'+
+    (d.rain>0?'<div class="wx-day-r">💧'+d.rain+'%</div>':'')+
+    '</div>'
+  ).join('');
+}
+function toggleWx(e){document.getElementById('wxDrop').classList.toggle('open')}
+function closeWx(e){e.stopPropagation();document.getElementById('wxDrop').classList.remove('open')}
+function changeWxLoc(){const v=document.getElementById('wxLI').value.trim();if(v)document.getElementById('wxLoc').textContent=v}
+
+// ─── LEFT PANEL ──────────────────────────────────────────
+function renderLP(){
+  const d=currentDay();
+  const ds=fmtD(d);
+  const isToday=ds===TODAY;
+  document.getElementById('lpTitle').textContent=isToday?'Today':fmtShort(d);
+  document.getElementById('lpLabel').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  const evs=eventsOnDay(ds);
+  const el=document.getElementById('lpBody');
+  if(!evs.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--txt3);font-size:12px"><i class="ti ti-calendar-off" style="font-size:24px;display:block;margin:0 auto 8px;opacity:.3"></i>No events</div>';
+    return;
+  }
+  el.innerHTML=evs.map(ev=>renderCard(ev)).join('');
+}
+
+function renderCard(ev){
+  const isTask=ev._type==='task';
+  const col=isTask?getGroup(ev.group).color:(ev._color||sportColor(ev.sport,ev));
+  const gName=isTask?getGroup(ev.group).name:(ev.sport||'sport');
+  const pri=ev.priority||'normal';
+  let meta='<span style="color:'+col+';font-size:9px">'+gName+'</span>';
+  meta+='<span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
+  if(isTask&&ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
+  if(isTask)meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
+  if(ev.reminder)meta+=reminderBadge(ev.reminder);
+  let acts='';
+  if(isTask){
+    acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
+    acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
+    acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
+    acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
+  } else {
+    acts+='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
+    acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
+  }
+  return '<div class="ecard'+(ev.done?' done':'')+'">'+
+    '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
+    '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
+    '<div class="ec-meta">'+meta+'</div>'+
+    (ev.notes?'<div class="ec-notes">'+escHtml(ev.notes)+'</div>':'')+
+    '</div></div>'+
+    '<div class="ec-actions">'+acts+'</div>'+
+    '</div>';
+}
+
+function shiftDay(n){S.dayOffset+=n;renderLP()}
+function markDone(id){const t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;saveState();renderAll()}}
+function postpone(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;const d=parseD(t.date);d.setDate(d.getDate()+1);t.date=fmtD(d);saveState();renderAll()}
+
+function delTask(id){
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  showModal('Delete task',
+    '<div style="font-size:13px;margin-bottom:8px">Delete <b>'+escHtml(t.name)+'</b>?</div><div style="font-size:11px;color:var(--txt2)">This cannot be undone.</div>',
+    '<button class="btn red" onclick="confirmDelTask(\''+id+'\')"><i class="ti ti-trash"></i> Delete</button><span class="msp"></span><button class="btn" onclick="closeModal()">Cancel</button>');
+}
+function confirmDelTask(id){S.tasks=S.tasks.filter(x=>x.id!==id);saveState();closeModal();renderAll()}
+
+function delSport(id){
+  const ev=(S.sportEvents||[]).find(x=>x.id===id);if(!ev)return;
+  showModal('Delete event',
+    '<div style="font-size:13px;margin-bottom:8px">Delete <b>'+escHtml(ev.name)+'</b>?</div><div style="font-size:11px;color:var(--txt2)">This cannot be undone.</div>',
+    '<button class="btn red" onclick="confirmDelSport(\''+id+'\')"><i class="ti ti-trash"></i> Delete</button><span class="msp"></span><button class="btn" onclick="closeModal()">Cancel</button>');
+}
+function confirmDelSport(id){S.sportEvents=(S.sportEvents||[]).filter(x=>x.id!==id);saveState();closeModal();renderAll()}
+
+// ─── CALENDAR ────────────────────────────────────────────
+let _selDay=TODAY;
+
+function renderCal(){
+  const ms=new Date(parseD(TODAY).getFullYear(),parseD(TODAY).getMonth()+S.weekOffset,1);
+  const year=ms.getFullYear(),month=ms.getMonth();
+  document.getElementById('calLabel').textContent=MONTHS_LONG[month]+' '+year;
+  let startDow=(ms.getDay()+6)%7; // Mon=0
+  const dim=new Date(year,month+1,0).getDate();
+  const prev=new Date(year,month,0).getDate();
+  let cells=[];
+  for(let i=startDow-1;i>=0;i--)cells.push({d:prev-i,m:month-1,y:year,other:true});
+  for(let d=1;d<=dim;d++)cells.push({d,m:month,y:year,other:false});
+  let nd=1;while(cells.length%7!==0)cells.push({d:nd++,m:month+1,y:year,other:true});
+  const DOWS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html='<div class="month-dow-row">'+DOWS.map(d=>'<div class="month-dow">'+d+'</div>').join('')+'</div>';
+  for(let w=0;w<cells.length;w+=7){
+    html+='<div class="month-week">';
+    for(let i=0;i<7;i++){
+      const c=cells[w+i];
+      const dt=new Date(c.y,c.m,c.d);
+      const ds=fmtD(dt);
+      const isToday=ds===TODAY,isSel=ds===_selDay;
+      const evs=c.other?[]:eventsOnDay(ds);
+      let chips=evs.slice(0,3).map(ev=>{
+        const col=ev._type==='task'?getGroup(ev.group).color:(ev._color||sportColor(ev.sport,ev));
+        return '<div class="chip" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+escHtml(ev.name)+'">'+escHtml(ev.name)+'</div>';
+      }).join('');
+      if(evs.length>3)chips+='<div class="mday-more">+'+(evs.length-3)+' more…</div>';
+      html+='<div class="month-day'+(c.other?' other-month':'')+(isToday?' today':'')+(isSel&&!isToday?' selected':'')+(evs.length?' has-events':'')+'" onclick="selectDay(\''+ds+'\')">';
+      html+='<div class="mday-num">'+c.d+'</div><div class="mday-chips">'+chips+'</div></div>';
+    }
+    html+='</div>';
+  }
+  document.getElementById('cgrid').innerHTML=html;
+}
+
+function selectDay(ds){
+  _selDay=ds;
+  const base=parseD(TODAY),sel=parseD(ds);
+  S.dayOffset=Math.round((sel-base)/86400000);
+  renderLP();renderCal();
+}
+function shiftMonth(n){S.weekOffset+=n;renderCal()}
+function gotoToday(){S.weekOffset=0;S.dayOffset=0;_selDay=TODAY;renderAll()}
+
+function hOpts(sel){
+  // Returns an input[type=time] value string HH:MM
+  const hh=(sel||'09').toString().padStart(2,'0');
+  return hh.includes(':')?hh:hh+':00';
+}
+function pOpts(sel){return PRIS.map(p=>'<option value="'+p+'"'+(p===(sel||'normal')?' selected':'')+'>'+(p==='very'?'Very high (urgent)':p[0].toUpperCase()+p.slice(1))+'</option>').join('')}
+function spOpts(sel){
+  const sp=['f1','motogp','tdf','giro','ucl','seriea','bundesliga','wec','snooker','cycling','n24h','football','romania','other'];
+  const lb={f1:'Formula 1',motogp:'MotoGP',tdf:'Tour de France',giro:"Giro d'Italia",ucl:'Champions League',seriea:'Serie A',bundesliga:'Bundesliga',wec:'WEC Endurance',snooker:'Snooker',cycling:'Cycling',n24h:'24h Race',football:'Football',romania:'Romania NT',other:'Other'};
+  return sp.map(s=>'<option value="'+s+'"'+(s===(sel||'other')?' selected':'')+'>'+lb[s]+'</option>').join('');
+}
+
+function gOpts(sel){return S.groups.map(g=>'<option value="'+g.id+'"'+(g.id===sel?' selected':'')+'>'+escHtml(g.name)+'</option>').join('')}
+function fOpts(sel){return FREQS.map(f=>'<option value="'+f+'"'+(f===(sel||'none')?' selected':'')+'>'+(f==='none'?'No repeat':f[0].toUpperCase()+f.slice(1))+'</option>').join('')}
+let _tc=PAL[0];
+function selColor(c){_tc=c;document.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('sel',d.dataset.c===c))}
+function colorPicker(cur){
+  _tc=cur||PAL[0];
+  return '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">'+
+    PAL.map(c=>'<div class="cdot" style="width:20px;height:20px;border-radius:50%;background:'+c+
+      ';cursor:pointer;border:2px solid '+(c===_tc?'#fff':'transparent')+
+      ';flex-shrink:0" data-c="'+c+'" onclick="selColor(\''+c+'\')"></div>').join('')+'</div>';
+}
+
+function toggleEvType(){
+  const t=document.getElementById('fevtype').value;
+  document.getElementById('task-extra').style.display=t==='task'?'block':'none';
+  document.getElementById('sport-extra').style.display=t==='sport'?'block':'none';
+}
+
+function evForm(ev){
+  const isSport=ev&&ev._type==='sport';
+  const type=isSport?'sport':'task';
+  const reminder=ev&&ev.reminder!=null?ev.reminder:'15';
+  return '<div class="field"><label>Event type</label><select id="fevtype" onchange="toggleEvType()">'+
+    '<option value="task"'+(type==='task'?' selected':'')+'>📋 Task / Reminder</option>'+
+    '<option value="sport"'+(type==='sport'?' selected':'')+'>🏆 Sport Event</option></select></div>'+
+    '<div class="field"><label>Name</label><input id="fn" value="'+(ev?escHtml(ev.name):'')+'" placeholder="e.g. Dentist · F1 Belgian GP" autocomplete="off"></div>'+
+    '<div class="field"><label>Date</label><input type="date" id="fd" value="'+(ev?ev.date:TODAY)+'"></div>'+
+    '<div style="display:flex;gap:10px">'+
+      '<div class="field" style="flex:1"><label>Start time (24h)</label>'+
+        '<input type="time" id="ft" value="'+hOpts(ev?ev.time:'09:00')+'" style="cursor:pointer;width:100%" '+
+        'step="300"></div>'+  // 5-min steps
+      '<div class="field" style="flex:1"><label>Remind me before</label>'+
+        '<select id="fremind">'+
+          '<option value="">No reminder</option>'+
+          ['5','10','15','30','60','120','1440'].map(m=>'<option value="'+m+'"'+(reminder===m?' selected':'')+'>'+(m==='60'?'1 hour':m==='120'?'2 hours':m==='1440'?'1 day':m+' min')+'</option>').join('')+
+        '</select></div>'+
+    '</div>'+
+    '<div class="field"><label>Notes</label><textarea id="fno" placeholder="Details, location, reminders…">'+(ev?escHtml(ev.notes||''):'')+'</textarea></div>'+
+    '<div id="task-extra" style="display:'+(type==='task'?'block':'none')+'">'+
+      '<div class="field"><label>Group</label><select id="fg">'+gOpts(ev&&!isSport?ev.group:S.groups[0].id)+'</select></div>'+
+      '<div class="field"><label>Repeat</label><select id="fr">'+fOpts(ev&&!isSport?ev.freq:'none')+'</select></div>'+
+      '<div class="field"><label>Priority</label><select id="fp">'+pOpts(ev&&!isSport?ev.priority:'normal')+'</select></div>'+
+    '</div>'+
+    '<div id="sport-extra" style="display:'+(type==='sport'?'block':'none')+'">'+
+      '<div class="field"><label>Competition</label><select id="fsport">'+spOpts(ev&&isSport?ev.sport:'other')+'</select></div>'+
+      '<div class="field"><label>Color</label>'+colorPicker(ev&&isSport?ev.color:PAL[0])+'</div>'+
+    '</div>'+
+    '<input type="hidden" id="fid" value="'+(ev?ev.id:'')+'">'+
+    '<input type="hidden" id="forigtype" value="'+(isSport?'sport':'task')+'">';
+}
+
+function openAddTask(prefill){
+  showModal('New event',evForm(prefill||null),
+    '<button class="btn" onclick="closeModal()">Cancel</button><span class="msp"></span><button class="btn acc" onclick="doSaveEvent()">Save</button>');
+  setTimeout(()=>{document.getElementById('fn').focus();toggleEvType();},50);
+}
+
+function editTask(id){
+  const t=S.tasks.find(x=>x.id===id);
+  if(t){
+    showModal('Edit task',evForm({...t,_type:'task'}),
+      '<button class="btn red" onclick="delTask(\''+id+'\')">Delete</button><span class="msp"></span><button class="btn" onclick="closeModal()">Cancel</button><button class="btn acc" onclick="doSaveEvent()">Save</button>');
+    setTimeout(()=>{toggleEvType();document.getElementById('fn').focus();},50);return;
+  }
+  const se=(S.sportEvents||[]).find(x=>x.id===id);
+  if(se){
+    showModal('Edit event',evForm({...se,_type:'sport'}),
+      '<button class="btn red" onclick="delSport(\''+id+'\')">Delete</button><span class="msp"></span><button class="btn" onclick="closeModal()">Cancel</button><button class="btn acc" onclick="doSaveEvent()">Save</button>');
+    setTimeout(()=>{toggleEvType();document.getElementById('fn').focus();},50);
+  }
+}
+
+function doSaveEvent(){
+  const name=(document.getElementById('fn').value||'').trim();
+  if(!name){document.getElementById('fn').focus();return;}
+  const type=document.getElementById('fevtype').value;
+  const id=document.getElementById('fid').value;
+  const origType=document.getElementById('forigtype').value;
+  const date=document.getElementById('fd').value;
+  const time=document.getElementById('ft').value;
+  const notes=document.getElementById('fno').value;
+  const reminder=document.getElementById('fremind').value; // '' or minutes string
+  if(id){
+    if(origType==='task')S.tasks=S.tasks.filter(x=>x.id!==id);
+    else S.sportEvents=(S.sportEvents||[]).filter(x=>x.id!==id);
+  }
+  const newId=id||uid();
+  if(type==='sport'){
+    const sport=document.getElementById('fsport').value;
+    if(!S.sportEvents)S.sportEvents=[];
+    S.sportEvents.push({id:newId,name,date,time,notes,sport,color:_tc,reminder});
+  } else {
+    S.tasks.push({id:newId,name,date,time,notes,
+      group:document.getElementById('fg').value,
+      freq:document.getElementById('fr').value,
+      priority:document.getElementById('fp').value,
+      reminder,done:false});
+  }
+  saveState();
+  scheduleReminder({id:newId,name,date,time,reminder});
+  closeModal();renderAll();
+}
+
+// ─── NOTIFICATIONS / REMINDERS ────────────────────────────
+function requestNotifPermission(cb){
+  if(!('Notification' in window)){cb&&cb(false);return;}
+  if(Notification.permission==='granted'){cb&&cb(true);return;}
+  Notification.requestPermission().then(p=>cb&&cb(p==='granted'));
+}
+
+// Store active timer IDs so we can cancel on reload
+const _timers={};
+
+function scheduleReminder(ev){
+  if(!ev.reminder||!ev.date||!ev.time)return;
+  const minBefore=parseInt(ev.reminder);
+  if(isNaN(minBefore)||minBefore<=0)return;
+  // Build event datetime
+  const [hh,mm]=(ev.time||'00:00').split(':');
+  const evMs=new Date(ev.date+'T'+hh.padStart(2,'0')+':'+(mm||'00').padStart(2,'0')+':00').getTime();
+  const fireMs=evMs-(minBefore*60000);
+  const nowMs=Date.now();
+  const delay=fireMs-nowMs;
+  if(delay<=0)return; // already past
+  // Cancel previous timer for this event if any
+  if(_timers[ev.id])clearTimeout(_timers[ev.id]);
+  _timers[ev.id]=setTimeout(()=>{
+    requestNotifPermission(ok=>{
+      if(ok){
+        const label=minBefore>=60?(minBefore/60)+'h':''+minBefore+' min';
+        new Notification('⏰ '+ev.name,{
+          body:'Starting in '+label+' — '+ev.date+' at '+ev.time,
+          icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="28" font-size="28">📅</text></svg>',
+          tag:ev.id
+        });
+      }
+    });
+  },delay);
+}
+
+function scheduleAllReminders(){
+  const all=[...S.tasks,...(S.sportEvents||[])];
+  all.forEach(ev=>{if(ev.reminder)scheduleReminder(ev)});
+}
+
+// Show reminder badge on event cards
+function reminderBadge(reminder){
+  if(!reminder)return'';
+  const min=parseInt(reminder);
+  const label=min>=1440?'1d before':min>=120?(min/60)+'h before':min===60?'1h before':min+'min before';
+  return'<span style="font-size:9px;background:#a78bfa20;color:#a78bfa;border:1px solid #a78bfa40;border-radius:10px;padding:1px 5px;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-bell" style="font-size:9px"></i>'+label+'</span>';
+}
+
+// ─── SPORT DETAIL ─────────────────────────────────────────
+function sdItem(label,val,full){
+  return '<div class="sd-item"'+(full?' style="grid-column:1/-1"':'')+'>'+
+    '<div class="sd-label">'+label+'</div><div class="sd-val">'+val+'</div></div>';
+}
+function showSportDetail(id){
+  const ev=(S.sportEvents||[]).find(e=>e.id===id);if(!ev)return;
+  const col=ev.color||sportColor(ev.sport,ev);
+  const d=parseD(ev.date);
+  const links={f1:'<a href="https://www.formula1.com" target="_blank" style="color:var(--accent)">formula1.com</a>',motogp:'<a href="https://www.motogp.com" target="_blank" style="color:var(--orange)">motogp.com</a>',wec:'<a href="https://www.fiawec.com" target="_blank" style="color:var(--accent)">fiawec.com</a>',tdf:'<a href="https://www.letour.fr" target="_blank" style="color:var(--yellow)">letour.fr</a>',giro:'<a href="https://www.giroditalia.it" target="_blank" style="color:var(--red)">giroditalia.it</a>',ucl:'<a href="https://www.uefa.com/uefachampionsleague" target="_blank" style="color:var(--accent)">UEFA.com</a>',seriea:'<a href="https://www.legaseriea.it" target="_blank" style="color:var(--green)">legaseriea.it</a>'};
+  let body='<div style="border-left:3px solid '+col+';padding-left:12px;margin-bottom:14px">'+
+    '<div style="font-size:16px;font-weight:700;margin-bottom:4px">'+escHtml(ev.name)+'</div>'+
+    '<div style="font-size:11px;color:var(--txt2)">'+fmtLong(d)+' · '+fmtTime(ev.time)+' Bucharest</div></div>'+
+    '<div class="sd-grid">'+sdItem('Sport',ev.sport||'other')+sdItem('Date',fmtShort(d))+sdItem('Time',fmtTime(ev.time))+'</div>';
+  if(ev.notes)body+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.6;white-space:pre-wrap">'+escHtml(ev.notes)+'</div>';
+  if(links[ev.sport])body+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px;font-size:11px;color:var(--txt2);text-align:center;margin-top:10px">Official: '+links[ev.sport]+'</div>';
+  showModal(ev.name,body,'<button class="btn" onclick="editTask(\''+id+'\')"><i class="ti ti-edit"></i> Edit</button><span class="msp"></span><button class="btn red" onclick="delSport(\''+id+'\')"><i class="ti ti-trash"></i></button><button class="btn acc" onclick="closeModal()">Close</button>');
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────
+function openSettings(){
+  showModal('Settings',
+    '<div class="slabel">Groups</div>'+
+    '<div>'+S.groups.map(g=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="width:10px;height:10px;border-radius:50%;background:'+g.color+';flex-shrink:0;display:inline-block"></span><span style="flex:1;font-size:13px">'+escHtml(g.name)+'</span><button class="btn sm" onclick="editGroup(\''+g.id+'\')"><i class="ti ti-edit"></i></button><button class="btn sm red" onclick="delGroup(\''+g.id+'\')"><i class="ti ti-trash"></i></button></div>').join('')+'</div>'+
+    '<button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="newGroup()"><i class="ti ti-plus"></i> New group</button>'+
+    '<div class="slabel" style="margin-top:14px">Football API Key</div>'+
+    '<div style="display:flex;gap:6px"><input id="ftKIn" value="'+(S.ftKey||'')+'" placeholder="football-data.org key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.ftKey=document.getElementById(\'ftKIn\').value.trim();saveState()">Save</button></div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Free key at <a href="https://www.football-data.org" target="_blank" style="color:var(--accent)">football-data.org</a></div>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
+    '<div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.6">'+
+      '1. Open Telegram → search <b>@BotFather</b> → send <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">/newbot</code> → copy token<br>'+
+      '2. Search <b>@userinfobot</b> → send <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">/start</code> → copy your Chat ID<br>'+
+      '3. Start a chat with your new bot (send it any message) first!'+
+    '</div>'+
+    '<div class="field"><label>Bot Token</label><input id="tgTok" value="'+(S.tgToken||'')+'" placeholder="123456:ABC-DEF…" style="font-size:11px"></div>'+
+    '<div style="display:flex;gap:8px">'+
+      '<div class="field" style="flex:1"><label>Your Chat ID</label><input id="tgCid" value="'+(S.tgChatId||'')+'" placeholder="123456789" style="font-size:11px"></div>'+
+      '<div class="field" style="width:90px"><label>Morning at</label><input type="time" id="tgHour" value="'+(S.tgMorningHour||'08')+':00" style="font-size:11px"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+      '<button class="btn sm acc" onclick="saveTgSettings()"><i class="ti ti-device-floppy"></i> Save</button>'+
+      '<button class="btn sm" onclick="sendTgTest()"><i class="ti ti-send"></i> Send test</button>'+
+      '<button class="btn sm" onclick="sendTgDaily()"><i class="ti ti-calendar-day"></i> Send today</button>'+
+      '<button class="btn sm" onclick="sendTgWeekly()"><i class="ti ti-calendar-week"></i> Send weekly</button>'+
+    '</div>'+
+    '<div id="tgStatus" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px"></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+}
+function newGroup(){
+  _tc=PAL[Math.floor(Math.random()*PAL.length)];
+  showModal('New group','<div class="field"><label>Name</label><input id="gin" placeholder="e.g. Health"></div><div class="field"><label>Color</label>'+colorPicker(_tc)+'</div><input type="hidden" id="gid" value="">',
+    '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="doSaveGroup()">Create</button>');
+  setTimeout(()=>document.getElementById('gin').focus(),50);
+}
+function editGroup(id){
+  const g=S.groups.find(x=>x.id===id);_tc=g.color;
+  showModal('Edit group','<div class="field"><label>Name</label><input id="gin" value="'+escHtml(g.name)+'"></div><div class="field"><label>Color</label>'+colorPicker(g.color)+'</div><input type="hidden" id="gid" value="'+id+'">',
+    '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="doSaveGroup()">Save</button>');
+}
+function doSaveGroup(){
+  const name=(document.getElementById('gin').value||'').trim();if(!name)return;
+  const id=document.getElementById('gid').value;
+  if(id){const g=S.groups.find(x=>x.id===id);g.name=name;g.color=_tc;}
+  else S.groups.push({id:'g_'+uid(),name,color:_tc});
+  saveState();openSettings();renderAll();
+}
+function delGroup(id){
+  const g=S.groups.find(x=>x.id===id);
+  showModal('Delete group','<div style="font-size:13px;margin-bottom:8px">Delete group <b>'+escHtml(g?.name||'')+'</b>?</div>',
+    '<button class="btn red" onclick="S.groups=S.groups.filter(x=>x.id!==\''+id+'\');saveState();closeModal();openSettings();renderAll()"><i class="ti ti-trash"></i> Delete</button><span class="msp"></span><button class="btn" onclick="openSettings()">Cancel</button>');
+}
+
+// ─── TELEGRAM ────────────────────────────────────────────
+function saveTgSettings(){
+  S.tgToken=(document.getElementById('tgTok').value||'').trim();
+  S.tgChatId=(document.getElementById('tgCid').value||'').trim();
+  const hv=document.getElementById('tgHour').value||'08:00';
+  S.tgMorningHour=hv.slice(0,2);
+  S.tgMorningMin=hv.slice(3,5)||'00';
+  saveState(); // saves to server, server reschedules crons automatically
+  const el=document.getElementById('tgStatus');
+  if(el){el.style.color='var(--green)';el.textContent='✅ Saved! Server will send messages automatically.';}
+  setTimeout(()=>{const el=document.getElementById('tgStatus');if(el)el.textContent=''},3000);
+}
+
+async function tgSend(text){
+  if(!S.tgToken||!S.tgChatId)return false;
+  try{
+    const r=await fetch('https://api.telegram.org/bot'+S.tgToken+'/sendMessage',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:S.tgChatId,text,parse_mode:'HTML'})
+    });
+    const d=await r.json();
+    return d.ok;
+  }catch(e){return false}
+}
+
+function buildDailyMsg(dateStr){
+  const d=parseD(dateStr);
+  const evs=eventsOnDay(dateStr);
+  const dow=d.toLocaleDateString('en-GB',{weekday:'long'});
+  const dateDisp=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  let msg='📅 <b>Daily briefing — '+dow+', '+dateDisp+'</b>\n\n';
+  if(!evs.length){
+    msg+='✨ No events scheduled today. Enjoy your day!';
+  } else {
+    msg+='<b>'+evs.length+' event'+(evs.length>1?'s':'')+' today:</b>\n\n';
+    evs.forEach(ev=>{
+      const icon=ev._type==='task'?'📋':'🏆';
+      msg+=icon+' <b>'+ev.name+'</b>\n';
+      msg+='   🕐 '+fmtTime(ev.time);
+      if(ev._type==='task'){
+        const g=getGroup(ev.group);
+        msg+=' · '+g.name;
+        if(ev.priority&&ev.priority!=='normal') msg+=' · ⚠️ '+ev.priority;
+      } else {
+        msg+=' · '+(ev.sport||'sport');
+      }
+      if(ev.notes) msg+='\n   📝 '+ev.notes;
+      if(ev.reminder) msg+='\n   🔔 Reminder: '+reminderBadgeTxt(ev.reminder)+' before';
+      msg+='\n\n';
+    });
+  }
+  msg+='—\n🗂 Personal Organizer';
+  return msg;
+}
+
+function reminderBadgeTxt(r){
+  const m=parseInt(r);
+  if(m>=1440)return'1 day';
+  if(m>=120)return(m/60)+' hours';
+  if(m===60)return'1 hour';
+  return m+' min';
+}
+
+function buildWeeklyMsg(){
+  // 7 days starting from today
+  let msg='📆 <b>Weekly summary</b> — week of '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+'\n\n';
+  const totalTasks=S.tasks.filter(t=>!t.done).length;
+  const totalSport=(S.sportEvents||[]).length;
+  msg+='📋 <b>'+totalTasks+'</b> active tasks · 🏆 <b>'+totalSport+'</b> sport events\n\n';
+  // Active tasks by priority
+  const urgent=S.tasks.filter(t=>!t.done&&t.priority==='very');
+  const high=S.tasks.filter(t=>!t.done&&t.priority==='high');
+  if(urgent.length){
+    msg+='🚨 <b>URGENT:</b>\n';
+    urgent.forEach(t=>msg+='• '+t.name+' ('+t.date+')\n');
+    msg+='\n';
+  }
+  if(high.length){
+    msg+='⚠️ <b>High priority:</b>\n';
+    high.forEach(t=>msg+='• '+t.name+' ('+t.date+')\n');
+    msg+='\n';
+  }
+  // This week's events day by day
+  msg+='<b>This week\'s schedule:</b>\n';
+  for(let i=0;i<7;i++){
+    const d=parseD(TODAY);d.setDate(d.getDate()+i);
+    const ds=fmtD(d);
+    const evs=eventsOnDay(ds);
+    if(evs.length){
+      const dow=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+      msg+='\n<b>'+dow+'</b>\n';
+      evs.forEach(ev=>{
+        const icon=ev._type==='task'?'📋':'🏆';
+        msg+=icon+' '+ev.name+' ('+fmtTime(ev.time)+')\n';
+      });
+    }
+  }
+  // Upcoming sport events
+  const upcoming=(S.sportEvents||[]).filter(e=>e.date>=TODAY).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
+  if(upcoming.length){
+    msg+='\n🏆 <b>Next sport events:</b>\n';
+    upcoming.forEach(e=>{
+      const d=parseD(e.date);
+      msg+='• '+e.name+' — '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' at '+fmtTime(e.time)+'\n';
+    });
+  }
+  msg+='\n—\n🗂 Personal Organizer';
+  return msg;
+}
+
+async function tgSend(text){
+  if(!S.tgToken||!S.tgChatId)return{ok:false,err:'No token or chat ID set'};
+  try{
+    const r=await fetch('/api/telegram/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:S.tgToken,chatId:S.tgChatId,text})
+    });
+    const d=await r.json();
+    return{ok:d.ok,err:d.err||''};
+  }catch(e){return{ok:false,err:e.message||'Network error'}}
+}
+
+async function sendTgTest(){
+  const el=document.getElementById('tgStatus');
+  if(el)el.textContent='Sending…';
+  const res=await tgSend('👋 Hello from your Personal Organizer! Telegram notifications are working correctly.');
+  if(el){
+    if(res.ok){
+      el.style.color='var(--green)';
+      el.textContent='✅ Test message sent! Check Telegram.';
+    } else {
+      el.style.color='var(--red)';
+      el.textContent='❌ Failed: '+res.err;
+    }
+    setTimeout(()=>{if(el)el.textContent='';el.style.color='var(--green)'},6000);
+  }
+}
+
+async function sendTgDaily(){
+  const el=document.getElementById('tgStatus');
+  if(el)el.textContent='Sending…';
+  const res=await tgSend(buildDailyMsg(TODAY));
+  if(el){
+    el.style.color=res.ok?'var(--green)':'var(--red)';
+    el.textContent=res.ok?'✅ Daily briefing sent!':'❌ Failed: '+res.err;
+    setTimeout(()=>{if(el)el.textContent='';el.style.color='var(--green)'},6000);
+  }
+}
+
+async function sendTgWeekly(){
+  const el=document.getElementById('tgStatus');
+  if(el)el.textContent='Sending…';
+  const res=await tgSend(buildWeeklyMsg());
+  if(el){
+    el.style.color=res.ok?'var(--green)':'var(--red)';
+    el.textContent=res.ok?'✅ Weekly summary sent!':'❌ Failed: '+res.err;
+    setTimeout(()=>{if(el)el.textContent='';el.style.color='var(--green)'},6000);
+  }
+}
+
+// Auto-schedule daily and weekly messages
+const _tgTimers={daily:null,weekly:null};
+function scheduleTgMessages(){
+  if(!S.tgToken||!S.tgChatId)return;
+  // Clear old timers
+  if(_tgTimers.daily)clearTimeout(_tgTimers.daily);
+  if(_tgTimers.weekly)clearTimeout(_tgTimers.weekly);
+
+  const now=new Date();
+  const morningH=parseInt(S.tgMorningHour||'08');
+
+  // Daily: fire at morning hour, then every 24h
+  const nextDaily=new Date();
+  nextDaily.setHours(morningH,0,0,0);
+  if(nextDaily<=now)nextDaily.setDate(nextDaily.getDate()+1);
+  const dailyDelay=nextDaily-now;
+  _tgTimers.daily=setTimeout(async function tick(){
+    await tgSend(buildDailyMsg(fmtD(new Date())));
+    _tgTimers.daily=setTimeout(tick,86400000); // repeat every 24h
+  },dailyDelay);
+
+  // Weekly: fire next Monday at morning hour
+  const nextMonday=new Date();
+  const daysUntilMon=(8-nextMonday.getDay())%7||7; // days until next Monday
+  nextMonday.setDate(nextMonday.getDate()+daysUntilMon);
+  nextMonday.setHours(morningH,0,0,0);
+  const weeklyDelay=nextMonday-now;
+  _tgTimers.weekly=setTimeout(async function tickW(){
+    await tgSend(buildWeeklyMsg());
+    _tgTimers.weekly=setTimeout(tickW,7*86400000); // repeat every 7 days
+  },weeklyDelay);
+}
+
+// ─── CHATBOT ──────────────────────────────────────────────
+function addChatMsg(text,role){
+  const el=document.getElementById('chatMsgs');
+  const div=document.createElement('div');
+  div.className='cmsg '+role;
+  div.innerHTML=text.replace(/\n/g,'<br>');
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+}
+
+function fmtDLocal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function addDays(ds,n){const d=parseD(ds);d.setDate(d.getDate()+n);return fmtDLocal(d)}
+
+function parseNLDate(str){
+  if(!str)return null;
+  const s=str.toLowerCase().trim();
+  const fmt=d=>fmtDLocal(d);
+  const base=parseD(TODAY);
+  const add=n=>{const d=new Date(base);d.setDate(d.getDate()+n);return fmt(d)};
+  if(s==='today'||s==='azi')return TODAY;
+  if(s==='tomorrow'||s==='maine')return add(1);
+  if(s==='yesterday')return add(-1);
+  const DAYS=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const dm=s.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
+  if(dm){const di=DAYS.indexOf(dm[1]);const cur=base.getDay();let diff=di-cur;if(diff<=0)diff+=7;return add(diff)}
+  const inm=s.match(/in\s+(\d+)\s+days?/);if(inm)return add(parseInt(inm[1]));
+  const iso=s.match(/(\d{4}-\d{2}-\d{2})/);if(iso)return iso[1];
+  const MNAMES=['january','february','march','april','may','june','july','august','september','october','november','december'];
+  for(let i=0;i<MNAMES.length;i++){
+    const m=s.match(new RegExp('(\\d{1,2})\\s+'+MNAMES[i]+'|'+MNAMES[i]+'\\s+(\\d{1,2})'));
+    if(m){const day=parseInt(m[1]||m[2]);return base.getFullYear()+'-'+String(i+1).padStart(2,'0')+'-'+String(day).padStart(2,'0')}
+  }
+  const dmy=s.match(/(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{4}))?/);
+  if(dmy)return(dmy[3]||String(base.getFullYear()))+'-'+dmy[2].padStart(2,'0')+'-'+dmy[1].padStart(2,'0');
+  return null;
+}
+
+function parseNLTime(str){
+  if(!str)return'09';
+  const m=str.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);if(!m)return'09';
+  let h=parseInt(m[1]);
+  if((m[3]||'').toLowerCase()==='pm'&&h<12)h+=12;
+  if((m[3]||'').toLowerCase()==='am'&&h===12)h=0;
+  const mm=m[2]||'00';
+  return String(h).padStart(2,'0')+':'+mm.padStart(2,'0');
+}
+
+function findTask(q){const ql=q.toLowerCase();return S.tasks.find(t=>t.name.toLowerCase().includes(ql))}
+function findSport(q){const ql=q.toLowerCase();return(S.sportEvents||[]).find(e=>e.name.toLowerCase().includes(ql))}
+async function fetchRealSportEvent(query){
+  // Map common sport names to TheSportsDB league IDs
+  const SPORT_IDS={
+    'motogp':'motogp',f1:'4370',motogp:'4558',
+    'formula 1':'4370','formula1':'4370',
+    'champions league':'4480','ucl':'4480',
+    'serie a':'4331','bundesliga':'4332',
+    'tour de france':'4479','tdf':'4479',
+  };
+  const q=query.toLowerCase();
+  let leagueId=null;
+  for(const[k,v] of Object.entries(SPORT_IDS)){
+    if(q.includes(k)){leagueId=v;break;}
+  }
+  if(!leagueId)return null;
+  try{
+    const r=await fetch('/api/sports/next/'+leagueId);
+    const d=await r.json();
+    const evs=d.events||d.event||[];
+    if(!evs.length)return null;
+    const ev=evs[0];
+    return{
+      name: ev.strEvent||ev.strLeague,
+      date: ev.dateEvent,
+      time: (ev.strTime||'14:00').slice(0,5),
+      notes: (ev.strVenue||'')+(ev.strCountry?' · '+ev.strCountry:''),
+      sport: leagueId==='4370'?'f1':leagueId==='4558'?'motogp':leagueId==='4480'?'ucl':leagueId==='4331'?'seriea':leagueId==='4332'?'bundesliga':'other'
+    };
+  }catch(e){return null;}
+}
+
+function guessGroup(t){const s=t.toLowerCase();if(/car|vehicle|tire|insurance|fuel/.test(s))return'g_car';if(/work|meeting|deadline|office|project|client/.test(s))return'g_work';if(/bill|invoice|electric|water|gas|internet|rent|payment/.test(s))return'g_home';if(/gym|run|sport|race|match|training/.test(s))return'g_sport';return'g_pers'}
+function guessPriority(t){const s=t.toLowerCase();if(/urgent|asap|critical/.test(s))return'very';if(/important|high/.test(s))return'high';if(/low|minor/.test(s))return'low';return'normal'}
+function guessSport(t){const s=t.toLowerCase();if(/f1|formula|grand.?prix|\bgp\b/.test(s))return'f1';if(/motogp|moto.?gp/.test(s))return'motogp';if(/tour.de.france|tdf/.test(s))return'tdf';if(/giro/.test(s))return'giro';if(/champions|ucl/.test(s))return'ucl';if(/serie.?a|milan|inter|juve/.test(s))return'seriea';if(/bundesliga/.test(s))return'bundesliga';if(/wec|endurance|le.?mans/.test(s))return'wec';if(/snooker/.test(s))return'snooker';if(/romania/.test(s))return'romania';return'other'}
+
+function processChat(raw){
+  // Strip polite filler at the start in any language
+  let clean=raw.trim().replace(/^(?:please|can you|could you|would you|te rog|va rog|poti|i want you to|i'd like you to|i would like you to)\s+/i,'');
+  const txt=clean.toLowerCase();
+
+  // ── CLEAR ALL ──
+  if(/(?:remove|delete|clear)\s+all\s+tasks?/.test(txt)){const n=S.tasks.length;S.tasks=[];saveState();renderAll();return'🗑️ Removed all '+n+' tasks.'}
+  if(/(?:remove|delete|clear)\s+all\s+(?:sport|event|competition)/.test(txt)){const n=(S.sportEvents||[]).length;S.sportEvents=[];saveState();renderAll();return'🗑️ Removed all '+n+' sport events.'}
+
+  // ── DELETE ──
+  const delM=txt.match(/^(?:delete|remove|sterge|elimina)\s+(?:task\s+|event\s+)?["']?(.+?)["']?\s*$/);
+  if(delM&&!/\ball\b/.test(txt)){
+    const t=findTask(delM[1]);if(t){S.tasks=S.tasks.filter(x=>x.id!==t.id);saveState();renderAll();return'🗑️ Deleted: <b>'+escHtml(t.name)+'</b>'}
+    const se=findSport(delM[1]);if(se){S.sportEvents=(S.sportEvents||[]).filter(x=>x.id!==se.id);saveState();renderAll();return'🗑️ Deleted: <b>'+escHtml(se.name)+'</b>'}
+    return'❌ Could not find "'+escHtml(delM[1])+'"'
+  }
+
+  // ── MARK DONE ──
+  const doneM=txt.match(/^(?:mark\s+)?(?:done|completed?|gata|rezolvat)\s+["']?(.+?)["']?\s*$/);
+  if(doneM){const t=findTask(doneM[1]);if(t){t.done=!t.done;saveState();renderAll();return'✅ Marked <b>'+escHtml(t.name)+'</b> as '+(t.done?'done':'not done')}return'❌ Could not find that task.'}
+
+  // ── POSTPONE ──
+  const postM=txt.match(/^postpone\s+["']?(.+?)["']?(?:\s+by\s+(\d+)\s+days?)?\s*$/);
+  if(postM){const t=findTask(postM[1]);if(t){const n=parseInt(postM[2])||1;t.date=addDays(t.date,n);saveState();renderAll();return'⏩ Postponed <b>'+escHtml(t.name)+'</b> by '+n+' day(s) → '+t.date}return'❌ Could not find that task.'}
+
+  // ── QUERY ──
+  if(/what.*(?:today|schedule)|show.*today|today.*event|list.*task|ce am azi/.test(txt)){const evs=eventsOnDay(TODAY);if(!evs.length)return'📅 Nothing today ('+TODAY+').';return'📅 Today:<br>'+evs.map(e=>'• '+fmtTime(e.time)+' <b>'+escHtml(e.name)+'</b>').join('<br>')}
+  if(/how many|cate/.test(txt))return'📋 '+S.tasks.filter(t=>!t.done).length+' active tasks · '+(S.sportEvents||[]).length+' sport events.';
+
+  // ── HELP ──
+  if(/^help/.test(txt))return'What I can do:<br>• <em>add task dentist tomorrow at 10am</em><br>• <em>please add an event on 06.08.2026 at 19:00 named "Joi - cantare"</em><br>• <em>add sport F1 Belgian GP on July 26 at 16:00</em><br>• <em>delete dentist</em><br>• <em>mark done dentist</em><br>• <em>postpone dentist by 2 days</em><br>• <em>remove all tasks</em><br>• <em>what do I have today?</em>';
+
+  // ── DETECT ADD INTENT ──
+  const isAddI=/^(?:add|new|create|schedule|set|adauga|pune|creeaza)\b/i.test(clean);
+  const isSportI=/\b(?:f1|formula|grand.?prix|\bgp\b|motogp|tour.de.france|giro|champions.league|ucl|serie.?a|bundesliga|wec|snooker|roubaix|nurburgring)\b/i.test(raw);
+
+  if(!isAddI&&!isSportI)return'❓ I didn\'t understand that. Type <em>help</em> to see what I can do, or use the <b>+ Add event</b> button.';
+
+  // ── EXTRACT NAME from "named X" or "called X" or quoted string ──
+  let forcedName=null;
+  const namedM=clean.match(/\bnamed?\s+[""]([^"""]+)[""]|\bcalled?\s+[""]([^"""]+)[""]|[""]([^"""]+)[""]/);
+  if(namedM){
+    forcedName=(namedM[1]||namedM[2]||namedM[3]).trim();
+    // Remove the named/called + quoted part from clean so it doesn't pollute date/time parsing
+    clean=clean.replace(namedM[0],'').trim();
+  }
+  // Also handle straight quotes
+  const sqM=!forcedName&&clean.match(/\bnamed?\s+"([^"]+)"|\bcalled?\s+"([^"]+)"|"([^"]+)"/);
+  if(sqM){
+    forcedName=(sqM[1]||sqM[2]||sqM[3]).trim();
+    clean=clean.replace(sqM[0],'').trim();
+  }
+
+  // ── EXTRACT TIME ──
+  const tmM=clean.match(/\bat\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/i)
+         ||clean.match(/\bora\s+(\d{1,2}(?::\d{2})?)\b/i);
+  const time=tmM?parseNLTime(tmM[1]):(isSportI?'14':'09');
+  if(tmM)clean=clean.replace(tmM[0],'').trim();
+
+  // ── EXTRACT DATE ──
+  // Order matters: most specific first
+  let date=TODAY;
+  const yr=parseD(TODAY).getFullYear();
+  const datePatterns=[
+    // ISO: 2026-08-06
+    {r:/\b(\d{4})-(\d{2})-(\d{2})\b/,       f:m=>m[1]+'-'+m[2]+'-'+m[3]},
+    // DD.MM.YYYY or DD/MM/YYYY or DD-MM-YYYY
+    {r:/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})\b/, f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
+    // DD.MM (no year)
+    {r:/\b(\d{1,2})[.\/-](\d{1,2})\b/,       f:m=>yr+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
+    // tomorrow / maine
+    {r:/\b(?:tomorrow|maine)\b/i,              f:()=>addDays(TODAY,1)},
+    // today / azi
+    {r:/\b(?:today|azi)\b/i,                   f:()=>TODAY},
+    // next Monday / weekday name
+    {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,
+      f:m=>{const DAYS={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};
+            const di=DAYS[m[1].toLowerCase()];const base=parseD(TODAY);
+            let diff=di-base.getDay();if(diff<=0)diff+=7;return addDays(TODAY,diff)}},
+    // July 26 / 26 July
+    {r:/\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s+(\d{1,2})\b/i,
+      f:m=>{const MI={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,ianuarie:1,februarie:2,martie:3,aprilie:4,mai:5,iunie:6,iulie:7,august:8,septembrie:9,octombrie:10,noiembrie:11,decembrie:12};
+            const mo=MI[m[1].toLowerCase()];return yr+'-'+String(mo).padStart(2,'0')+'-'+String(parseInt(m[2])).padStart(2,'0')}},
+    {r:/\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\b/i,
+      f:m=>{const MI={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+            const mo=MI[m[2].toLowerCase()];return yr+'-'+String(mo).padStart(2,'0')+'-'+String(parseInt(m[1])).padStart(2,'0')}},
+    // in N days
+    {r:/\bin\s+(\d+)\s+days?\b/i,             f:m=>addDays(TODAY,parseInt(m[1]))},
+  ];
+  for(const p of datePatterns){
+    const m=clean.match(p.r);
+    if(m){date=p.f(m);clean=clean.replace(m[0],'').trim();break;}
+  }
+
+  // ── CLEAN UP REMAINING TEXT TO GET THE NAME ──
+  let name=forcedName;
+  if(!name){
+    // Strip trigger words and filler
+    clean=clean
+      .replace(/^(?:please|add|new|create|schedule|set|a|an|the|event|task|reminder|appointment|sport|adauga|pune|eveniment|sarcina|memento)\s+/gi,'')
+      .replace(/\b(?:on|for|at|named?|called?)\b/gi,'')
+      .replace(/[-–,;:]+$/,'').replace(/^[-–,;:]+/,'')
+      .replace(/\s+/g,' ').trim();
+    name=clean;
+  }
+
+  if(!name)return'❓ What should I call this event? Try: <em>add task dentist tomorrow at 10am</em>';
+
+  // ── SAVE ──
+  if(isSportI&&!(/^(?:add|new|create)\s+task/i.test(raw))){
+    if(!S.sportEvents)S.sportEvents=[];
+    const sport=guessSport(raw);
+    S.sportEvents.push({id:uid(),name,date,time,sport,notes:'',color:SPORT_COLORS[sport]||'#94a3b8'});
+    saveState();renderAll();
+    return'✅ Sport event added: <b>'+escHtml(name)+'</b><br>📅 '+date+' at '+time+':00';
+  } else {
+    S.tasks.push({id:uid(),name,date,time,freq:'none',priority:guessPriority(raw),group:guessGroup(name),notes:'',done:false});
+    saveState();renderAll();
+    return'✅ Task added: <b>'+escHtml(name)+'</b><br>📅 '+(date===TODAY?'today':date)+' at '+time+':00';
+  }
+}
+
+function sendChat(){
+  const inp=document.getElementById('chatIn');
+  const text=(inp.value||'').trim();if(!text)return;
+  inp.value='';inp.style.height='auto';
+  addChatMsg(text,'u');
+  setTimeout(()=>addChatMsg(processChat(text),'b'),100);
+}
+
+// ─── RENDER ALL ───────────────────────────────────────────
+function renderAll(){renderLP();renderCal();}
+
+// ─── BOOT ────────────────────────────────────────────────
+renderWx();
+// Load data from server then render
+loadFromServer().then(()=>{
+  renderAll();
+  scheduleAllReminders(); // local browser notifications
+});
+
+// Request notification permission on load and schedule all reminders
+requestNotifPermission(function(granted){
+  if(granted) scheduleAllReminders();
+});
+// If permission already granted, schedule immediately
+if(typeof Notification!=='undefined' && Notification.permission==='granted'){
+  scheduleAllReminders();
+}
+</script>
+</body>
+</html>
