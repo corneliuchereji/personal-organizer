@@ -195,14 +195,6 @@ function parseDate(str, today) {
 
 function parseTime(str) {
   if(!str) return '09:00';
-  const s=(str||'').toLowerCase();
-  // Named times
-  if(/\bmorning\b/.test(s))  return '08:00';
-  if(/\bnoon\b/.test(s))     return '12:00';
-  if(/\bafternoon\b/.test(s))return '15:00';
-  if(/\bevening\b/.test(s))  return '19:00';
-  if(/\bnight\b/.test(s))    return '21:00';
-  if(/\bmidnight\b/.test(s)) return '00:00';
   const m=str.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
   if(!m) return '09:00';
   let h=parseInt(m[1]); const mm=m[2]||'00';
@@ -231,12 +223,8 @@ function guessPriority(text) {
 async function processTgCommand(text, data) {
   const today = getToday();
   const raw   = text.trim();
-  // Strip ALL conversational/polite prefixes in any order
-  let clean = raw
-    .replace(/^(?:hi|hello|hey|buna|salut|ciao)[,!.\s]+/i,'')
-    .replace(/^(?:please|can you|could you|would you|te rog|va rog|poti)\s+/i,'')
-    .replace(/^(?:i want you to|i'd like you to|i would like you to)\s+/i,'')
-    .trim();
+  // Strip polite prefixes
+  let clean = raw.replace(/^(?:please|can you|could you|te rog|va rog)\s+/i,'').trim();
   const txt = clean.toLowerCase();
 
   // ── HELP ──
@@ -325,7 +313,7 @@ async function processTgCommand(text, data) {
     let work=clean.replace(/^(?:add|new|create)\s+(?:sport\s+(?:event\s+)?)?/i,'').trim();
     // Extract name from quotes
     let name=null;
-    const qm=work.match(/named?\s+["""]([^"""]+)["""]|["""]([^"""]+)["""]/);
+    const qm=work.match(/named?\s+"([^"]+)"|"([^"]+)"/);
     if(qm){ name=(qm[1]||qm[2]).trim(); work=work.replace(qm[0],'').trim(); }
     // Time
     const tm=work.match(/\bat\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/i);
@@ -355,46 +343,41 @@ async function processTgCommand(text, data) {
   }
 
   // ── ADD TASK ──
-  const isAddI=/^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune|please add|please set)\b/i.test(clean);
+  const isAddI=/^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\b/i.test(clean);
   if(isAddI){
     let work=clean.replace(/^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\s+(?:a\s+)?(?:task|reminder|event|appointment|me\s+to)?\s*/i,'').trim();
-    // Quoted name — check FIRST
+    // Quoted name
     let name=null;
-    const qm=work.match(/named?\s+[\u201c\u201d"]([^\u201c\u201d"]+)[\u201c\u201d"]|named?\s+"([^"]+)"|[\u201c\u201d"]([^\u201c\u201d"]+)[\u201c\u201d"]|"([^"]+)"/);
-    if(qm){ name=(qm[1]||qm[2]||qm[3]||qm[4]).trim(); work=work.replace(qm[0],'').trim(); }
-    // Named time THEN numeric time
-    const namedTm=work.match(/\b(morning|afternoon|evening|noon|night|midnight)\b/i);
-    const numTm=work.match(/\bat\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/i);
-    let time='09:00';
-    if(numTm){ time=parseTime(numTm[1]); work=work.replace(numTm[0],'').trim(); }
-    else if(namedTm){ time=parseTime(namedTm[1]); work=work.replace(namedTm[0],'').trim(); }
+    const qm=work.match(/named?\s+"([^"]+)"|"([^"]+)"/);
+    if(qm){ name=(qm[1]||qm[2]).trim(); work=work.replace(qm[0],'').trim(); }
+    // Time
+    const tm=work.match(/\bat\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/i);
+    const time=tm?parseTime(tm[1]):'09:00';
+    if(tm) work=work.replace(tm[0],'').trim();
     // Date
     let date=today;
-    const dp2=[
-      {r:/\b(\d{1,2})[.\/\-](\d{1,2})[\.\/-](\d{4})\b/,f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
+    const datePatterns2=[
+      {r:/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})\b/,f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
       {r:/\btomorrow\b/i,f:()=>addDays(today,1)},
       {r:/\btoday\b/i,f:()=>today},
-      {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,f:m=>{const DW={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};const di=DW[m[1].toLowerCase()];const base=new Date(today+'T00:00:00');let diff=di-base.getDay();if(diff<=0)diff+=7;return addDays(today,diff)}},
+      {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,f:m=>{const DAYS={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};const di=DAYS[m[1].toLowerCase()];const base=new Date(today+'T00:00:00');let diff=di-base.getDay();if(diff<=0)diff+=7;return addDays(today,diff)}},
       {r:/\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s+(\d{1,2})\b/i,f:m=>{const MI={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,ianuarie:1,februarie:2,martie:3,aprilie:4,mai:5,iunie:6,iulie:7,august:8,septembrie:9,octombrie:10,noiembrie:11,decembrie:12};return new Date().getFullYear()+'-'+String(MI[m[1].toLowerCase()]).padStart(2,'0')+'-'+String(parseInt(m[2])).padStart(2,'0')}},
       {r:/\b(\d{4}-\d{2}-\d{2})\b/,f:m=>m[1]},
       {r:/\bin\s+(\d+)\s+days?\b/i,f:m=>addDays(today,parseInt(m[1]))},
     ];
-    for(const p of dp2){const m=work.match(p.r);if(m){date=p.f(m);work=work.replace(m[0],'').trim();break;}}
+    for(const p of datePatterns2){const m=work.match(p.r);if(m){date=p.f(m);work=work.replace(m[0],'').trim();break;}}
     if(!name){
-      work=work
-        .replace(/^(?:for|on|a|an|the|task|reminder)\s+/gi,'')
-        .replace(/^\s*[-\u2013:,;]+\s*/,'')
-        .replace(/\s*[-\u2013,;:]+\s*$/,'')
-        .trim();
+      work=work.replace(/^(?:for|on|a|the)\s+/i,'').replace(/[-–,;:]+/g,' ').trim();
       name=work||null;
     }
-    if(!name) return '\u2753 What should I call this task?\nTry: <code>add task dentist tomorrow at 10:00</code>';
+    if(!name) return '❓ What should I call this task?\nTry: <code>add task dentist tomorrow at 10:00</code>';
     const groups=data.groups||[];
     const grp=groups.find(g=>g.id===guessGroup(name))||groups[0]||{id:'g_pers'};
     data.tasks.push({id:uid(),name,date,time,freq:'none',priority:guessPriority(raw),group:grp.id,notes:'',done:false});
     writeData(data);
-    return '\u2705 Task added:\n\ud83d\udccb <b>'+name+'</b>\n\ud83d\udcc5 '+(date===today?'Today':date)+' at '+time;
+    return '✅ Task added:\n📋 <b>'+name+'</b>\n📅 '+(date===today?'Today':date)+' at '+time;
   }
+
   return '❓ I didn\'t understand that.\nSend /help to see what I can do.';
 }
 
@@ -402,34 +385,27 @@ async function processTgCommand(text, data) {
 // WEBHOOK — Telegram sends messages here
 // ═══════════════════════════════════════════════════
 app.post('/webhook/:token', async (req, res) => {
-  res.sendStatus(200); // always ack fast
-  try {
-    const data = readData();
-    console.log('Webhook received. Body keys:', Object.keys(req.body||{}));
+  res.sendStatus(200); // always respond fast
+  const data = readData();
+  const secret = req.params.token;
+  // Verify it's our bot
+  if(!data.settings?.tgToken || !data.settings.tgToken.startsWith(secret.split(':')[0])) return;
 
-    const msg = req.body?.message;
-    if(!msg?.text){ console.log('No text, skip.'); return; }
+  const msg = req.body?.message;
+  if(!msg?.text) return;
 
-    const chatId = String(msg.chat.id);
-    const text   = msg.text;
-    console.log('From chatId:', chatId, '| text:', text);
-    console.log('Stored chatId:', String(data.settings?.tgChatId));
+  const chatId = String(msg.chat.id);
+  const text   = msg.text;
 
-    if(!data.settings?.tgToken){ console.log('No token stored.'); return; }
-
-    // Security: only our chat ID
-    if(data.settings.tgChatId && chatId !== String(data.settings.tgChatId)){
-      console.log('Unauthorized.');
-      await sendTg(data.settings.tgToken, chatId, '⛔ Unauthorized.');
-      return;
-    }
-
-    const reply = await processTgCommand(text, data);
-    console.log('Reply:', reply.slice(0,80));
-    await sendTg(data.settings.tgToken, chatId, reply);
-  } catch(e) {
-    console.log('Webhook error:', e.message);
+  // Only respond to our chat ID
+  if(chatId !== String(data.settings.tgChatId)) {
+    await sendTg(data.settings.tgToken, chatId, '⛔ Unauthorized.');
+    return;
   }
+
+  console.log('TG incoming:', text);
+  const reply = await processTgCommand(text, data);
+  await sendTg(data.settings.tgToken, chatId, reply);
 });
 
 // Register webhook with Telegram
