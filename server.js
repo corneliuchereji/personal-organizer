@@ -195,19 +195,22 @@ function parseDate(str, today) {
 
 function parseTime(str) {
   if(!str) return '09:00';
-  const s=(str||'').toLowerCase();
+  const s=(str||'').toLowerCase().trim();
   // Named times
-  if(/\bmorning\b/.test(s))  return '08:00';
-  if(/\bnoon\b/.test(s))     return '12:00';
-  if(/\bafternoon\b/.test(s))return '15:00';
-  if(/\bevening\b/.test(s))  return '19:00';
-  if(/\bnight\b/.test(s))    return '21:00';
-  if(/\bmidnight\b/.test(s)) return '00:00';
+  if(/\bmorning\b/.test(s))   return '06:00';
+  if(/\bnoon\b/.test(s))      return '12:00';
+  if(/\bafternoon\b/.test(s)) return '15:00';
+  if(/\bevening\b/.test(s))   return '19:00';
+  if(/\bnight\b/.test(s))     return '21:00';
+  if(/\bmidnight\b/.test(s))  return '00:00';
+  // Numeric: 6AM, 6am, 6:30AM, 6:30 am, 18:00, 6
   const m=str.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
   if(!m) return '09:00';
-  let h=parseInt(m[1]); const mm=m[2]||'00';
-  if((m[3]||'').toLowerCase()==='pm'&&h<12) h+=12;
-  if((m[3]||'').toLowerCase()==='am'&&h===12) h=0;
+  let h=parseInt(m[1]);
+  const mm=m[2]||'00';
+  const ap=(m[3]||'').toLowerCase();
+  if(ap==='pm' && h<12) h+=12;
+  if(ap==='am' && h===12) h=0;
   return String(h).padStart(2,'0')+':'+mm.padStart(2,'0');
 }
 
@@ -388,18 +391,39 @@ async function processTgCommand(text, data) {
     ];
     for(const p of dpat){const m=work.match(p.r);if(m){date=p.f(m);work=work.replace(m[0],'').trim();break;}}
 
-    // 3. Extract TIME after date is removed
-    // Matches: "6AM", "6am", "at 6", "at 06:30", "at 6:30 AM", "la 18:00", "morning" etc
-    const numTm =work.match(/\b(?:at|la)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b|\b(\d{1,2}(?::\d{2})\s*(?:am|pm)?)\b|\b(\d{1,2}\s*(?:am|pm))\b/i);
+    // 2. Extract TIME — before date so "6AM" doesn't leak into name
+    // Order: named time words first if no explicit numeric time found
+    const numTm =work.match(/\b(?:at|la)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b|\b(\d{1,2}:\d{2}\s*(?:am|pm)?)\b|\b(\d{1,2}\s*(?:am|pm))\b/i);
     const namedTm=work.match(/\b(morning|afternoon|evening|noon|night|midnight)\b/i);
     let time='09:00';
     if(numTm){
-      time=parseTime(numTm[1]||numTm[2]||numTm[3]);
+      time=parseTime((numTm[1]||numTm[2]||numTm[3]).trim());
       work=work.replace(numTm[0],'').trim();
+      // Also strip any remaining named time word so it doesn't leak into name
+      work=work.replace(/\b(?:morning|afternoon|evening|noon|night|midnight)\b/i,'').trim();
     } else if(namedTm){
       time=parseTime(namedTm[1]);
       work=work.replace(namedTm[0],'').trim();
     }
+
+    // 3. Extract DATE
+    let date=today;
+    const dp=[
+      {r:/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})\b/,  f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
+      {r:/\btomorrow\b/i,                                 f:()=>addDays(today,1)},
+      {r:/\btoday\b/i,                                    f:()=>today},
+      {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,
+        f:m=>{const DW={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};
+              const di=DW[m[1].toLowerCase()];const base=new Date(today+'T00:00:00');
+              let diff=di-base.getDay();if(diff<=0)diff+=7;return addDays(today,diff)}},
+      {r:/\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s+(\d{1,2})\b/i,
+        f:m=>{const MI={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,
+                       ianuarie:1,februarie:2,martie:3,aprilie:4,mai:5,iunie:6,iulie:7,august:8,septembrie:9,octombrie:10,noiembrie:11,decembrie:12};
+              return new Date().getFullYear()+'-'+String(MI[m[1].toLowerCase()]).padStart(2,'0')+'-'+String(parseInt(m[2])).padStart(2,'0')}},
+      {r:/\b(\d{4}-\d{2}-\d{2})\b/,                      f:m=>m[1]},
+      {r:/\bin\s+(\d+)\s+days?\b/i,                       f:m=>addDays(today,parseInt(m[1]))},
+    ];
+    for(const p of dp){const m=work.match(p.r);if(m){date=p.f(m);work=work.replace(m[0],'').trim();break;}}
 
     // 4. Strip leftover date/time words that weren't consumed
     work=work
@@ -521,6 +545,31 @@ app.post('/api/telegram/send', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
+// DEBUG ENDPOINTS
+// ═══════════════════════════════════════════════════
+app.get('/api/status', async (req, res) => {
+  const data = readData();
+  const token = data.settings?.tgToken;
+  let webhookInfo = null;
+  if(token){
+    try{
+      const r = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+      webhookInfo = await r.json();
+    }catch(e){ webhookInfo = {error: e.message}; }
+  }
+  res.json({
+    ok: true,
+    appUrl: APP_URL,
+    port: PORT,
+    hasTgToken: !!token,
+    hasTgChatId: !!data.settings?.tgChatId,
+    taskCount: data.tasks?.length || 0,
+    sportCount: data.sportEvents?.length || 0,
+    webhookInfo: webhookInfo?.result || webhookInfo
+  });
+});
+
+// ═══════════════════════════════════════════════════
 // CRON SCHEDULING
 // ═══════════════════════════════════════════════════
 let _dailyCron=null, _weeklyCron=null;
@@ -562,6 +611,36 @@ function setupCrons(settings) {
 // START
 // ═══════════════════════════════════════════════════
 const initialData = readData();
-if(initialData.settings?.tgToken) setupCrons(initialData.settings);
 
-app.listen(PORT, ()=>console.log(`Personal Organizer running on port ${PORT}`));
+app.listen(PORT, async ()=>{
+  console.log(`✅ Personal Organizer running on port ${PORT}`);
+  console.log(`   APP_URL: ${APP_URL||'NOT SET'}`);
+
+  if(initialData.settings?.tgToken){
+    console.log(`   TG token: set | ChatID: ${initialData.settings.tgChatId||'NOT SET'}`);
+    setupCrons(initialData.settings);
+
+    // Always re-register webhook on startup with current APP_URL
+    if(APP_URL && initialData.settings.tgToken){
+      const webhookUrl = APP_URL.replace(/\/$/,'')+'/webhook/'+initialData.settings.tgToken;
+      console.log(`   Registering webhook: ${webhookUrl}`);
+      try{
+        const r = await fetch(`https://api.telegram.org/bot${initialData.settings.tgToken}/setWebhook`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({url:webhookUrl, drop_pending_updates:false})
+        });
+        const d = await r.json();
+        console.log(`   Webhook result: ${d.ok} — ${d.description||'ok'}`);
+        // Send startup notification to user
+        await sendTg(initialData.settings.tgToken, initialData.settings.tgChatId,
+          '🟢 Personal Organizer bot is online!\nSend /help to see available commands.');
+      }catch(e){
+        console.log(`   Webhook error: ${e.message}`);
+      }
+    } else {
+      console.log('   ⚠️  APP_URL not set — webhook not registered. Add APP_URL to Railway variables.');
+    }
+  } else {
+    console.log('   ⚠️  No Telegram token in data.json — open the app and configure Telegram settings.');
+  }
+});
