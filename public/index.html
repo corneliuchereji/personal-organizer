@@ -201,11 +201,11 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
       <button class="btn ghost ico sm" onclick="closeWx(event)"><i class="ti ti-x"></i></button>
     </div>
     <div class="wx-loc-bar">
-      <input id="wxLI" value="Lugoj, Romania" placeholder="Change location…" onkeydown="if(event.key==='Enter'){changeWxLoc();event.stopPropagation()}">
+      <input id="wxLI" value="" placeholder="Change location…" onkeydown="if(event.key==='Enter'){changeWxLoc();event.stopPropagation()}">
       <button class="btn sm acc" onclick="changeWxLoc()">Go</button>
     </div>
     <div class="wx-days" id="wxDays"></div>
-    <a class="wx-windy" href="https://www.windy.com/45.689/21.903?45.689,21.903,10" target="_blank" onclick="event.stopPropagation()">
+    <a class="wx-windy" id="wxWindyLink" href="https://www.windy.com/45.689/21.903?45.689,21.903,10" target="_blank" onclick="event.stopPropagation()">
       <i class="ti ti-wind"></i> Open Windy interactive forecast
     </a>
   </div>
@@ -286,17 +286,8 @@ function uid(){return 'e'+Date.now().toString(36)+Math.random().toString(36).sli
 
 const DFLT = {
   weekOffset:0, dayOffset:0, ftKey:'', tgToken:'', tgChatId:'', tgMorningHour:'08',
-  wx:{cond:'partly_cloudy',text:'Partly sunny',tempC:34,high:38,low:24,
-    forecast:[
-      {dow:'Sat',high:34,low:24,rain:5,cond:'partly_cloudy'},
-      {dow:'Sun',high:36,low:25,rain:0,cond:'sunny'},
-      {dow:'Mon',high:38,low:26,rain:0,cond:'sunny'},
-      {dow:'Tue',high:38,low:25,rain:20,cond:'partly_cloudy'},
-      {dow:'Wed',high:32,low:22,rain:40,cond:'cloudy'},
-      {dow:'Thu',high:28,low:20,rain:65,cond:'rainy'},
-      {dow:'Fri',high:26,low:19,rain:70,cond:'rainy'},
-    ]
-  },
+  wxLat:45.689, wxLon:21.903, wxLocName:'Lugoj, RO',
+  wx:null, // filled in by loadWeather() on boot — null shows a loading state, never fake data
   tasks:[], sportEvents:[],
   groups:[
     {id:'g_pers',name:'Personal',color:'#a78bfa'},
@@ -327,6 +318,7 @@ function saveState(){
           tgChatId: S.tgChatId||'',
           tgMorningHour: S.tgMorningHour||'08',
           tgMorningMin: S.tgMorningMin||'00',
+          wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName
         }
       })
     }).catch(e=>console.log('Save error:',e));
@@ -346,6 +338,9 @@ async function loadFromServer(){
       tgChatId: d.settings?.tgChatId||'',
       tgMorningHour: d.settings?.tgMorningHour||'08',
       tgMorningMin: d.settings?.tgMorningMin||'00',
+      wxLat: d.settings?.wxLat ?? DFLT.wxLat,
+      wxLon: d.settings?.wxLon ?? DFLT.wxLon,
+      wxLocName: d.settings?.wxLocName || DFLT.wxLocName,
       weekOffset:0, dayOffset:0
     };
   }catch(e){ console.log('Load error:',e); }
@@ -397,6 +392,20 @@ window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 function renderWx(){
   const wx=S.wx;
   const ic=document.getElementById('wxi');
+  document.getElementById('wxLoc').textContent=S.wxLocName||'—';
+  const windyLink=document.getElementById('wxWindyLink');
+  if(windyLink) windyLink.href='https://www.windy.com/'+S.wxLat+'/'+S.wxLon+'?'+S.wxLat+','+S.wxLon+',10';
+
+  if(!wx){
+    // Loading or failed state — never show fake numbers
+    ic.className='ti ti-loader-2';
+    ic.style.color='#94a3b8';
+    document.getElementById('wxT').textContent='—';
+    document.getElementById('wxMM').textContent='';
+    document.getElementById('wxC').textContent=S._wxError?'Unavailable':'Loading…';
+    document.getElementById('wxDays').innerHTML='';
+    return;
+  }
   ic.className='ti '+(WXI[wx.cond]||'ti-cloud');
   ic.style.color=WXC[wx.cond]||'#94a3b8';
   document.getElementById('wxT').textContent=wx.tempC+'°C';
@@ -412,9 +421,39 @@ function renderWx(){
     '</div>'
   ).join('');
 }
+
+// Fetches real weather from our backend (which calls Open-Meteo).
+// Pass {q:'Timisoara'} to look up a place name, or nothing to use S.wxLat/wxLon.
+async function loadWeather(opts){
+  opts=opts||{};
+  try{
+    S._wxError=false;
+    renderWx(); // show loading state immediately
+    const params=new URLSearchParams();
+    if(opts.q) params.set('q',opts.q);
+    else { params.set('lat',S.wxLat); params.set('lon',S.wxLon); }
+    const r=await fetch('/api/weather?'+params.toString());
+    if(!r.ok){ throw new Error('Weather lookup failed ('+r.status+')'); }
+    const d=await r.json();
+    S.wx=d;
+    S.wxLat=d.lat; S.wxLon=d.lon;
+    if(d.locName) S.wxLocName=d.locName;
+    renderWx();
+    saveState(); // persist chosen location + coords
+  }catch(e){
+    console.log('Weather error:',e.message);
+    S._wxError=true;
+    renderWx();
+  }
+}
+
 function toggleWx(e){document.getElementById('wxDrop').classList.toggle('open')}
 function closeWx(e){e.stopPropagation();document.getElementById('wxDrop').classList.remove('open')}
-function changeWxLoc(){const v=document.getElementById('wxLI').value.trim();if(v)document.getElementById('wxLoc').textContent=v}
+function changeWxLoc(){
+  const v=document.getElementById('wxLI').value.trim();
+  if(!v)return;
+  loadWeather({q:v});
+}
 
 // ─── LEFT PANEL ──────────────────────────────────────────
 function renderLP(){
@@ -737,14 +776,7 @@ function openSettings(){
       '<button class="btn sm" onclick="sendTgTest()"><i class="ti ti-send"></i> Send test</button>'+
       '<button class="btn sm" onclick="sendTgDaily()"><i class="ti ti-calendar-day"></i> Send today</button>'+
       '<button class="btn sm" onclick="sendTgWeekly()"><i class="ti ti-calendar-week"></i> Send weekly</button>'+
-      '<button class="btn sm" onclick="activateTwoWayBot()" style="background:#29b6f620;color:#29b6f6;border-color:#29b6f640"><i class="ti ti-brand-telegram"></i> Activate 2-way bot</button>'+
     '</div>'+
-    '<div id="tgStatus" style="font-size:11px;margin-top:6px;min-height:16px"></div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-top:8px;line-height:1.6;background:var(--bg2);padding:8px;border-radius:var(--r)">'+
-      '💡 <b>Two-way bot:</b> after clicking "Activate 2-way bot", you can write commands directly to your Telegram bot:<br>'+
-      '<code style="background:var(--bg3);padding:1px 4px;border-radius:3px">add task dentist tomorrow at 10:00</code><br>'+
-      '<code style="background:var(--bg3);padding:1px 4px;border-radius:3px">today</code> · <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">week</code> · <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">done dentist</code> · <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">delete dentist</code>'+
-    '</div>',
     '<div id="tgStatus" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px"></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
 }
@@ -967,32 +999,7 @@ function scheduleTgMessages(){
   },weeklyDelay);
 }
 
-async function activateTwoWayBot(){
-  const el=document.getElementById('tgStatus');
-  if(!S.tgToken||!S.tgChatId){
-    if(el){el.style.color='var(--red)';el.textContent='❌ Save your token and chat ID first!';}
-    return;
-  }
-  if(el){el.style.color='var(--txt2)';el.textContent='Registering webhook…';}
-  try{
-    const r=await fetch('/api/telegram/register-webhook',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({token:S.tgToken,chatId:S.tgChatId})
-    });
-    const d=await r.json();
-    if(d.ok){
-      if(el){el.style.color='var(--green)';el.textContent='✅ Two-way bot activated! Write to your bot on Telegram now.';}
-      // Send confirmation to Telegram
-      await tgSend('🤖 Two-way bot activated! Send /help to see available commands.');
-    } else {
-      if(el){el.style.color='var(--red)';el.textContent='❌ Failed: '+(d.err||'Check APP_URL environment variable on Railway');}
-    }
-  }catch(e){
-    if(el){el.style.color='var(--red)';el.textContent='❌ Error: '+e.message;}
-  }
-  setTimeout(()=>{if(el)el.textContent='';},5000);
-}
+// ─── CHATBOT ──────────────────────────────────────────────
 function addChatMsg(text,role){
   const el=document.getElementById('chatMsgs');
   const div=document.createElement('div');
@@ -1210,10 +1217,11 @@ function sendChat(){
 function renderAll(){renderLP();renderCal();}
 
 // ─── BOOT ────────────────────────────────────────────────
-renderWx();
+renderWx(); // shows loading state until real data arrives
 // Load data from server then render
 loadFromServer().then(()=>{
   renderAll();
+  loadWeather(); // fetch real weather for the saved/default location
   scheduleAllReminders(); // local browser notifications
 });
 
