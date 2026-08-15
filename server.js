@@ -406,24 +406,6 @@ async function processTgCommand(text, data) {
       work=work.replace(namedTm[0],'').trim();
     }
 
-    // 3. Extract DATE
-    let date=today;
-    const dp=[
-      {r:/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})\b/,  f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
-      {r:/\btomorrow\b/i,                                 f:()=>addDays(today,1)},
-      {r:/\btoday\b/i,                                    f:()=>today},
-      {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,
-        f:m=>{const DW={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};
-              const di=DW[m[1].toLowerCase()];const base=new Date(today+'T00:00:00');
-              let diff=di-base.getDay();if(diff<=0)diff+=7;return addDays(today,diff)}},
-      {r:/\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s+(\d{1,2})\b/i,
-        f:m=>{const MI={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,
-                       ianuarie:1,februarie:2,martie:3,aprilie:4,mai:5,iunie:6,iulie:7,august:8,septembrie:9,octombrie:10,noiembrie:11,decembrie:12};
-              return new Date().getFullYear()+'-'+String(MI[m[1].toLowerCase()]).padStart(2,'0')+'-'+String(parseInt(m[2])).padStart(2,'0')}},
-      {r:/\b(\d{4}-\d{2}-\d{2})\b/,                      f:m=>m[1]},
-      {r:/\bin\s+(\d+)\s+days?\b/i,                       f:m=>addDays(today,parseInt(m[1]))},
-    ];
-    for(const p of dp){const m=work.match(p.r);if(m){date=p.f(m);work=work.replace(m[0],'').trim();break;}}
 
     // 4. Strip leftover date/time words that weren't consumed
     work=work
