@@ -6,7 +6,12 @@ const fetch   = require('node-fetch');
 
 const app       = express();
 const PORT      = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data.json');
+// DATA_DIR should point at a Railway Volume mount (e.g. /data) so the file
+// survives redeploys. Falls back to the app folder for local dev, but on
+// Railway WITHOUT a volume this will still reset on every deploy.
+const DATA_DIR  = process.env.DATA_DIR || __dirname;
+const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const SEED_FILE = path.join(__dirname, 'data.json'); // template shipped with the repo
 const APP_URL   = process.env.APP_URL || ''; // e.g. https://personal-organizer-xxx.up.railway.app
 
 app.use(express.json());
@@ -15,9 +20,40 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ═══════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════
+const DEFAULT_DATA = {
+  tasks: [], sportEvents: [],
+  groups: [
+    {id:'g_pers',name:'Personal',color:'#a78bfa'},
+    {id:'g_home',name:'Home',color:'#4f8ef7'},
+    {id:'g_car',name:'Car',color:'#94a3b8'},
+    {id:'g_work',name:'Work',color:'#34d399'},
+    {id:'g_sport',name:'Sport',color:'#f97316'}
+  ],
+  settings: {
+    tgToken:'', tgChatId:'', tgMorningHour:'08', tgMorningMin:'00', tgWeeklyDay:'1',
+    wxLat: 45.689, wxLon: 21.903, wxLocName: 'Lugoj, RO'
+  }
+};
+
+// If DATA_DIR is a fresh volume with no data.json yet, seed it once so the
+// app doesn't start completely empty. This only ever runs the FIRST time —
+// after that the volume's own file is the source of truth and is never
+// overwritten by redeploys.
+function ensureDataFile() {
+  if (fs.existsSync(DATA_FILE)) return;
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch(e) {}
+  let seed = DEFAULT_DATA;
+  if (DATA_FILE !== SEED_FILE && fs.existsSync(SEED_FILE)) {
+    try { seed = JSON.parse(fs.readFileSync(SEED_FILE, 'utf8')); } catch(e) {}
+  }
+  fs.writeFileSync(DATA_FILE, JSON.stringify(seed, null, 2));
+  console.log(`Seeded new data file at ${DATA_FILE}`);
+}
+ensureDataFile();
+
 function readData() {
   try { return JSON.parse(fs.readFileSync(DATA_FILE,'utf8')); }
-  catch(e){ return {tasks:[],sportEvents:[],groups:[],settings:{}}; }
+  catch(e){ return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
 }
 function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data,null,2));
@@ -525,6 +561,75 @@ app.get('/api/sports/next/:league', async (req, res) => {
   } catch(e){ res.status(500).json({error:e.message}); }
 });
 
+// ═══════════════════════════════════════════════════
+// WEATHER — Open-Meteo (free, no API key required)
+// ═══════════════════════════════════════════════════
+const WMO_COND = {
+  0:'sunny', 1:'partly_cloudy', 2:'partly_cloudy', 3:'cloudy',
+  45:'fog', 48:'fog',
+  51:'rainy', 53:'rainy', 55:'rainy', 56:'rainy', 57:'rainy',
+  61:'rainy', 63:'rainy', 65:'rainy', 66:'rainy', 67:'rainy',
+  80:'rainy', 81:'rainy', 82:'rainy',
+  71:'snow', 73:'snow', 75:'snow', 77:'snow', 85:'snow', 86:'snow',
+  95:'storm', 96:'storm', 99:'storm'
+};
+const WMO_LABEL = {
+  sunny:'Sunny', partly_cloudy:'Partly sunny', cloudy:'Cloudy',
+  rainy:'Rainy', snow:'Snow', storm:'Thunderstorm', fog:'Foggy'
+};
+function wmoToCond(code){ return WMO_COND[code] || 'cloudy'; }
+
+async function geocodeLocation(name) {
+  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`);
+  const d = await r.json();
+  if(!d.results || !d.results.length) return null;
+  const g = d.results[0];
+  const label = [g.name, g.admin1, g.country].filter(Boolean).slice(0,2).join(', ');
+  return { lat: g.latitude, lon: g.longitude, label };
+}
+
+// GET /api/weather?lat=..&lon=..          -> forecast for coordinates
+// GET /api/weather?q=Timisoara            -> geocodes the name first
+app.get('/api/weather', async (req, res) => {
+  try {
+    let { lat, lon, q } = req.query;
+    let label = null;
+
+    if (q && (!lat || !lon)) {
+      const g = await geocodeLocation(q);
+      if (!g) return res.status(404).json({ error: 'Location not found' });
+      lat = g.lat; lon = g.lon; label = g.label;
+    }
+    if (!lat || !lon) { lat = 45.689; lon = 21.903; label = label || 'Lugoj, RO'; }
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (!d.current || !d.daily) return res.status(502).json({ error: 'Weather provider error' });
+
+    const forecast = d.daily.time.slice(0, 7).map((t, i) => ({
+      dow: new Date(t + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short' }),
+      high: Math.round(d.daily.temperature_2m_max[i]),
+      low: Math.round(d.daily.temperature_2m_min[i]),
+      rain: Math.round(d.daily.precipitation_probability_max?.[i] || 0),
+      cond: wmoToCond(d.daily.weather_code[i])
+    }));
+    const cond = wmoToCond(d.current.weather_code);
+
+    res.json({
+      lat: Number(lat), lon: Number(lon),
+      locName: label,
+      tempC: Math.round(d.current.temperature_2m),
+      cond, text: WMO_LABEL[cond] || 'Cloudy',
+      high: forecast[0]?.high ?? null,
+      low: forecast[0]?.low ?? null,
+      forecast
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/telegram/send', async (req, res) => {
   const {token,chatId,text}=req.body;
   if(!token||!chatId) return res.json({ok:false,err:'Missing token or chatId'});
@@ -609,6 +714,7 @@ const initialData = readData();
 app.listen(PORT, async ()=>{
   console.log(`✅ Personal Organizer running on port ${PORT}`);
   console.log(`   APP_URL: ${APP_URL||'NOT SET'}`);
+  console.log(`   DATA_FILE: ${DATA_FILE} ${DATA_DIR===__dirname?'⚠️  NOT on a persistent volume — will reset on every deploy!':'(persistent volume)'}`);
 
   if(initialData.settings?.tgToken){
     console.log(`   TG token: set | ChatID: ${initialData.settings.tgChatId||'NOT SET'}`);
