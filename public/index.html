@@ -195,7 +195,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
     </div>
   </div>
   <div class="wx-hint">tap for forecast ↓</div>
-  <div class="wx-drop" id="wxDrop">
+  <div class="wx-drop" id="wxDrop" onclick="event.stopPropagation()">
     <div class="wx-drop-head">
       <h3><i class="ti ti-cloud-sun" style="color:var(--accent)"></i> 7-day forecast</h3>
       <button class="btn ghost ico sm" onclick="closeWx(event)"><i class="ti ti-x"></i></button>
