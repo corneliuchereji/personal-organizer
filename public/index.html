@@ -370,11 +370,25 @@ function matchesDate(ev,ds){
   return false;
 }
 
+// Converts "HH:MM" (or "H") to minutes-since-midnight for correct chronological sorting.
+function timeToMinutes(t){
+  if(!t) return 0;
+  const s=fmtTime(t); // normalizes to "HH:MM"
+  const [h,m]=s.split(':').map(Number);
+  return (h||0)*60+(m||0);
+}
+
 function eventsOnDay(ds){
   return[
     ...S.tasks.map(t=>({...t,_type:'task'})),
     ...(S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'}))
-  ].filter(ev=>matchesDate(ev,ds)).sort((a,b)=>parseInt(a.time||0)-parseInt(b.time||0));
+  ].filter(ev=>matchesDate(ev,ds)).sort((a,b)=>{
+    const dt=timeToMinutes(a.time)-timeToMinutes(b.time);
+    if(dt!==0) return dt;
+    // Same time: tasks (personal items) come before sport fixtures.
+    if(a._type!==b._type) return a._type==='task'?-1:1;
+    return 0; // same type & time: keep original order
+  });
 }
 
 // ─── MODAL ───────────────────────────────────────────────
