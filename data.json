@@ -13,6 +13,9 @@
     "tgChatId": "",
     "tgMorningHour": "08",
     "tgMorningMin": "00",
-    "tgWeeklyDay": "1"
+    "tgWeeklyDay": "1",
+    "wxLat": 45.689,
+    "wxLon": 21.903,
+    "wxLocName": "Lugoj, RO"
   }
 }
