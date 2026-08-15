@@ -357,80 +357,92 @@ async function processTgCommand(text, data) {
     return '✅ Sport event added:\n🏆 <b>'+name+'</b>\n📅 '+date+' at '+time;
   }
 
-  // ── ADD TASK ──
-  const isAddI=/^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\b/i.test(clean);
+  // ── ADD TASK / EVENT ──
+  const isAddI = /^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\b/i.test(clean)
+               || /^event\s*:/i.test(clean);
   if(isAddI){
-    let work=clean
-      .replace(/^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\s+(?:a\s+)?(?:task|reminder|event|appointment|me\s+to)?\s*[:\-,]?\s*/i,'')
+    // Strip trigger words
+    let work = clean
+      .replace(/^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\s+(?:a\s+|an\s+)?(?:task|event|reminder|appointment|me\s+to)?\s*[:\-,]?\s*/i,'')
+      .replace(/^event\s*:\s*/i,'')
       .trim();
 
-    // 1. Extract name if explicitly given via named:/named "..." FIRST
-    let name=null;
-    const namedQ=work.match(/\bnamed?\s*[:\-]?\s*[\u201c\u201d"]([^\u201c\u201d"]+)[\u201c\u201d"]|\bnamed?\s*[:\-]?\s*"([^"]+)"/i);
-    const namedC=work.match(/\bnamed?\s*:\s*([^,]+?)(?:\s*,\s*(?:la|at|on|tomorrow|today|morning|evening|night)|$)/i);
-    const bareQ =work.match(/[\u201c\u201d"]([^\u201c\u201d"]+)[\u201c\u201d"]|"([^"]+)"/);
-    if(namedQ){ name=(namedQ[1]||namedQ[2]).trim(); work=work.replace(namedQ[0],'').trim(); }
-    else if(namedC){ name=namedC[1].trim(); work=work.replace(namedC[0],'').trim(); }
-    else if(bareQ){ name=(bareQ[1]||bareQ[2]).trim(); work=work.replace(bareQ[0],'').trim(); }
+    // 1. Extract NAME — try patterns in order of priority
+    let name = null;
 
-    // 2. Extract DATE first (before time, so "tomorrow" doesn't confuse time)
-    let date=today;
-    const dpat=[
-      {r:/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})\b/,f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
-      {r:/\btomorrow\b/i,f:()=>addDays(today,1)},
-      {r:/\btoday\b/i,f:()=>today},
-      {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,
-        f:m=>{const DW={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};
-              const di=DW[m[1].toLowerCase()];const b=new Date(today+'T00:00:00');let diff=di-b.getDay();if(diff<=0)diff+=7;return addDays(today,diff)}},
-      {r:/\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s+(\d{1,2})\b/i,
-        f:m=>{const MI={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,
-                       ianuarie:1,februarie:2,martie:3,aprilie:4,mai:5,iunie:6,iulie:7,august:8,septembrie:9,octombrie:10,noiembrie:11,decembrie:12};
-              return new Date().getFullYear()+'-'+String(MI[m[1].toLowerCase()]).padStart(2,'0')+'-'+String(parseInt(m[2])).padStart(2,'0')}},
-      {r:/\b(\d{4}-\d{2}-\d{2})\b/,f:m=>m[1]},
-      {r:/\bin\s+(\d+)\s+days?\b/i,f:m=>addDays(today,parseInt(m[1]))},
-    ];
-    for(const p of dpat){const m=work.match(p.r);if(m){date=p.f(m);work=work.replace(m[0],'').trim();break;}}
+    // "named: X" — takes everything after colon to end of string or next comma
+    const namedC = work.match(/\bnamed?\s*:\s*([^,\n]+?)\s*(?:,\s*(?:at|la|on|\d)|$)/i)
+                || work.match(/\bnamed?\s*:\s*(.+)$/i);
+    if(namedC){ name=namedC[1].trim(); work=work.replace(namedC[0],'').trim(); }
 
-    // 2. Extract TIME — before date so "6AM" doesn't leak into name
-    // Order: named time words first if no explicit numeric time found
-    const numTm =work.match(/\b(?:at|la)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b|\b(\d{1,2}:\d{2}\s*(?:am|pm)?)\b|\b(\d{1,2}\s*(?:am|pm))\b/i);
-    const namedTm=work.match(/\b(morning|afternoon|evening|noon|night|midnight)\b/i);
-    let time='09:00';
-    if(numTm){
-      time=parseTime((numTm[1]||numTm[2]||numTm[3]).trim());
-      work=work.replace(numTm[0],'').trim();
-      // Also strip any remaining named time word so it doesn't leak into name
-      work=work.replace(/\b(?:morning|afternoon|evening|noon|night|midnight)\b/i,'').trim();
-    } else if(namedTm){
-      time=parseTime(namedTm[1]);
-      work=work.replace(namedTm[0],'').trim();
+    // Quoted name "..." or “...”
+    if(!name){
+      const qm=work.match(/[\u201c\u201d"]([^\u201c\u201d"]+)[\u201c\u201d"]|"([^"]+)"/);
+      if(qm){ name=(qm[1]||qm[2]).trim(); work=work.replace(qm[0],'').trim(); }
     }
 
+    // 2. Extract DATE
+    let date=today;
+    const dps=[
+      // DD-MM-YYYY, DD.MM.YYYY, DD/MM/YYYY
+      {r:/\b(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})\b/, f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
+      // YYYY-MM-DD
+      {r:/\b(\d{4})-(\d{2})-(\d{2})\b/, f:m=>m[1]+'-'+m[2]+'-'+m[3]},
+      {r:/\btomorrow\b/i, f:()=>addDays(today,1)},
+      {r:/\btoday\b/i,    f:()=>today},
+      {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,
+        f:m=>{const DW={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,
+                       duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};
+              const di=DW[m[1].toLowerCase()];const b=new Date(today+'T00:00:00');
+              let diff=di-b.getDay();if(diff<=0)diff+=7;return addDays(today,diff)}},
+      {r:/\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s+(\d{1,2})\b/i,
+        f:m=>{const MI={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,
+                       september:9,october:10,november:11,december:12,
+                       ianuarie:1,februarie:2,martie:3,aprilie:4,mai:5,iunie:6,
+                       iulie:7,august:8,septembrie:9,octombrie:10,noiembrie:11,decembrie:12};
+              return new Date().getFullYear()+'-'+String(MI[m[1].toLowerCase()]).padStart(2,'0')+'-'+String(parseInt(m[2])).padStart(2,'0')}},
+      {r:/\bin\s+(\d+)\s+days?\b/i, f:m=>addDays(today,parseInt(m[1]))},
+    ];
+    for(const p of dps){const m=work.match(p.r);if(m){date=p.f(m);work=work.replace(m[0],'').trim();break;}}
 
-    // 4. Strip leftover date/time words that weren't consumed
+    // 3. Extract TIME — try patterns from most specific to least
+    let time='09:00';
+    const tmPats=[
+      /\b(?:at|la)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/i,  // at 10:00, at 6AM
+      /\b(\d{1,2}:\d{2}\s*(?:am|pm)?)\b/i,                     // 22:00, 6:30PM
+      /\b(\d{1,2}\s*(?:am|pm))\b/i,                             // 6AM, 10pm
+      /\b(morning|afternoon|evening|noon|night|midnight)\b/i,      // morning, evening
+    ];
+    for(const r of tmPats){
+      const m=work.match(r);
+      if(m){time=parseTime(m[1]);work=work.replace(m[0],'').trim();break;}
+    }
+
+    // 4. Strip leftover date/time keywords
     work=work
       .replace(/\b(morning|afternoon|evening|noon|night|midnight)\b/gi,'')
       .replace(/\b(tomorrow|today|azi|maine)\b/gi,'')
       .replace(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/gi,'')
       .replace(/\s+/g,' ').trim();
 
-    // 5. Name from dash/colon separator "- task name" if not found yet
+    // 5. Name from "- X" or ": X" separator pattern
     if(!name){
       const dashM=work.match(/^[,\s]*[-–:]\s*(.+)$/);
-      if(dashM){ name=dashM[1].trim(); work=''; }
+      if(dashM){name=dashM[1].trim();}
     }
 
-    // 6. Fallback: whatever is left = name
+    // 6. Fallback: last comma-part that looks like a name (not a number/date/time)
     if(!name){
-      work=work
-        .replace(/^(?:for|on|a|an|the|task|reminder|un|o)\s+/gi,'')
-        .replace(/^[\s,;:\-–]+/,'')
-        .replace(/[\s,;:\-–]+$/,'')
-        .trim();
-      name=work||null;
+      const parts=work.split(',').map(s=>s.trim()).filter(Boolean);
+      const np=parts.find(p=>p.length>1&&!/^\d{1,2}[:.\-]\d/.test(p)&&!/^\d{4}/.test(p));
+      name=np||work;
     }
 
-    if(!name) return '❓ What should I call this task?\nExamples:\n<code>add task dentist tomorrow at 10:00</code>\n<code>add task: tomorrow, 6AM, named: dentist</code>\n<code>add task tomorrow at 19:00 - plata chirie</code>';
+    // Final cleanup
+    if(name) name=name.replace(/^[,\s\-–:]+/,'').replace(/[,\s\-–:]+$/,'').trim();
+
+    if(!name) return '❓ What should I call this?\nExamples:\n<code>add task dentist tomorrow at 10:00</code>\n<code>add task: tomorrow, 6AM, named: dentist</code>\n<code>add event: 12-08-2026, 22:00, Supercupa Europei</code>';
+
     const groups=data.groups||[];
     const grp=groups.find(g=>g.id===guessGroup(name))||groups[0]||{id:'g_pers'};
     data.tasks.push({id:uid(),name,date,time,freq:'none',priority:guessPriority(raw),group:grp.id,notes:'',done:false});
