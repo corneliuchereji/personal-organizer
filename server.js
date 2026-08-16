@@ -697,6 +697,33 @@ app.post('/api/sports/sync-now', async (req, res) => {
   catch(e){ res.status(500).json({ error: e.message }); }
 });
 
+// One-off raw diagnostic against football-data.org, using whatever key is
+// currently saved in Settings — shows exact HTTP status + body for three
+// representative calls so we can see precisely what the account allows.
+app.get('/api/sports/debug-football', async (req, res) => {
+  const d = readData();
+  const key = fdKeyOf(d);
+  if (!key) return res.json({ error: 'No football-data.org key saved in Settings.' });
+  const headers = { 'X-Auth-Token': key };
+  const tests = [
+    { label:'Competition lookup (Serie A)', url:`${FD_BASE}/competitions/SA` },
+    { label:'Competition matches (Serie A)', url:`${FD_BASE}/competitions/SA/matches?status=SCHEDULED` },
+    { label:'Team matches (AC Milan, id 98)', url:`${FD_BASE}/teams/98/matches?status=SCHEDULED` }
+  ];
+  const results = [];
+  for (const t of tests) {
+    try {
+      const r = await fetch(t.url, { headers });
+      const text = await r.text();
+      let body; try { body = JSON.parse(text); } catch { body = text; }
+      results.push({ label:t.label, url:t.url, status:r.status, body });
+    } catch(e) {
+      results.push({ label:t.label, url:t.url, status:'network-error', body:e.message });
+    }
+  }
+  res.json({ keyPrefix: key.slice(0,6)+'…'+key.slice(-4), results });
+});
+
 // Both football-data.org and TheSportsDB return fixture times in UTC. Everywhere
 // else in this app, a stored "date"+"time" pair is assumed to already be in
 // the user's local time (Europe/Bucharest) — so fixtures must be converted
