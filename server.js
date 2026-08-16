@@ -32,7 +32,7 @@ const DEFAULT_DATA = {
   settings: {
     tgToken:'', tgChatId:'', tgMorningHour:'08', tgMorningMin:'00', tgWeeklyDay:'1',
     wxLat: 45.689, wxLon: 21.903, wxLocName: 'Lugoj, RO',
-    apiFootballKey: '', tsdbKey: '3'
+    apiFootballKey: '', footballDataKey: '', tsdbKey: '3'
   },
   follows: { teams: [], competitions: [] }
 };
@@ -578,10 +578,27 @@ app.get('/api/sports/next/:league', async (req, res) => {
 // ═══════════════════════════════════════════════════
 // FOLLOWS — teams & competitions the user wants tracked,
 // auto-synced into sportEvents.
-//   Football        → API-Football (api-sports.io) — full detail
+//   Football        → football-data.org — free forever, fixtures/scores/standings
+//                      for 12 major competitions, no lineups/live stats
 //   Everything else → TheSportsDB — schedule/basic result only
 // ═══════════════════════════════════════════════════
-const AF_BASE = 'https://v3.football.api-sports.io';
+const FD_BASE = 'https://api.football-data.org/v4';
+// The 12 competitions football-data.org's free tier covers. Fixed, documented
+// list — no need to call their API to "search" competitions.
+const FD_FREE_COMPETITIONS = [
+  { code:'PL',  name:'Premier League', country:'England' },
+  { code:'BL1', name:'Bundesliga', country:'Germany' },
+  { code:'SA',  name:'Serie A', country:'Italy' },
+  { code:'PD',  name:'La Liga', country:'Spain' },
+  { code:'FL1', name:'Ligue 1', country:'France' },
+  { code:'DED', name:'Eredivisie', country:'Netherlands' },
+  { code:'PPL', name:'Primeira Liga', country:'Portugal' },
+  { code:'ELC', name:'Championship', country:'England' },
+  { code:'CL',  name:'UEFA Champions League', country:'Europe' },
+  { code:'EC',  name:'European Championship', country:'Europe' },
+  { code:'WC',  name:'FIFA World Cup', country:'World' },
+  { code:'BSA', name:'Série A', country:'Brazil' }
+];
 // Sports on the "other" side all live under TheSportsDB's "Motorsport" bucket
 // except cycling, snooker and darts which have their own sport names there.
 const TSDB_SPORT_MAP = {
@@ -591,46 +608,33 @@ const TSDB_SPORT_MAP = {
 };
 
 function tsdbKeyOf(data){ return (data.settings && data.settings.tsdbKey) || '3'; }
-function afKeyOf(data){ return data.settings && data.settings.apiFootballKey; }
+function fdKeyOf(data){ return data.settings && data.settings.footballDataKey; }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// GET /api/sports/search?sport=football&kind=team&q=Dortmund
+// GET /api/sports/search?sport=football&kind=team&q=Milan&compCode=SA
 // GET /api/sports/search?sport=motorsport&kind=competition&q=MotoGP
-// Stable, well-known API-Football league IDs — used so the "browse without
-// typing" list has something sensible to show for football competitions
-// (API-Football's own /leagues search requires query text).
-const POPULAR_FOOTBALL_LEAGUES = [
-  { id:39,  name:'Premier League', country:'England' },
-  { id:140, name:'La Liga', country:'Spain' },
-  { id:135, name:'Serie A', country:'Italy' },
-  { id:78,  name:'Bundesliga', country:'Germany' },
-  { id:61,  name:'Ligue 1', country:'France' },
-  { id:2,   name:'UEFA Champions League', country:'Europe' },
-  { id:3,   name:'UEFA Europa League', country:'Europe' },
-  { id:1,   name:'FIFA World Cup', country:'World' }
-];
-
 app.get('/api/sports/search', async (req, res) => {
-  const { sport, kind, q } = req.query; // kind: 'team' | 'competition'
+  const { sport, kind, q, compCode } = req.query; // kind: 'team' | 'competition'
   const data = readData();
   try {
     if (sport === 'football') {
-      const key = afKeyOf(data);
-      if (!key) return res.status(400).json({ error: 'Add your API-Football key in Settings first.' });
-      if (kind === 'competition' && (!q || !q.trim())) {
-        // Browse mode: no query typed yet — show the popular-league picklist.
-        return res.json({ results: POPULAR_FOOTBALL_LEAGUES.map(l=>({ id:l.id, name:l.name, logo:`https://media.api-sports.io/football/leagues/${l.id}.png`, country:l.country })) });
+      if (kind === 'competition') {
+        // Fixed free-tier list — no API call needed, so it's never rate-limited.
+        let list = FD_FREE_COMPETITIONS;
+        if (q && q.trim()) list = list.filter(c=>c.name.toLowerCase().includes(q.trim().toLowerCase()));
+        return res.json({ results: list.map(c=>({ id:c.code, name:c.name, logo:`https://crests.football-data.org/${c.code}.png`, country:c.country })) });
       }
-      if (!q || q.length < 2) return res.json({ results: [] });
-      const url = kind === 'team'
-        ? `${AF_BASE}/teams?search=${encodeURIComponent(q)}`
-        : `${AF_BASE}/leagues?search=${encodeURIComponent(q)}`;
-      const r = await fetch(url, { headers: { 'x-apisports-key': key } });
+      // Team search: free tier has no global text search, so we search
+      // within one competition's team list (picked by the user first).
+      const key = fdKeyOf(data);
+      if (!key) return res.status(400).json({ error: 'Add your football-data.org key in Settings first.' });
+      if (!compCode) return res.status(400).json({ error: 'Pick which competition the team plays in first.' });
+      const r = await fetch(`${FD_BASE}/competitions/${compCode}/teams`, { headers:{'X-Auth-Token':key} });
       const d = await r.json();
-      if (d.errors && Object.keys(d.errors).length) return res.status(400).json({ error: JSON.stringify(d.errors) });
-      const results = kind === 'team'
-        ? (d.response||[]).map(x=>({ id:x.team.id, name:x.team.name, logo:x.team.logo, country:x.team.country }))
-        : (d.response||[]).map(x=>({ id:x.league.id, name:x.league.name+(x.league.type==='Cup'?' (Cup)':''), logo:x.league.logo, country:x.country?.name }));
-      return res.json({ results });
+      if (d.errorCode || d.message) return res.status(400).json({ error: d.message || 'football-data.org error' });
+      let teams = d.teams||[];
+      if (q && q.trim()) teams = teams.filter(t=>t.name.toLowerCase().includes(q.trim().toLowerCase()) || (t.shortName||'').toLowerCase().includes(q.trim().toLowerCase()));
+      return res.json({ results: teams.map(t=>({ id:t.id, name:t.name, logo:t.crest||'', country:'' })) });
     } else {
       const key = tsdbKeyOf(data);
       const sportName = TSDB_SPORT_MAP[sport] || sport;
@@ -666,7 +670,7 @@ app.post('/api/follows', async (req, res) => {
   if (!kind || !sport || !providerId || !name) return res.status(400).json({ error: 'Missing fields' });
   const d = readData();
   if (!d.follows) d.follows = { teams: [], competitions: [] };
-  const provider = sport === 'football' ? 'api-football' : 'thesportsdb';
+  const provider = sport === 'football' ? 'football-data' : 'thesportsdb';
   const listKey = kind === 'team' ? 'teams' : 'competitions';
   if (!d.follows[listKey].find(x => x.providerId === String(providerId) && x.provider === provider)) {
     d.follows[listKey].push({ id: uid(), kind, sport, provider, providerId: String(providerId), name, logo: logo||'' });
@@ -693,7 +697,7 @@ app.post('/api/sports/sync-now', async (req, res) => {
   catch(e){ res.status(500).json({ error: e.message }); }
 });
 
-// Both API-Football and TheSportsDB return fixture times in UTC. Everywhere
+// Both football-data.org and TheSportsDB return fixture times in UTC. Everywhere
 // else in this app, a stored "date"+"time" pair is assumed to already be in
 // the user's local time (Europe/Bucharest) — so fixtures must be converted
 // here, once, rather than displayed raw. This also means the calendar date
@@ -708,20 +712,22 @@ function toBucharestParts(dateObj) {
   return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
 }
 
-function normalizeAFFixture(fx, followType, followId) {
-  const dt = new Date(fx.fixture.date); // ISO with UTC offset from API-Football
+function normalizeFDMatch(m, followType, followId) {
+  const dt = new Date(m.utcDate); // ISO UTC from football-data.org
   const { date, time } = toBucharestParts(dt);
+  const ft = m.score && m.score.fullTime;
   return {
-    id: 'af_'+fx.fixture.id, source:'auto', provider:'api-football', providerId:String(fx.fixture.id),
+    id: 'fd_'+m.id, source:'auto', provider:'football-data', providerId:String(m.id),
     sport:'football', freq:'none', date, time,
-    name: fx.teams.home.name+' vs '+fx.teams.away.name,
-    home: { id:fx.teams.home.id, name:fx.teams.home.name, logo:fx.teams.home.logo },
-    away: { id:fx.teams.away.id, name:fx.teams.away.name, logo:fx.teams.away.logo },
+    name: m.homeTeam.name+' vs '+m.awayTeam.name,
+    home: { id:m.homeTeam.id, name:m.homeTeam.name, logo:m.homeTeam.crest||'' },
+    away: { id:m.awayTeam.id, name:m.awayTeam.name, logo:m.awayTeam.crest||'' },
     competitionId: followType==='competition' ? followId : null,
-    competitionName: fx.league.name, competitionLogo: fx.league.logo,
+    competitionCode: m.competition && m.competition.code,
+    competitionName: m.competition && m.competition.name, competitionLogo: m.competition && m.competition.emblem,
     followType, followId,
-    status: fx.fixture.status.short,
-    score: { home:fx.goals.home, away:fx.goals.away },
+    status: m.status,
+    score: (ft && ft.home!=null) ? { home:ft.home, away:ft.away } : null,
     notes:'', color:'#4f8ef7'
   };
 }
@@ -754,43 +760,40 @@ async function syncFixtures() {
   if (!d.follows) return { count: 0, log: [] };
   const newAuto = [];
   const log = []; // per-follow diagnostic trail, returned to the UI so failures aren't silent
-  const afKey = afKeyOf(d);
+  const fdKey = fdKeyOf(d);
   const tsdbKey = tsdbKeyOf(d);
-  const season = new Date().getFullYear();
+  const today = new Date();
+  const dateFrom = today.toISOString().slice(0,10);
+  const dateTo = new Date(today.getTime()+45*86400000).toISOString().slice(0,10);
 
-  if (!afKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
-    log.push({ name:'Football follows', ok:false, error:'No API-Football key set in Settings.' });
+  if (!fdKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
+    log.push({ name:'Football follows', ok:false, error:'No football-data.org key set in Settings.' });
   }
 
-  if (afKey) {
+  if (fdKey) {
+    // football-data.org free tier: 10 requests/minute — pace calls out to stay under that.
+    const headers = { 'X-Auth-Token': fdKey };
     for (const t of d.follows.teams.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${AF_BASE}/fixtures?team=${t.providerId}&next=15`, { headers:{'x-apisports-key':afKey} });
+        const r = await fetch(`${FD_BASE}/teams/${t.providerId}/matches?status=SCHEDULED&dateFrom=${dateFrom}&dateTo=${dateTo}`, { headers });
         const dd = await r.json();
-        if (dd.errors && Object.keys(dd.errors).length) { log.push({ name:t.name, ok:false, error: JSON.stringify(dd.errors) }); continue; }
-        const found = dd.response||[];
-        found.forEach(fx => newAuto.push(normalizeAFFixture(fx,'team',t.id)));
+        if (dd.errorCode || dd.message) { log.push({ name:t.name, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
+        const found = dd.matches||[];
+        found.forEach(m => newAuto.push(normalizeFDMatch(m,'team',t.id)));
         log.push({ name:t.name, ok:true, count:found.length });
       } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
+      await sleep(6500);
     }
     for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
       try {
-        let r = await fetch(`${AF_BASE}/fixtures?league=${c.providerId}&season=${season}&next=30`, { headers:{'x-apisports-key':afKey} });
-        let dd = await r.json();
-        if (dd.errors && Object.keys(dd.errors).length) { log.push({ name:c.name, ok:false, error: JSON.stringify(dd.errors) }); continue; }
-        let found = dd.response||[];
-        let usedFallback = false;
-        if (found.length === 0) {
-          // Season filter may not match this competition's current season yet
-          // (e.g. brand-new season just before kickoff) — retry without it.
-          r = await fetch(`${AF_BASE}/fixtures?league=${c.providerId}&next=30`, { headers:{'x-apisports-key':afKey} });
-          dd = await r.json();
-          found = dd.response||[];
-          usedFallback = true;
-        }
-        found.forEach(fx => newAuto.push(normalizeAFFixture(fx,'competition',c.id)));
-        log.push({ name:c.name, ok:true, count:found.length, note: usedFallback?'used no-season fallback':undefined });
+        const r = await fetch(`${FD_BASE}/competitions/${c.providerId}/matches?status=SCHEDULED&dateFrom=${dateFrom}&dateTo=${dateTo}`, { headers });
+        const dd = await r.json();
+        if (dd.errorCode || dd.message) { log.push({ name:c.name, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
+        const found = dd.matches||[];
+        found.forEach(m => newAuto.push(normalizeFDMatch(m,'competition',c.id)));
+        log.push({ name:c.name, ok:true, count:found.length });
       } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
+      await sleep(6500);
     }
   }
 
@@ -820,31 +823,28 @@ async function syncFixtures() {
   return { count: newAuto.length, log };
 }
 
-// GET /api/fixture/:provider/:id — full detail for tap-through (lineups/stats/standings for football)
+// GET /api/fixture/:provider/:id — full detail for tap-through
 app.get('/api/fixture/:provider/:id', async (req, res) => {
   const { provider, id } = req.params;
   const d = readData();
   try {
-    if (provider === 'api-football') {
-      const key = afKeyOf(d);
-      if (!key) return res.status(400).json({ error: 'No API-Football key set' });
-      const headers = { 'x-apisports-key': key };
-      const [fxR, lineupR, statsR] = await Promise.all([
-        fetch(`${AF_BASE}/fixtures?id=${id}`, { headers }),
-        fetch(`${AF_BASE}/fixtures/lineups?fixture=${id}`, { headers }),
-        fetch(`${AF_BASE}/fixtures/statistics?fixture=${id}`, { headers })
-      ]);
-      const [fx, lineup, stats] = await Promise.all([fxR.json(), lineupR.json(), statsR.json()]);
-      const fixture = fx.response && fx.response[0];
+    if (provider === 'football-data') {
+      const key = fdKeyOf(d);
+      if (!key) return res.status(400).json({ error: 'No football-data.org key set' });
+      const headers = { 'X-Auth-Token': key };
+      const r = await fetch(`${FD_BASE}/matches/${id}`, { headers });
+      const fixture = await r.json();
+      if (fixture.errorCode || fixture.message) return res.status(400).json({ error: fixture.message||'football-data.org error' });
       let standings = null;
-      if (fixture) {
+      if (fixture.competition && fixture.competition.code) {
         try {
-          const stR = await fetch(`${AF_BASE}/standings?league=${fixture.league.id}&season=${fixture.league.season}`, { headers });
+          const stR = await fetch(`${FD_BASE}/competitions/${fixture.competition.code}/standings`, { headers });
           const stD = await stR.json();
-          standings = stD.response && stD.response[0] && stD.response[0].league.standings;
+          standings = stD.standings && stD.standings.find(s=>s.type==='TOTAL');
         } catch(e) {}
       }
-      return res.json({ fixture, lineups: lineup.response||[], statistics: stats.response||[], standings });
+      // No lineups/statistics on the free tier — flagged so the UI shows an honest message.
+      return res.json({ fixture, lineups: [], statistics: [], standings: standings ? standings.table : null, noDeepStats:true });
     } else if (provider === 'thesportsdb') {
       const key = tsdbKeyOf(d);
       const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${key}/lookupevent.php?id=${id}`);
