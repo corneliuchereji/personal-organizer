@@ -32,7 +32,7 @@ const DEFAULT_DATA = {
   settings: {
     tgToken:'', tgChatId:'', tgMorningHour:'08', tgMorningMin:'00', tgWeeklyDay:'1',
     wxLat: 45.689, wxLon: 21.903, wxLocName: 'Lugoj, RO',
-    apiFootballKey: '', footballDataKey: '', tsdbKey: '3'
+    apiFootballKey: '', footballDataKey: '', tsdbKey: '123'
   },
   follows: { teams: [], competitions: [] }
 };
@@ -611,7 +611,12 @@ const TSDB_SPORT_MAP = {
   football_other:'Soccer'
 };
 
-function tsdbKeyOf(data){ return (data.settings && data.settings.tsdbKey) || '3'; }
+function tsdbKeyOf(data){
+  const k = data.settings && data.settings.tsdbKey;
+  // '3' was an older shared test key that's since become unreliable —
+  // auto-upgrade anyone still storing it to the current one, '123'.
+  return (!k || k === '3') ? '123' : k;
+}
 function fdKeyOf(data){ return data.settings && data.settings.footballDataKey; }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
