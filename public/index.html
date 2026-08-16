@@ -1020,20 +1020,47 @@ function openFollowManager(){
   showModal('Sport follows',
     '<div style="font-size:11px;color:var(--txt2);margin-bottom:10px;line-height:1.6">Follow a team to see its games as its own slot. Follow a competition to see all its fixtures — if several land at the same time they collapse into one tappable slot.</div>'+
     '<div class="slabel">Currently following</div>'+
-    '<div id="fmFollowedList" style="margin-bottom:14px">'+followedHtml+'</div>'+
+    '<div id="fmFollowedList" style="margin-bottom:6px">'+followedHtml+'</div>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmSyncNow()"><i class="ti ti-refresh"></i> Sync fixtures now</button>'+
+    '<div id="fmSyncStatus" style="font-size:11px;color:var(--green);min-height:14px;margin:-8px 0 8px;text-align:center"></div>'+
     '<div class="slabel">Add new</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
-      '<select id="fmSport" onchange="_fmSport=this.value" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px">'+
+      '<select id="fmSport" onchange="_fmSport=this.value;fmBrowse()" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px">'+
         FOLLOW_SPORTS.map(s=>'<option value="'+s.id+'"'+(s.id===_fmSport?' selected':'')+'>'+s.label+'</option>').join('')+
       '</select>'+
     '</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:8px">'+
-      '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="team" '+(_fmKind==='team'?'checked':'')+' onchange="_fmKind=\'team\'"> Team</label>'+
-      '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="competition" '+(_fmKind==='competition'?'checked':'')+' onchange="_fmKind=\'competition\'"> Competition</label>'+
+      '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="team" '+(_fmKind==='team'?'checked':'')+' onchange="_fmKind=\'team\';fmBrowse()"> Team</label>'+
+      '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="competition" '+(_fmKind==='competition'?'checked':'')+' onchange="_fmKind=\'competition\';fmBrowse()"> Competition</label>'+
     '</div>'+
-    '<div style="display:flex;gap:6px"><input id="fmQ" placeholder="e.g. AC Milan, Champions League, MotoGP…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none" onkeydown="if(event.key===\'Enter\')fmSearch()"><button class="btn sm acc" onclick="fmSearch()"><i class="ti ti-search"></i></button></div>'+
+    '<div style="display:flex;gap:6px"><input id="fmQ" placeholder="Search, or leave blank to browse…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none" onkeydown="if(event.key===\'Enter\')fmSearch()"><button class="btn sm acc" onclick="fmSearch()"><i class="ti ti-search"></i></button></div>'+
     '<div id="fmResults" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>',
     '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  fmBrowse(); // show a starting list immediately (competitions) so there's always something to tap
+}
+
+async function fmSyncNow(){
+  const el=document.getElementById('fmSyncStatus');
+  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Syncing…';
+  try{
+    const r=await fetch('/api/sports/sync-now',{method:'POST'});
+    const d=await r.json();
+    if(d.error){ el.style.color='var(--red)'; el.textContent='Sync failed: '+d.error; return; }
+    el.style.color='var(--green)'; el.textContent='✅ Synced '+d.synced+' fixtures.';
+    await loadFromServer(); renderAll();
+  }catch(e){ el.style.color='var(--red)'; el.textContent='Sync failed: '+e.message; }
+}
+
+// Loads a starting list with no query typed — search results for non-football
+// sports, or the popular-leagues picklist for football competitions. Cleared
+// (not called) for football teams, since there's no sensible default list.
+function fmBrowse(){
+  document.getElementById('fmQ').value='';
+  if(_fmSport==='football' && _fmKind==='team'){
+    document.getElementById('fmResults').innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a team name to search.</div>';
+    return;
+  }
+  fmSearch();
 }
 
 function followRow(f,kind){
@@ -1046,8 +1073,8 @@ function followRow(f,kind){
 async function fmSearch(){
   const q=(document.getElementById('fmQ').value||'').trim();
   const resEl=document.getElementById('fmResults');
-  if(!q){resEl.innerHTML='';return;}
-  resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0"><i class="ti ti-loader-2"></i> Searching…</div>';
+  if(!q && !(_fmKind==='competition')){resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search.</div>';return;}
+  resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0"><i class="ti ti-loader-2"></i> Loading…</div>';
   try{
     const r=await fetch('/api/sports/search?sport='+encodeURIComponent(_fmSport)+'&kind='+_fmKind+'&q='+encodeURIComponent(q));
     const d=await r.json();
