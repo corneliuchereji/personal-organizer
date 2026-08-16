@@ -287,6 +287,7 @@ function uid(){return 'e'+Date.now().toString(36)+Math.random().toString(36).sli
 const DFLT = {
   weekOffset:0, dayOffset:0, ftKey:'', tgToken:'', tgChatId:'', tgMorningHour:'08',
   wxLat:45.689, wxLon:21.903, wxLocName:'Lugoj, RO',
+  apiFootballKey:'', tsdbKey:'3', follows:{teams:[],competitions:[]},
   wx:null, // filled in by loadWeather() on boot — null shows a loading state, never fake data
   tasks:[], sportEvents:[],
   groups:[
@@ -311,14 +312,18 @@ function saveState(){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         tasks: S.tasks,
-        sportEvents: S.sportEvents,
+        // Auto-synced fixtures are managed exclusively by the server's
+        // follow-sync job — never echo them back or we can clobber a
+        // fresher sync with a stale client copy. Only manual entries save.
+        sportEvents: (S.sportEvents||[]).filter(e=>e.source!=='auto'),
         groups: S.groups,
         settings:{
           tgToken: S.tgToken||'',
           tgChatId: S.tgChatId||'',
           tgMorningHour: S.tgMorningHour||'08',
           tgMorningMin: S.tgMorningMin||'00',
-          wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName
+          wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
+          apiFootballKey: S.apiFootballKey||'', tsdbKey: S.tsdbKey||'3'
         }
       })
     }).catch(e=>console.log('Save error:',e));
@@ -341,6 +346,9 @@ async function loadFromServer(){
       wxLat: d.settings?.wxLat ?? DFLT.wxLat,
       wxLon: d.settings?.wxLon ?? DFLT.wxLon,
       wxLocName: d.settings?.wxLocName || DFLT.wxLocName,
+      apiFootballKey: d.settings?.apiFootballKey||'',
+      tsdbKey: d.settings?.tsdbKey||'3',
+      follows: d.follows || {teams:[],competitions:[]},
       weekOffset:0, dayOffset:0
     };
   }catch(e){ console.log('Load error:',e); }
@@ -378,11 +386,38 @@ function timeToMinutes(t){
   return (h||0)*60+(m||0);
 }
 
+// Groups same-day sport fixtures: fixtures belonging to a followed TEAM
+// always get their own slot (e.g. "Borussia Dortmund vs X"). Fixtures that
+// only belong to a followed COMPETITION are grouped by competition — if
+// there's more than one at the same competition on the same day (e.g. a
+// full Champions League group-stage night), they collapse into a single
+// slot at the earliest kickoff time, tap-through to the full list.
+function collapseSportEvents(sportEvs){
+  const teamSlots = sportEvs.filter(e=>e.followType==='team').map(e=>({...e,_display:'single'}));
+  const rest = sportEvs.filter(e=>e.followType!=='team');
+  const groups = {};
+  rest.forEach(e=>{
+    const key = e.competitionId || ('single_'+e.id);
+    (groups[key] = groups[key]||[]).push(e);
+  });
+  const restSlots = Object.values(groups).map(g=>{
+    if(g.length===1) return {...g[0], _display:'single'};
+    const sorted=[...g].sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time));
+    return {
+      _type:'sport', _display:'collapsed', id:'collapsed_'+(sorted[0].competitionId||sorted[0].id)+'_'+sorted[0].date,
+      time: sorted[0].time, name: sorted[0].competitionName || 'Competition',
+      competitionLogo: sorted[0].competitionLogo, sport: sorted[0].sport,
+      count: sorted.length, fixtures: sorted, color: sorted[0].color
+    };
+  });
+  return [...teamSlots, ...restSlots];
+}
+
 function eventsOnDay(ds){
-  return[
-    ...S.tasks.map(t=>({...t,_type:'task'})),
-    ...(S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'}))
-  ].filter(ev=>matchesDate(ev,ds)).sort((a,b)=>{
+  const tasks = S.tasks.map(t=>({...t,_type:'task'})).filter(ev=>matchesDate(ev,ds));
+  const sportsRaw = (S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds));
+  const sports = collapseSportEvents(sportsRaw);
+  return [...tasks, ...sports].sort((a,b)=>{
     const dt=timeToMinutes(a.time)-timeToMinutes(b.time);
     if(dt!==0) return dt;
     // Same time: tasks (personal items) come before sport fixtures.
@@ -477,6 +512,7 @@ function renderLP(){
   document.getElementById('lpTitle').textContent=isToday?'Today':fmtShort(d);
   document.getElementById('lpLabel').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   const evs=eventsOnDay(ds);
+  cacheEvents(evs);
   const el=document.getElementById('lpBody');
   if(!evs.length){
     el.innerHTML='<div style="padding:20px;text-align:center;color:var(--txt3);font-size:12px"><i class="ti ti-calendar-off" style="font-size:24px;display:block;margin:0 auto 8px;opacity:.3"></i>No events</div>';
@@ -487,24 +523,20 @@ function renderLP(){
 
 function renderCard(ev){
   const isTask=ev._type==='task';
-  const col=isTask?getGroup(ev.group).color:(ev._color||sportColor(ev.sport,ev));
-  const gName=isTask?getGroup(ev.group).name:(ev.sport||'sport');
+  if(!isTask) return renderSportCard(ev);
+  const col=getGroup(ev.group).color;
+  const gName=getGroup(ev.group).name;
   const pri=ev.priority||'normal';
   let meta='<span style="color:'+col+';font-size:9px">'+gName+'</span>';
   meta+='<span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
-  if(isTask&&ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
-  if(isTask)meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
+  if(ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
+  meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
   if(ev.reminder)meta+=reminderBadge(ev.reminder);
   let acts='';
-  if(isTask){
-    acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
-    acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
-    acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
-    acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  } else {
-    acts+='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
-    acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  }
+  acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
+  acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
+  acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
+  acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
   return '<div class="ecard'+(ev.done?' done':'')+'">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
@@ -512,6 +544,46 @@ function renderCard(ev){
     (ev.notes?'<div class="ec-notes">'+escHtml(ev.notes)+'</div>':'')+
     '</div></div>'+
     '<div class="ec-actions">'+acts+'</div>'+
+    '</div>';
+}
+
+// Small badge <img>, falls back to a colored dot if no logo URL.
+function badgeImg(url,alt,col){
+  if(url) return '<img src="'+escHtml(url)+'" alt="'+escHtml(alt||'')+'" style="width:20px;height:20px;object-fit:contain;border-radius:3px;background:#fff1;flex-shrink:0">';
+  return '<span style="width:10px;height:10px;border-radius:50%;background:'+(col||'#94a3b8')+';flex-shrink:0;display:inline-block"></span>';
+}
+
+function renderSportCard(ev){
+  const col=ev._color||sportColor(ev.sport,ev);
+  const gName=ev.sport||'sport';
+  let meta='<span style="color:'+col+';font-size:9px">'+gName+'</span><span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
+
+  if(ev._display==='collapsed'){
+    // Multiple fixtures at once in a followed competition (e.g. CL group night)
+    let title=escHtml(ev.name)+' <span style="color:var(--txt3);font-weight:400;font-size:11px">('+ev.count+' matches)</span>';
+    return '<div class="ecard" onclick="showFixtureList(\''+ev.id.replace(/'/g,'')+'\')" style="cursor:pointer">'+
+      '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badgeImg(ev.competitionLogo,ev.name,col)+
+      '<div class="ec-body" style="padding-left:0"><div class="ec-title">'+title+'</div><div class="ec-meta">'+meta+'</div></div></div></div>'+
+      '<div class="ec-actions"><button class="ea" onclick="event.stopPropagation();showFixtureList(\''+ev.id+'\')"><i class="ti ti-list"></i>See all</button></div>'+
+      '</div>';
+  }
+
+  // Single fixture (team-follow match or a lone competition fixture)
+  const hasTeams = ev.home && ev.away;
+  const scoreTxt = ev.score && (ev.score.home!=null) ? (ev.score.home+' - '+ev.score.away) : '';
+  const badges = hasTeams
+    ? '<div style="display:flex;align-items:center;gap:4px">'+badgeImg(ev.home.logo,ev.home.name,col)+'<span style="font-size:10px;color:var(--txt3)">vs</span>'+badgeImg(ev.away.logo,ev.away.name,col)+'</div>'
+    : badgeImg(ev.competitionLogo,ev.name,col);
+  let acts='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
+  if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
+  return '<div class="ecard" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer">'+
+    '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
+    '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badges+
+    '<div class="ec-body" style="padding-left:0"><div class="ec-title">'+escHtml(ev.name)+(scoreTxt?' <span style="color:var(--txt2);font-weight:700">'+scoreTxt+'</span>':'')+'</div>'+
+    (ev.competitionName?'<div style="font-size:10px;color:var(--txt3)">'+escHtml(ev.competitionName)+'</div>':'')+
+    '<div class="ec-meta">'+meta+'</div></div></div></div>'+
+    '<div class="ec-actions" onclick="event.stopPropagation()">'+acts+'</div>'+
     '</div>';
 }
 
@@ -559,6 +631,7 @@ function renderCal(){
       const ds=fmtD(dt);
       const isToday=ds===TODAY,isSel=ds===_selDay;
       const evs=c.other?[]:eventsOnDay(ds);
+      cacheEvents(evs);
       let chips=evs.slice(0,3).map(ev=>{
         const col=ev._type==='task'?getGroup(ev.group).color:(ev._color||sportColor(ev.sport,ev));
         return '<div class="chip" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+escHtml(ev.name)+'">'+escHtml(ev.name)+'</div>';
@@ -747,12 +820,40 @@ function reminderBadge(reminder){
 }
 
 // ─── SPORT DETAIL ─────────────────────────────────────────
+// Caches every event object currently rendered (including fixtures nested
+// inside collapsed competition slots) so click handlers can look up full
+// data by id without re-deriving it.
+let _evCache={};
+function cacheEvents(evs){
+  evs.forEach(e=>{ _evCache[e.id]=e; if(e.fixtures) e.fixtures.forEach(f=>_evCache[f.id]=f); });
+}
+
+function showFixtureList(id){
+  const slot=_evCache[id]; if(!slot||!slot.fixtures)return;
+  const rows=slot.fixtures.map(f=>{
+    const hasTeams=f.home&&f.away;
+    const badges=hasTeams?badgeImg(f.home.logo,f.home.name)+'<span style="font-size:10px;color:var(--txt3);margin:0 4px">vs</span>'+badgeImg(f.away.logo,f.away.name):'';
+    const scoreTxt=f.score&&(f.score.home!=null)?(f.score.home+' - '+f.score.away):fmtTime(f.time);
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer" onclick="showSportDetail(\''+f.id+'\')">'+
+      badges+'<div style="flex:1;font-size:12px">'+escHtml(f.name)+'</div>'+
+      '<div style="font-size:11px;color:var(--txt2);font-weight:600">'+scoreTxt+'</div></div>';
+  }).join('');
+  showModal(slot.name, '<div style="max-height:60vh;overflow-y:auto">'+rows+'</div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
+}
+
 function sdItem(label,val,full){
   return '<div class="sd-item"'+(full?' style="grid-column:1/-1"':'')+'>'+
     '<div class="sd-label">'+label+'</div><div class="sd-val">'+val+'</div></div>';
 }
+
 function showSportDetail(id){
-  const ev=(S.sportEvents||[]).find(e=>e.id===id);if(!ev)return;
+  const ev=_evCache[id]||(S.sportEvents||[]).find(e=>e.id===id);if(!ev)return;
+  if(ev.source==='auto'){ showAutoFixtureDetail(ev); return; }
+  showManualSportDetail(ev);
+}
+
+function showManualSportDetail(ev){
   const col=ev.color||sportColor(ev.sport,ev);
   const d=parseD(ev.date);
   const links={f1:'<a href="https://www.formula1.com" target="_blank" style="color:var(--accent)">formula1.com</a>',motogp:'<a href="https://www.motogp.com" target="_blank" style="color:var(--orange)">motogp.com</a>',wec:'<a href="https://www.fiawec.com" target="_blank" style="color:var(--accent)">fiawec.com</a>',tdf:'<a href="https://www.letour.fr" target="_blank" style="color:var(--yellow)">letour.fr</a>',giro:'<a href="https://www.giroditalia.it" target="_blank" style="color:var(--red)">giroditalia.it</a>',ucl:'<a href="https://www.uefa.com/uefachampionsleague" target="_blank" style="color:var(--accent)">UEFA.com</a>',seriea:'<a href="https://www.legaseriea.it" target="_blank" style="color:var(--green)">legaseriea.it</a>'};
@@ -762,7 +863,88 @@ function showSportDetail(id){
     '<div class="sd-grid">'+sdItem('Sport',ev.sport||'other')+sdItem('Date',fmtShort(d))+sdItem('Time',fmtTime(ev.time))+'</div>';
   if(ev.notes)body+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.6;white-space:pre-wrap">'+escHtml(ev.notes)+'</div>';
   if(links[ev.sport])body+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px;font-size:11px;color:var(--txt2);text-align:center;margin-top:10px">Official: '+links[ev.sport]+'</div>';
-  showModal(ev.name,body,'<button class="btn" onclick="editTask(\''+id+'\')"><i class="ti ti-edit"></i> Edit</button><span class="msp"></span><button class="btn red" onclick="delSport(\''+id+'\')"><i class="ti ti-trash"></i></button><button class="btn acc" onclick="closeModal()">Close</button>');
+  showModal(ev.name,body,'<button class="btn" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i> Edit</button><span class="msp"></span><button class="btn red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i></button><button class="btn acc" onclick="closeModal()">Close</button>');
+}
+
+// Auto-synced fixture (from a followed team/competition). Fetches full
+// detail from the backend — lineups/stats/standings for football via
+// API-Football, best-available info for everything else via TheSportsDB.
+async function showAutoFixtureDetail(ev){
+  const col=ev.color||sportColor(ev.sport,ev);
+  const d=parseD(ev.date);
+  const headerBadges=ev.home&&ev.away
+    ? '<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px">'+
+        '<div style="text-align:center">'+badgeImgLg(ev.home.logo,ev.home.name)+'<div style="font-size:11px;margin-top:4px">'+escHtml(ev.home.name)+'</div></div>'+
+        '<div style="font-size:13px;color:var(--txt3)">vs</div>'+
+        '<div style="text-align:center">'+badgeImgLg(ev.away.logo,ev.away.name)+'<div style="font-size:11px;margin-top:4px">'+escHtml(ev.away.name)+'</div></div>'+
+      '</div>' : '';
+  showModal(ev.name,
+    headerBadges+'<div style="text-align:center;font-size:11px;color:var(--txt2);margin-bottom:10px">'+fmtLong(d)+' · '+fmtTime(ev.time)+' Bucharest'+(ev.competitionName?' · '+escHtml(ev.competitionName):'')+'</div>'+
+    '<div id="fxDetailBody" style="font-size:12px;color:var(--txt2);text-align:center;padding:20px 0"><i class="ti ti-loader-2"></i> Loading details…</div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
+
+  try{
+    const r=await fetch('/api/fixture/'+ev.provider+'/'+ev.providerId);
+    const d2=await r.json();
+    const el=document.getElementById('fxDetailBody');
+    if(!el)return; // modal was closed before this resolved
+    if(d2.error){ el.innerHTML='<div style="color:var(--red)">Could not load details: '+escHtml(d2.error)+'</div>'; return; }
+    el.innerHTML=renderFixtureDetailBody(ev,d2);
+  }catch(e){
+    const el=document.getElementById('fxDetailBody');
+    if(el) el.innerHTML='<div style="color:var(--red)">Network error loading details.</div>';
+  }
+}
+function badgeImgLg(url,alt){ return url?'<img src="'+escHtml(url)+'" alt="'+escHtml(alt||'')+'" style="width:40px;height:40px;object-fit:contain">':'<div style="width:40px;height:40px;border-radius:50%;background:var(--bg3);margin:0 auto"></div>'; }
+
+function renderFixtureDetailBody(ev,d){
+  if(ev.provider==='thesportsdb'){
+    const f=d.fixture;
+    if(!f) return '<div style="text-align:center;color:var(--txt3)">No further detail available for this event.</div>';
+    let html='<div class="sd-grid">'+sdItem('Status',f.strStatus||'Scheduled')+sdItem('Venue',f.strVenue||'—');
+    if(f.intHomeScore!=null) html+=sdItem('Score',f.intHomeScore+' - '+f.intAwayScore,true);
+    html+='</div>';
+    return html;
+  }
+  // API-Football
+  const fx=d.fixture;
+  let html='';
+  if(fx){
+    html+='<div class="sd-grid">'+sdItem('Status',fx.fixture.status.long)+sdItem('Venue',(fx.fixture.venue&&fx.fixture.venue.name)||'—');
+    if(fx.goals.home!=null) html+=sdItem('Score',fx.goals.home+' - '+fx.goals.away);
+    html+='</div>';
+  }
+  // Lineups
+  if(d.lineups&&d.lineups.length===2){
+    html+='<div class="slabel" style="margin-top:14px">Lineups</div><div style="display:flex;gap:10px">';
+    d.lineups.forEach(side=>{
+      html+='<div style="flex:1;font-size:11px"><div style="font-weight:700;margin-bottom:4px">'+escHtml(side.team.name)+' <span style="color:var(--txt3);font-weight:400">('+escHtml(side.formation||'')+')</span></div>';
+      (side.startXI||[]).forEach(p=>{ html+='<div style="padding:2px 0;color:var(--txt2)">'+(p.player.number||'')+' · '+escHtml(p.player.name)+' <span style="color:var(--txt3)">'+(p.player.pos||'')+'</span></div>'; });
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  // Statistics
+  if(d.statistics&&d.statistics.length===2){
+    const home=d.statistics[0], away=d.statistics[1];
+    html+='<div class="slabel" style="margin-top:14px">Statistics</div>';
+    (home.statistics||[]).forEach((s,i)=>{
+      const a=s.value ?? '—', b=(away.statistics[i]&&away.statistics[i].value) ?? '—';
+      html+='<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+a+'</span><span style="color:var(--txt3)">'+escHtml(s.type)+'</span><span>'+b+'</span></div>';
+    });
+  }
+  // Standings
+  if(d.standings&&d.standings.length){
+    html+='<div class="slabel" style="margin-top:14px">Standings</div>';
+    const table=d.standings[0]; // first group/table
+    html+='<div style="font-size:11px">'+table.slice(0,10).map(t=>
+      '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border)">'+
+      '<span style="width:16px;color:var(--txt3)">'+t.rank+'</span>'+badgeImg(t.team.logo,t.team.name)+
+      '<span style="flex:1">'+escHtml(t.team.name)+'</span><span style="color:var(--txt2);font-weight:700">'+t.points+'p</span></div>'
+    ).join('')+'</div>';
+  }
+  if(!html) html='<div style="text-align:center;color:var(--txt3)">No further detail available yet — check back closer to kickoff.</div>';
+  return html;
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
@@ -771,9 +953,10 @@ function openSettings(){
     '<div class="slabel">Groups</div>'+
     '<div>'+S.groups.map(g=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="width:10px;height:10px;border-radius:50%;background:'+g.color+';flex-shrink:0;display:inline-block"></span><span style="flex:1;font-size:13px">'+escHtml(g.name)+'</span><button class="btn sm" onclick="editGroup(\''+g.id+'\')"><i class="ti ti-edit"></i></button><button class="btn sm red" onclick="delGroup(\''+g.id+'\')"><i class="ti ti-trash"></i></button></div>').join('')+'</div>'+
     '<button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="newGroup()"><i class="ti ti-plus"></i> New group</button>'+
-    '<div class="slabel" style="margin-top:14px">Football API Key</div>'+
-    '<div style="display:flex;gap:6px"><input id="ftKIn" value="'+(S.ftKey||'')+'" placeholder="football-data.org key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.ftKey=document.getElementById(\'ftKIn\').value.trim();saveState()">Save</button></div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Free key at <a href="https://www.football-data.org" target="_blank" style="color:var(--accent)">football-data.org</a></div>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-ball-football"></i> Sport data & follows</div>'+
+    '<div style="display:flex;gap:6px"><input id="afKIn" value="'+(S.apiFootballKey||'')+'" placeholder="API-Football key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.apiFootballKey=document.getElementById(\'afKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key at <a href="https://dashboard.api-football.com" target="_blank" style="color:var(--accent)">dashboard.api-football.com</a> — powers football fixtures, lineups, stats & standings.</div>'+
+    '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
     '<div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.6">'+
       '1. Open Telegram → search <b>@BotFather</b> → send <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">/newbot</code> → copy token<br>'+
@@ -816,6 +999,88 @@ function delGroup(id){
   const g=S.groups.find(x=>x.id===id);
   showModal('Delete group','<div style="font-size:13px;margin-bottom:8px">Delete group <b>'+escHtml(g?.name||'')+'</b>?</div>',
     '<button class="btn red" onclick="S.groups=S.groups.filter(x=>x.id!==\''+id+'\');saveState();closeModal();openSettings();renderAll()"><i class="ti ti-trash"></i> Delete</button><span class="msp"></span><button class="btn" onclick="openSettings()">Cancel</button>');
+}
+
+// ─── SPORT FOLLOWS ─────────────────────────────────────────
+const FOLLOW_SPORTS=[
+  {id:'football',label:'Football'},
+  {id:'motorsport',label:'Motorsport (F1, MotoGP, WEC, IMSA, endurance…)'},
+  {id:'cycling',label:'Cycling'},
+  {id:'snooker',label:'Snooker'},
+  {id:'darts',label:'Darts'}
+];
+let _fmSport='football', _fmKind='team', _fmResults=[];
+
+function openFollowManager(){
+  const teams=(S.follows?.teams||[]);
+  const comps=(S.follows?.competitions||[]);
+  const followedHtml = (teams.length+comps.length===0)
+    ? '<div style="font-size:11px;color:var(--txt3);padding:8px 0">Nothing followed yet.</div>'
+    : [...teams.map(f=>followRow(f,'team')),...comps.map(f=>followRow(f,'competition'))].join('');
+  showModal('Sport follows',
+    '<div style="font-size:11px;color:var(--txt2);margin-bottom:10px;line-height:1.6">Follow a team to see its games as its own slot. Follow a competition to see all its fixtures — if several land at the same time they collapse into one tappable slot.</div>'+
+    '<div class="slabel">Currently following</div>'+
+    '<div id="fmFollowedList" style="margin-bottom:14px">'+followedHtml+'</div>'+
+    '<div class="slabel">Add new</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:6px">'+
+      '<select id="fmSport" onchange="_fmSport=this.value" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px">'+
+        FOLLOW_SPORTS.map(s=>'<option value="'+s.id+'"'+(s.id===_fmSport?' selected':'')+'>'+s.label+'</option>').join('')+
+      '</select>'+
+    '</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:8px">'+
+      '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="team" '+(_fmKind==='team'?'checked':'')+' onchange="_fmKind=\'team\'"> Team</label>'+
+      '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="competition" '+(_fmKind==='competition'?'checked':'')+' onchange="_fmKind=\'competition\'"> Competition</label>'+
+    '</div>'+
+    '<div style="display:flex;gap:6px"><input id="fmQ" placeholder="e.g. AC Milan, Champions League, MotoGP…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none" onkeydown="if(event.key===\'Enter\')fmSearch()"><button class="btn sm acc" onclick="fmSearch()"><i class="ti ti-search"></i></button></div>'+
+    '<div id="fmResults" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>',
+    '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+}
+
+function followRow(f,kind){
+  return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
+    badgeImg(f.logo,f.name)+'<span style="flex:1;font-size:12px">'+escHtml(f.name)+'</span>'+
+    '<span style="font-size:9px;color:var(--txt3);text-transform:uppercase">'+kind+'</span>'+
+    '<button class="btn sm red" onclick="removeFollow(\''+kind+'\',\''+f.id+'\')"><i class="ti ti-trash"></i></button></div>';
+}
+
+async function fmSearch(){
+  const q=(document.getElementById('fmQ').value||'').trim();
+  const resEl=document.getElementById('fmResults');
+  if(!q){resEl.innerHTML='';return;}
+  resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0"><i class="ti ti-loader-2"></i> Searching…</div>';
+  try{
+    const r=await fetch('/api/sports/search?sport='+encodeURIComponent(_fmSport)+'&kind='+_fmKind+'&q='+encodeURIComponent(q));
+    const d=await r.json();
+    if(d.error){ resEl.innerHTML='<div style="font-size:11px;color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+    _fmResults=d.results||[];
+    if(!_fmResults.length){ resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">No results.</div>'; return; }
+    resEl.innerHTML=_fmResults.map((x,i)=>
+      '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
+      badgeImg(x.logo,x.name)+'<span style="flex:1;font-size:12px">'+escHtml(x.name)+(x.country?' <span style="color:var(--txt3);font-size:10px">'+escHtml(x.country)+'</span>':'')+'</span>'+
+      '<button class="btn sm acc" onclick="fmAdd('+i+')"><i class="ti ti-plus"></i> Follow</button></div>'
+    ).join('');
+  }catch(e){ resEl.innerHTML='<div style="font-size:11px;color:var(--red)">Search failed: '+escHtml(e.message)+'</div>'; }
+}
+
+async function fmAdd(i){
+  const x=_fmResults[i]; if(!x)return;
+  try{
+    const r=await fetch('/api/follows',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kind:_fmKind,sport:_fmSport,providerId:x.id,name:x.name,logo:x.logo})});
+    const d=await r.json();
+    if(d.error){ alert(d.error); return; }
+    S.follows=d.follows;
+    openFollowManager(); // refresh list; sync happens in background server-side
+  }catch(e){ alert('Could not add follow: '+e.message); }
+}
+
+async function removeFollow(kind,id){
+  try{
+    await fetch('/api/follows/'+kind+'/'+id,{method:'DELETE'});
+    const r=await fetch('/api/follows'); S.follows=await r.json();
+    openFollowManager();
+    await loadFromServer(); renderAll();
+  }catch(e){ alert('Could not remove: '+e.message); }
 }
 
 // ─── TELEGRAM ────────────────────────────────────────────
