@@ -845,8 +845,18 @@ async function syncFixtures() {
     } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
   }
 
+  // A match can legitimately be fetched twice — once via a followed
+  // competition, once via a followed team playing in it. Same real match id
+  // in both cases, so dedupe here, preferring the 'team' tag (so it always
+  // renders with full team names as its own slot rather than folding into
+  // the generic competition group).
+  const dedup = new Map();
+  for (const ev of newAuto) {
+    const existing = dedup.get(ev.id);
+    if (!existing || (existing.followType !== 'team' && ev.followType === 'team')) dedup.set(ev.id, ev);
+  }
   const manual = (d.sportEvents||[]).filter(e => e.source !== 'auto');
-  d.sportEvents = [...manual, ...newAuto];
+  d.sportEvents = [...manual, ...dedup.values()];
   writeData(d);
   console.log(`Synced ${newAuto.length} auto fixtures from ${d.follows.teams.length} teams + ${d.follows.competitions.length} competitions.`, JSON.stringify(log));
   return { count: newAuto.length, log };
