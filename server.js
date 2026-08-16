@@ -31,8 +31,10 @@ const DEFAULT_DATA = {
   ],
   settings: {
     tgToken:'', tgChatId:'', tgMorningHour:'08', tgMorningMin:'00', tgWeeklyDay:'1',
-    wxLat: 45.689, wxLon: 21.903, wxLocName: 'Lugoj, RO'
-  }
+    wxLat: 45.689, wxLon: 21.903, wxLocName: 'Lugoj, RO',
+    apiFootballKey: '', tsdbKey: '3'
+  },
+  follows: { teams: [], competitions: [] }
 };
 
 // If DATA_DIR is a fresh volume with no data.json yet, seed it once so the
@@ -574,6 +576,226 @@ app.get('/api/sports/next/:league', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
+// FOLLOWS — teams & competitions the user wants tracked,
+// auto-synced into sportEvents.
+//   Football        → API-Football (api-sports.io) — full detail
+//   Everything else → TheSportsDB — schedule/basic result only
+// ═══════════════════════════════════════════════════
+const AF_BASE = 'https://v3.football.api-sports.io';
+// Sports on the "other" side all live under TheSportsDB's "Motorsport" bucket
+// except cycling, snooker and darts which have their own sport names there.
+const TSDB_SPORT_MAP = {
+  motorsport:'Motorsport', f1:'Motorsport', motogp:'Motorsport', wec:'Motorsport',
+  imsa:'Motorsport', endurance:'Motorsport',
+  cycling:'Cycling', snooker:'Snooker', darts:'Darts'
+};
+
+function tsdbKeyOf(data){ return (data.settings && data.settings.tsdbKey) || '3'; }
+function afKeyOf(data){ return data.settings && data.settings.apiFootballKey; }
+
+// GET /api/sports/search?sport=football&kind=team&q=Dortmund
+// GET /api/sports/search?sport=motorsport&kind=competition&q=MotoGP
+app.get('/api/sports/search', async (req, res) => {
+  const { sport, kind, q } = req.query; // kind: 'team' | 'competition'
+  const data = readData();
+  try {
+    if (sport === 'football') {
+      const key = afKeyOf(data);
+      if (!key) return res.status(400).json({ error: 'Add your API-Football key in Settings first.' });
+      if (!q || q.length < 2) return res.json({ results: [] });
+      const url = kind === 'team'
+        ? `${AF_BASE}/teams?search=${encodeURIComponent(q)}`
+        : `${AF_BASE}/leagues?search=${encodeURIComponent(q)}`;
+      const r = await fetch(url, { headers: { 'x-apisports-key': key } });
+      const d = await r.json();
+      if (d.errors && Object.keys(d.errors).length) return res.status(400).json({ error: JSON.stringify(d.errors) });
+      const results = kind === 'team'
+        ? (d.response||[]).map(x=>({ id:x.team.id, name:x.team.name, logo:x.team.logo, country:x.team.country }))
+        : (d.response||[]).map(x=>({ id:x.league.id, name:x.league.name+(x.league.type==='Cup'?' (Cup)':''), logo:x.league.logo, country:x.country?.name }));
+      return res.json({ results });
+    } else {
+      const key = tsdbKeyOf(data);
+      const sportName = TSDB_SPORT_MAP[sport] || sport;
+      if (kind === 'team') {
+        if (!q || q.length < 2) return res.json({ results: [] });
+        const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=${encodeURIComponent(q)}`);
+        const d = await r.json();
+        const results = (d.teams||[])
+          .filter(t => !sportName || (t.strSport||'').toLowerCase() === sportName.toLowerCase())
+          .map(t=>({ id:t.idTeam, name:t.strTeam, logo:t.strTeamBadge||'', country:t.strCountry }));
+        return res.json({ results });
+      } else {
+        // TheSportsDB has no fuzzy league search on the free tier — list all
+        // leagues for the sport and filter by name here.
+        const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${key}/search_all_leagues.php?s=${encodeURIComponent(sportName)}`);
+        const d = await r.json();
+        let list = d.countries || d.leagues || [];
+        if (q) list = list.filter(l => (l.strLeague||'').toLowerCase().includes(q.toLowerCase()));
+        const results = list.slice(0,40).map(l=>({ id:l.idLeague, name:l.strLeague, logo:l.strBadge||l.strLogo||'', country:l.strCountry||'' }));
+        return res.json({ results });
+      }
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/follows', (req, res) => {
+  const d = readData();
+  res.json(d.follows || { teams: [], competitions: [] });
+});
+
+app.post('/api/follows', async (req, res) => {
+  const { kind, sport, providerId, name, logo } = req.body; // kind: 'team'|'competition'
+  if (!kind || !sport || !providerId || !name) return res.status(400).json({ error: 'Missing fields' });
+  const d = readData();
+  if (!d.follows) d.follows = { teams: [], competitions: [] };
+  const provider = sport === 'football' ? 'api-football' : 'thesportsdb';
+  const listKey = kind === 'team' ? 'teams' : 'competitions';
+  if (!d.follows[listKey].find(x => x.providerId === String(providerId) && x.provider === provider)) {
+    d.follows[listKey].push({ id: uid(), kind, sport, provider, providerId: String(providerId), name, logo: logo||'' });
+  }
+  writeData(d);
+  res.json({ ok:true, follows: d.follows });
+  syncFixtures().catch(e => console.log('Sync after follow-add failed:', e.message));
+});
+
+app.delete('/api/follows/:kind/:id', (req, res) => {
+  const { kind, id } = req.params;
+  const d = readData();
+  if (!d.follows) d.follows = { teams: [], competitions: [] };
+  const listKey = kind === 'team' ? 'teams' : 'competitions';
+  d.follows[listKey] = (d.follows[listKey]||[]).filter(x => x.id !== id);
+  // Drop any auto-synced fixtures that came from this follow.
+  d.sportEvents = (d.sportEvents||[]).filter(e => !(e.source === 'auto' && e.followId === id));
+  writeData(d);
+  res.json({ ok:true });
+});
+
+app.post('/api/sports/sync-now', async (req, res) => {
+  try { const count = await syncFixtures(); res.json({ ok:true, synced:count }); }
+  catch(e){ res.status(500).json({ error: e.message }); }
+});
+
+function normalizeAFFixture(fx, followType, followId) {
+  const iso = fx.fixture.date; // e.g. 2026-08-20T19:00:00+00:00 — already ISO, includes offset
+  const dt = new Date(iso);
+  return {
+    id: 'af_'+fx.fixture.id, source:'auto', provider:'api-football', providerId:String(fx.fixture.id),
+    sport:'football', freq:'none',
+    date: dt.toISOString().slice(0,10), time: dt.toISOString().slice(11,16),
+    name: fx.teams.home.name+' vs '+fx.teams.away.name,
+    home: { id:fx.teams.home.id, name:fx.teams.home.name, logo:fx.teams.home.logo },
+    away: { id:fx.teams.away.id, name:fx.teams.away.name, logo:fx.teams.away.logo },
+    competitionId: followType==='competition' ? followId : null,
+    competitionName: fx.league.name, competitionLogo: fx.league.logo,
+    followType, followId,
+    status: fx.fixture.status.short,
+    score: { home:fx.goals.home, away:fx.goals.away },
+    notes:'', color:'#4f8ef7'
+  };
+}
+function normalizeTSDBEvent(ev, followType, followId) {
+  return {
+    id: 'tsdb_'+ev.idEvent, source:'auto', provider:'thesportsdb', providerId:ev.idEvent,
+    sport: (ev.strSport||'').toLowerCase(), freq:'none',
+    date: ev.dateEvent, time: (ev.strTime||'00:00:00').slice(0,5),
+    name: ev.strEvent,
+    home: ev.strHomeTeam ? { name:ev.strHomeTeam, logo:ev.strHomeTeamBadge||'' } : null,
+    away: ev.strAwayTeam ? { name:ev.strAwayTeam, logo:ev.strAwayTeamBadge||'' } : null,
+    competitionId: followType==='competition' ? followId : null,
+    competitionName: ev.strLeague, competitionLogo: ev.strLeagueBadge||'',
+    followType, followId,
+    status: ev.strStatus||'',
+    score: (ev.intHomeScore!=null) ? { home:ev.intHomeScore, away:ev.intAwayScore } : null,
+    notes:'', color:'#94a3b8'
+  };
+}
+
+// Pulls fresh fixtures for everything followed and replaces the auto-synced
+// slice of sportEvents. Manually-added sportEvents (source !== 'auto') are
+// left untouched.
+async function syncFixtures() {
+  const d = readData();
+  if (!d.follows) return 0;
+  const newAuto = [];
+  const afKey = afKeyOf(d);
+  const tsdbKey = tsdbKeyOf(d);
+  const season = new Date().getFullYear();
+
+  if (afKey) {
+    for (const t of d.follows.teams.filter(x=>x.sport==='football')) {
+      try {
+        const r = await fetch(`${AF_BASE}/fixtures?team=${t.providerId}&next=15`, { headers:{'x-apisports-key':afKey} });
+        const dd = await r.json();
+        (dd.response||[]).forEach(fx => newAuto.push(normalizeAFFixture(fx,'team',t.id)));
+      } catch(e){ console.log('API-Football team sync error:', e.message); }
+    }
+    for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
+      try {
+        const r = await fetch(`${AF_BASE}/fixtures?league=${c.providerId}&season=${season}&next=30`, { headers:{'x-apisports-key':afKey} });
+        const dd = await r.json();
+        (dd.response||[]).forEach(fx => newAuto.push(normalizeAFFixture(fx,'competition',c.id)));
+      } catch(e){ console.log('API-Football league sync error:', e.message); }
+    }
+  }
+
+  for (const c of d.follows.competitions.filter(x=>x.sport!=='football')) {
+    try {
+      const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
+      const dd = await r.json();
+      (dd.events||[]).forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
+    } catch(e){ console.log('TheSportsDB competition sync error:', e.message); }
+  }
+  for (const t of d.follows.teams.filter(x=>x.sport!=='football')) {
+    try {
+      const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnext.php?id=${t.providerId}`);
+      const dd = await r.json();
+      (dd.events||[]).forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'team',t.id)));
+    } catch(e){ console.log('TheSportsDB team sync error:', e.message); }
+  }
+
+  const manual = (d.sportEvents||[]).filter(e => e.source !== 'auto');
+  d.sportEvents = [...manual, ...newAuto];
+  writeData(d);
+  console.log(`Synced ${newAuto.length} auto fixtures from ${d.follows.teams.length} teams + ${d.follows.competitions.length} competitions.`);
+  return newAuto.length;
+}
+
+// GET /api/fixture/:provider/:id — full detail for tap-through (lineups/stats/standings for football)
+app.get('/api/fixture/:provider/:id', async (req, res) => {
+  const { provider, id } = req.params;
+  const d = readData();
+  try {
+    if (provider === 'api-football') {
+      const key = afKeyOf(d);
+      if (!key) return res.status(400).json({ error: 'No API-Football key set' });
+      const headers = { 'x-apisports-key': key };
+      const [fxR, lineupR, statsR] = await Promise.all([
+        fetch(`${AF_BASE}/fixtures?id=${id}`, { headers }),
+        fetch(`${AF_BASE}/fixtures/lineups?fixture=${id}`, { headers }),
+        fetch(`${AF_BASE}/fixtures/statistics?fixture=${id}`, { headers })
+      ]);
+      const [fx, lineup, stats] = await Promise.all([fxR.json(), lineupR.json(), statsR.json()]);
+      const fixture = fx.response && fx.response[0];
+      let standings = null;
+      if (fixture) {
+        try {
+          const stR = await fetch(`${AF_BASE}/standings?league=${fixture.league.id}&season=${fixture.league.season}`, { headers });
+          const stD = await stR.json();
+          standings = stD.response && stD.response[0] && stD.response[0].league.standings;
+        } catch(e) {}
+      }
+      return res.json({ fixture, lineups: lineup.response||[], statistics: stats.response||[], standings });
+    } else if (provider === 'thesportsdb') {
+      const key = tsdbKeyOf(d);
+      const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${key}/lookupevent.php?id=${id}`);
+      const dd = await r.json();
+      return res.json({ fixture: dd.events && dd.events[0] });
+    }
+    res.status(400).json({ error: 'Unknown provider' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ═══════════════════════════════════════════════════
 // WEATHER — Open-Meteo (free, no API key required)
 // ═══════════════════════════════════════════════════
 const WMO_COND = {
@@ -718,6 +940,12 @@ function setupCrons(settings) {
   }
 }
 
+// Fixture sync — refreshes followed teams/competitions into sportEvents.
+let _fixtureSyncCron = cron.schedule('17 */6 * * *', async () => {
+  console.log('Running scheduled fixture sync...');
+  try { await syncFixtures(); } catch(e){ console.log('Scheduled sync error:', e.message); }
+});
+
 // ═══════════════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════════════
@@ -727,6 +955,12 @@ app.listen(PORT, async ()=>{
   console.log(`✅ Personal Organizer running on port ${PORT}`);
   console.log(`   APP_URL: ${APP_URL||'NOT SET'}`);
   console.log(`   DATA_FILE: ${DATA_FILE} ${DATA_DIR===__dirname?'⚠️  NOT on a persistent volume — will reset on every deploy!':'(persistent volume)'}`);
+
+  const followCount = (initialData.follows?.teams?.length||0) + (initialData.follows?.competitions?.length||0);
+  if (followCount > 0) {
+    console.log(`   Syncing ${followCount} followed teams/competitions...`);
+    syncFixtures().catch(e => console.log('Startup sync error:', e.message));
+  }
 
   if(initialData.settings?.tgToken){
     console.log(`   TG token: set | ChatID: ${initialData.settings.tgChatId||'NOT SET'}`);
