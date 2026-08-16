@@ -1046,7 +1046,12 @@ async function fmSyncNow(){
     const r=await fetch('/api/sports/sync-now',{method:'POST'});
     const d=await r.json();
     if(d.error){ el.style.color='var(--red)'; el.textContent='Sync failed: '+d.error; return; }
-    el.style.color='var(--green)'; el.textContent='✅ Synced '+d.synced+' fixtures.';
+    const lines=(d.log||[]).map(x=>{
+      if(!x.ok) return '<div style="color:var(--red)">✗ '+escHtml(x.name)+': '+escHtml(x.error)+'</div>';
+      return '<div style="color:var(--txt2)">✓ '+escHtml(x.name)+': '+x.count+' fixture'+(x.count===1?'':'s')+(x.note?' <span style="color:var(--txt3)">('+escHtml(x.note)+')</span>':'')+'</div>';
+    }).join('');
+    el.style.color='var(--green)'; el.style.textAlign='left';
+    el.innerHTML='<div style="text-align:center;margin-bottom:4px">✅ Synced '+d.synced+' total fixtures.</div>'+lines;
     await loadFromServer(); renderAll();
   }catch(e){ el.style.color='var(--red)'; el.textContent='Sync failed: '+e.message; }
 }
