@@ -595,6 +595,20 @@ function afKeyOf(data){ return data.settings && data.settings.apiFootballKey; }
 
 // GET /api/sports/search?sport=football&kind=team&q=Dortmund
 // GET /api/sports/search?sport=motorsport&kind=competition&q=MotoGP
+// Stable, well-known API-Football league IDs — used so the "browse without
+// typing" list has something sensible to show for football competitions
+// (API-Football's own /leagues search requires query text).
+const POPULAR_FOOTBALL_LEAGUES = [
+  { id:39,  name:'Premier League', country:'England' },
+  { id:140, name:'La Liga', country:'Spain' },
+  { id:135, name:'Serie A', country:'Italy' },
+  { id:78,  name:'Bundesliga', country:'Germany' },
+  { id:61,  name:'Ligue 1', country:'France' },
+  { id:2,   name:'UEFA Champions League', country:'Europe' },
+  { id:3,   name:'UEFA Europa League', country:'Europe' },
+  { id:1,   name:'FIFA World Cup', country:'World' }
+];
+
 app.get('/api/sports/search', async (req, res) => {
   const { sport, kind, q } = req.query; // kind: 'team' | 'competition'
   const data = readData();
@@ -602,6 +616,10 @@ app.get('/api/sports/search', async (req, res) => {
     if (sport === 'football') {
       const key = afKeyOf(data);
       if (!key) return res.status(400).json({ error: 'Add your API-Football key in Settings first.' });
+      if (kind === 'competition' && (!q || !q.trim())) {
+        // Browse mode: no query typed yet — show the popular-league picklist.
+        return res.json({ results: POPULAR_FOOTBALL_LEAGUES.map(l=>({ id:l.id, name:l.name, logo:`https://media.api-sports.io/football/leagues/${l.id}.png`, country:l.country })) });
+      }
       if (!q || q.length < 2) return res.json({ results: [] });
       const url = kind === 'team'
         ? `${AF_BASE}/teams?search=${encodeURIComponent(q)}`
@@ -675,13 +693,27 @@ app.post('/api/sports/sync-now', async (req, res) => {
   catch(e){ res.status(500).json({ error: e.message }); }
 });
 
+// Both API-Football and TheSportsDB return fixture times in UTC. Everywhere
+// else in this app, a stored "date"+"time" pair is assumed to already be in
+// the user's local time (Europe/Bucharest) — so fixtures must be converted
+// here, once, rather than displayed raw. This also means the calendar date
+// a late-kickoff fixture lands on is correct even when UTC and Bucharest
+// time fall on different calendar days.
+function toBucharestParts(dateObj) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Bucharest',
+    year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false
+  }).formatToParts(dateObj);
+  const get = t => parts.find(p=>p.type===t).value;
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
+}
+
 function normalizeAFFixture(fx, followType, followId) {
-  const iso = fx.fixture.date; // e.g. 2026-08-20T19:00:00+00:00 — already ISO, includes offset
-  const dt = new Date(iso);
+  const dt = new Date(fx.fixture.date); // ISO with UTC offset from API-Football
+  const { date, time } = toBucharestParts(dt);
   return {
     id: 'af_'+fx.fixture.id, source:'auto', provider:'api-football', providerId:String(fx.fixture.id),
-    sport:'football', freq:'none',
-    date: dt.toISOString().slice(0,10), time: dt.toISOString().slice(11,16),
+    sport:'football', freq:'none', date, time,
     name: fx.teams.home.name+' vs '+fx.teams.away.name,
     home: { id:fx.teams.home.id, name:fx.teams.home.name, logo:fx.teams.home.logo },
     away: { id:fx.teams.away.id, name:fx.teams.away.name, logo:fx.teams.away.logo },
@@ -694,10 +726,14 @@ function normalizeAFFixture(fx, followType, followId) {
   };
 }
 function normalizeTSDBEvent(ev, followType, followId) {
+  // strTimestamp is UTC ISO when present; fall back to combining date+time as UTC.
+  const iso = ev.strTimestamp ? ev.strTimestamp.replace(' ','T')+(ev.strTimestamp.includes('Z')?'':'Z')
+    : `${ev.dateEvent}T${ev.strTime||'00:00:00'}Z`;
+  const dt = new Date(iso);
+  const { date, time } = isNaN(dt) ? { date: ev.dateEvent, time:(ev.strTime||'00:00').slice(0,5) } : toBucharestParts(dt);
   return {
     id: 'tsdb_'+ev.idEvent, source:'auto', provider:'thesportsdb', providerId:ev.idEvent,
-    sport: (ev.strSport||'').toLowerCase(), freq:'none',
-    date: ev.dateEvent, time: (ev.strTime||'00:00:00').slice(0,5),
+    sport: (ev.strSport||'').toLowerCase(), freq:'none', date, time,
     name: ev.strEvent,
     home: ev.strHomeTeam ? { name:ev.strHomeTeam, logo:ev.strHomeTeamBadge||'' } : null,
     away: ev.strAwayTeam ? { name:ev.strAwayTeam, logo:ev.strAwayTeamBadge||'' } : null,
