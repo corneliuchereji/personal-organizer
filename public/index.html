@@ -287,7 +287,7 @@ function uid(){return 'e'+Date.now().toString(36)+Math.random().toString(36).sli
 const DFLT = {
   weekOffset:0, dayOffset:0, ftKey:'', tgToken:'', tgChatId:'', tgMorningHour:'08',
   wxLat:45.689, wxLon:21.903, wxLocName:'Lugoj, RO',
-  apiFootballKey:'', footballDataKey:'', tsdbKey:'3', follows:{teams:[],competitions:[]},
+  apiFootballKey:'', footballDataKey:'', tsdbKey:'123', follows:{teams:[],competitions:[]},
   wx:null, // filled in by loadWeather() on boot — null shows a loading state, never fake data
   tasks:[], sportEvents:[],
   groups:[
@@ -323,7 +323,7 @@ function saveState(){
           tgMorningHour: S.tgMorningHour||'08',
           tgMorningMin: S.tgMorningMin||'00',
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
-          apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', tsdbKey: S.tsdbKey||'3'
+          apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', tsdbKey: S.tsdbKey||'123'
         }
       })
     }).catch(e=>console.log('Save error:',e));
@@ -348,7 +348,7 @@ async function loadFromServer(){
       wxLocName: d.settings?.wxLocName || DFLT.wxLocName,
       apiFootballKey: d.settings?.apiFootballKey||'',
       footballDataKey: d.settings?.footballDataKey||'',
-      tsdbKey: d.settings?.tsdbKey||'3',
+      tsdbKey: d.settings?.tsdbKey||'123',
       follows: d.follows || {teams:[],competitions:[]},
       weekOffset:0, dayOffset:0
     };
