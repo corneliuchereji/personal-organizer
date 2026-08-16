@@ -387,23 +387,31 @@ function timeToMinutes(t){
   return (h||0)*60+(m||0);
 }
 
-// Groups same-day sport fixtures: fixtures belonging to a followed TEAM
-// always get their own slot (e.g. "Borussia Dortmund vs X"). Fixtures that
-// only belong to a followed COMPETITION are grouped by competition — if
-// there's more than one at the same competition on the same day (e.g. a
-// full Champions League group-stage night), they collapse into a single
-// slot at the earliest kickoff time, tap-through to the full list.
+// Groups same-day sport fixtures: a fixture involving a followed TEAM always
+// gets its own slot with real team names (e.g. "Borussia Dortmund vs X").
+// Everything else that only belongs to a followed COMPETITION is shown
+// generically as the competition (badge + name), never spelling out team
+// names for matches you didn't specifically follow — even when there's
+// only one such fixture that day, per user preference. Multiple at once
+// (e.g. a full Champions League group-stage night) collapse into a single
+// tappable "(N matches)" slot.
 function collapseSportEvents(sportEvs){
-  const teamSlots = sportEvs.filter(e=>e.followType==='team').map(e=>({...e,_display:'single'}));
-  const rest = sportEvs.filter(e=>e.followType!=='team');
+  const followedTeamIds = new Set((S.follows&&S.follows.teams||[]).map(t=>String(t.providerId)));
+  const isTeamMatch = e => e.followType==='team' || (e.home && e.away && (followedTeamIds.has(String(e.home.id)) || followedTeamIds.has(String(e.away.id))));
+  const teamSlots = sportEvs.filter(isTeamMatch).map(e=>({...e,_display:'single'}));
+  const rest = sportEvs.filter(e=>!isTeamMatch(e));
+  // Manually-added events (no competitionId, not auto-synced) always show
+  // as themselves — only auto-synced "competition only" fixtures collapse.
+  const manual = rest.filter(e=>e.source!=='auto');
+  const autoRest = rest.filter(e=>e.source==='auto');
   const groups = {};
-  rest.forEach(e=>{
+  autoRest.forEach(e=>{
     const key = e.competitionId || ('single_'+e.id);
     (groups[key] = groups[key]||[]).push(e);
   });
   const restSlots = Object.values(groups).map(g=>{
-    if(g.length===1) return {...g[0], _display:'single'};
     const sorted=[...g].sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time));
+    // Always the generic competition-badge display, even for a single fixture.
     return {
       _type:'sport', _display:'collapsed', id:'collapsed_'+(sorted[0].competitionId||sorted[0].id)+'_'+sorted[0].date,
       time: sorted[0].time, name: sorted[0].competitionName || 'Competition',
@@ -411,7 +419,7 @@ function collapseSportEvents(sportEvs){
       count: sorted.length, fixtures: sorted, color: sorted[0].color
     };
   });
-  return [...teamSlots, ...restSlots];
+  return [...teamSlots, ...manual.map(e=>({...e,_display:'single'})), ...restSlots];
 }
 
 function eventsOnDay(ds){
@@ -560,13 +568,14 @@ function renderSportCard(ev){
   let meta='<span style="color:'+col+';font-size:9px">'+gName+'</span><span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
 
   if(ev._display==='collapsed'){
-    // Multiple fixtures at once in a followed competition (e.g. CL group night)
-    let title=escHtml(ev.name)+' <span style="color:var(--txt3);font-weight:400;font-size:11px">('+ev.count+' matches)</span>';
+    // Generic competition slot — matches not involving a followed team never
+    // spell out team names. Multiple at once show a count; a single fixture just shows the competition.
+    let title=escHtml(ev.name)+(ev.count>1?' <span style="color:var(--txt3);font-weight:400;font-size:11px">('+ev.count+' matches)</span>':'');
     return '<div class="ecard" onclick="showFixtureList(\''+ev.id.replace(/'/g,'')+'\')" style="cursor:pointer">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
       '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badgeImg(ev.competitionLogo,ev.name,col)+
       '<div class="ec-body" style="padding-left:0"><div class="ec-title">'+title+'</div><div class="ec-meta">'+meta+'</div></div></div></div>'+
-      '<div class="ec-actions"><button class="ea" onclick="event.stopPropagation();showFixtureList(\''+ev.id+'\')"><i class="ti ti-list"></i>See all</button></div>'+
+      '<div class="ec-actions"><button class="ea" onclick="event.stopPropagation();showFixtureList(\''+ev.id+'\')"><i class="ti ti-list"></i>'+(ev.count>1?'See all':'Details')+'</button></div>'+
       '</div>';
   }
 
@@ -635,7 +644,10 @@ function renderCal(){
       cacheEvents(evs);
       let chips=evs.slice(0,3).map(ev=>{
         const col=ev._type==='task'?getGroup(ev.group).color:(ev._color||sportColor(ev.sport,ev));
-        return '<div class="chip" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+escHtml(ev.name)+'">'+escHtml(ev.name)+'</div>';
+        const isSport=ev._type==='sport';
+        const badgeUrl=isSport?(ev._display==='collapsed'?ev.competitionLogo:(ev.home&&ev.home.logo)||ev.competitionLogo):null;
+        const icon=badgeUrl?'<img src="'+escHtml(badgeUrl)+'" style="width:12px;height:12px;object-fit:contain;border-radius:2px;flex-shrink:0;vertical-align:-2px;margin-right:3px">':'';
+        return '<div class="chip" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+escHtml(ev.name)+'">'+icon+escHtml(ev.name)+'</div>';
       }).join('');
       if(evs.length>3)chips+='<div class="mday-more">+'+(evs.length-3)+' more…</div>';
       html+='<div class="month-day'+(c.other?' other-month':'')+(isToday?' today':'')+(isSel&&!isToday?' selected':'')+(evs.length?' has-events':'')+'" onclick="selectDay(\''+ds+'\')">';
@@ -831,6 +843,7 @@ function cacheEvents(evs){
 
 function showFixtureList(id){
   const slot=_evCache[id]; if(!slot||!slot.fixtures)return;
+  if(slot.fixtures.length===1){ showSportDetail(slot.fixtures[0].id); return; }
   const rows=slot.fixtures.map(f=>{
     const hasTeams=f.home&&f.away;
     const badges=hasTeams?badgeImg(f.home.logo,f.home.name)+'<span style="font-size:10px;color:var(--txt3);margin:0 4px">vs</span>'+badgeImg(f.away.logo,f.away.name):'';
