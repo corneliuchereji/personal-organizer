@@ -733,6 +733,35 @@ app.get('/api/sports/debug-football', async (req, res) => {
   res.json({ keyPrefix: key.slice(0,6)+'…'+key.slice(-4), results });
 });
 
+// Diagnostic for TheSportsDB — tests a specific team id plus a known-good
+// one (Manchester United, 133612) side by side, so we can tell whether a
+// failure is "this team id is bad" vs "the endpoint/key is broken generally".
+app.get('/api/sports/debug-tsdb', async (req, res) => {
+  const d = readData();
+  const key = tsdbKeyOf(d);
+  const testTeamId = req.query.teamId;
+  const tests = [
+    { label:'Team lookup (known-good: Man United, 133612)', url:`https://www.thesportsdb.com/api/v1/json/${key}/lookupteam.php?id=133612` },
+    { label:'Team next events (known-good: Man United, 133612)', url:`https://www.thesportsdb.com/api/v1/json/${key}/eventsnext.php?id=133612` }
+  ];
+  if (testTeamId) {
+    tests.push({ label:`Team lookup (id ${testTeamId})`, url:`https://www.thesportsdb.com/api/v1/json/${key}/lookupteam.php?id=${testTeamId}` });
+    tests.push({ label:`Team next events (id ${testTeamId})`, url:`https://www.thesportsdb.com/api/v1/json/${key}/eventsnext.php?id=${testTeamId}` });
+  }
+  const results = [];
+  for (const t of tests) {
+    try {
+      const r = await fetch(t.url);
+      const text = await r.text();
+      let body; try { body = JSON.parse(text); } catch { body = text; }
+      results.push({ label:t.label, url:t.url, status:r.status, body });
+    } catch(e) {
+      results.push({ label:t.label, url:t.url, status:'network-error', body:e.message });
+    }
+  }
+  res.json({ key, results });
+});
+
 // Both football-data.org and TheSportsDB return fixture times in UTC. Everywhere
 // else in this app, a stored "date"+"time" pair is assumed to already be in
 // the user's local time (Europe/Bucharest) — so fixtures must be converted
@@ -838,7 +867,8 @@ async function syncFixtures() {
   for (const c of d.follows.competitions.filter(x=>x.sport!=='football')) {
     try {
       const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
-      const dd = await r.json();
+      const text = await r.text();
+      let dd; try { dd = JSON.parse(text); } catch { log.push({ name:c.name, ok:false, error:`HTTP ${r.status}: ${text.slice(0,200)}` }); continue; }
       const found = dd.events||[];
       found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
       log.push({ name:c.name, ok:true, count:found.length });
@@ -847,7 +877,8 @@ async function syncFixtures() {
   for (const t of d.follows.teams.filter(x=>x.sport!=='football')) {
     try {
       const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnext.php?id=${t.providerId}`);
-      const dd = await r.json();
+      const text = await r.text();
+      let dd; try { dd = JSON.parse(text); } catch { log.push({ name:t.name, ok:false, error:`HTTP ${r.status}: ${text.slice(0,200)}` }); continue; }
       const found = dd.events||[];
       found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'team',t.id)));
       log.push({ name:t.name, ok:true, count:found.length });
