@@ -789,9 +789,11 @@ async function syncFixtures() {
   const log = []; // per-follow diagnostic trail, returned to the UI so failures aren't silent
   const fdKey = fdKeyOf(d);
   const tsdbKey = tsdbKeyOf(d);
-  const today = new Date();
-  const dateFrom = today.toISOString().slice(0,10);
-  const dateTo = new Date(today.getTime()+45*86400000).toISOString().slice(0,10);
+  // football-data.org's free (TIER_ONE) key rejects requests that combine
+  // dateFrom/dateTo with status — confirmed via direct testing. So we fetch
+  // with just status=SCHEDULED (their default date window covers the rest
+  // of the season) and cap to a sane near-term window ourselves afterward.
+  const windowEndMs = Date.now() + 60*86400000;
 
   if (!fdKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
     log.push({ name:'Football follows', ok:false, error:'No football-data.org key set in Settings.' });
@@ -802,10 +804,10 @@ async function syncFixtures() {
     const headers = { 'X-Auth-Token': fdKey };
     for (const t of d.follows.teams.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${FD_BASE}/teams/${t.providerId}/matches?status=SCHEDULED&dateFrom=${dateFrom}&dateTo=${dateTo}`, { headers });
+        const r = await fetch(`${FD_BASE}/teams/${t.providerId}/matches?status=SCHEDULED`, { headers });
         const dd = await r.json();
         if (dd.errorCode || dd.message) { log.push({ name:t.name, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
-        const found = dd.matches||[];
+        const found = (dd.matches||[]).filter(m => new Date(m.utcDate).getTime() <= windowEndMs);
         found.forEach(m => newAuto.push(normalizeFDMatch(m,'team',t.id)));
         log.push({ name:t.name, ok:true, count:found.length });
       } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
@@ -813,10 +815,10 @@ async function syncFixtures() {
     }
     for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${FD_BASE}/competitions/${c.providerId}/matches?status=SCHEDULED&dateFrom=${dateFrom}&dateTo=${dateTo}`, { headers });
+        const r = await fetch(`${FD_BASE}/competitions/${c.providerId}/matches?status=SCHEDULED`, { headers });
         const dd = await r.json();
         if (dd.errorCode || dd.message) { log.push({ name:c.name, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
-        const found = dd.matches||[];
+        const found = (dd.matches||[]).filter(m => new Date(m.utcDate).getTime() <= windowEndMs);
         found.forEach(m => newAuto.push(normalizeFDMatch(m,'competition',c.id)));
         log.push({ name:c.name, ok:true, count:found.length });
       } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
