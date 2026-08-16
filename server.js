@@ -604,7 +604,11 @@ const FD_FREE_COMPETITIONS = [
 const TSDB_SPORT_MAP = {
   motorsport:'Motorsport', f1:'Motorsport', motogp:'Motorsport', wec:'Motorsport',
   imsa:'Motorsport', endurance:'Motorsport',
-  cycling:'Cycling', snooker:'Snooker', darts:'Darts'
+  cycling:'Cycling', snooker:'Snooker', darts:'Darts',
+  // football-data.org only covers 12 top-flight competitions — anything else
+  // (lower divisions, smaller leagues/countries) goes through TheSportsDB
+  // instead, which is broader but less consistently detailed.
+  football_other:'Soccer'
 };
 
 function tsdbKeyOf(data){ return (data.settings && data.settings.tsdbKey) || '3'; }
