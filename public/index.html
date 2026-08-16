@@ -278,7 +278,7 @@ const ALLH = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
 const WXI = {sunny:'ti-sun',partly_cloudy:'ti-cloud-sun',cloudy:'ti-cloud',rainy:'ti-cloud-rain',snow:'ti-snowflake',storm:'ti-storm',fog:'ti-mist',windy:'ti-wind'};
 const WXC = {sunny:'#fbbf24',partly_cloudy:'#60a5fa',cloudy:'#94a3b8',rainy:'#60a5fa',snow:'#bae6fd',storm:'#818cf8',fog:'#94a3b8',windy:'#34d399'};
 const BTC_HOLD=0.00359, BTC_RON=1800, USD_RON=4.65;
-const SPORT_COLORS = {f1:'#e879a0',motogp:'#f97316',tdf:'#fbbf24',giro:'#f87171',ucl:'#4f8ef7',seriea:'#34d399',bundesliga:'#fb923c',snooker:'#a78bfa',n24h:'#2dd4bf',wec:'#60a5fa',cycling:'#fbbf24',football:'#4f8ef7',romania:'#f87171'};
+const SPORT_COLORS = {f1:'#e879a0',motogp:'#f97316',tdf:'#fbbf24',giro:'#f87171',ucl:'#4f8ef7',seriea:'#34d399',bundesliga:'#fb923c',snooker:'#a78bfa',n24h:'#2dd4bf',wec:'#60a5fa',cycling:'#fbbf24',football:'#4f8ef7',soccer:'#4f8ef7',romania:'#f87171'};
 const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 // ─── STATE ───────────────────────────────────────────────
@@ -999,7 +999,8 @@ function delGroup(id){
 
 // ─── SPORT FOLLOWS ─────────────────────────────────────────
 const FOLLOW_SPORTS=[
-  {id:'football',label:'Football'},
+  {id:'football',label:'Football (12 major competitions)'},
+  {id:'football_other',label:'Football — other leagues (lower divisions, smaller countries)'},
   {id:'motorsport',label:'Motorsport (F1, MotoGP, WEC, IMSA, endurance…)'},
   {id:'cycling',label:'Cycling'},
   {id:'snooker',label:'Snooker'},
