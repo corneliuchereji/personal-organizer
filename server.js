@@ -689,7 +689,7 @@ app.delete('/api/follows/:kind/:id', (req, res) => {
 });
 
 app.post('/api/sports/sync-now', async (req, res) => {
-  try { const count = await syncFixtures(); res.json({ ok:true, synced:count }); }
+  try { const { count, log } = await syncFixtures(); res.json({ ok:true, synced:count, log }); }
   catch(e){ res.status(500).json({ error: e.message }); }
 });
 
@@ -751,26 +751,46 @@ function normalizeTSDBEvent(ev, followType, followId) {
 // left untouched.
 async function syncFixtures() {
   const d = readData();
-  if (!d.follows) return 0;
+  if (!d.follows) return { count: 0, log: [] };
   const newAuto = [];
+  const log = []; // per-follow diagnostic trail, returned to the UI so failures aren't silent
   const afKey = afKeyOf(d);
   const tsdbKey = tsdbKeyOf(d);
   const season = new Date().getFullYear();
+
+  if (!afKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
+    log.push({ name:'Football follows', ok:false, error:'No API-Football key set in Settings.' });
+  }
 
   if (afKey) {
     for (const t of d.follows.teams.filter(x=>x.sport==='football')) {
       try {
         const r = await fetch(`${AF_BASE}/fixtures?team=${t.providerId}&next=15`, { headers:{'x-apisports-key':afKey} });
         const dd = await r.json();
-        (dd.response||[]).forEach(fx => newAuto.push(normalizeAFFixture(fx,'team',t.id)));
-      } catch(e){ console.log('API-Football team sync error:', e.message); }
+        if (dd.errors && Object.keys(dd.errors).length) { log.push({ name:t.name, ok:false, error: JSON.stringify(dd.errors) }); continue; }
+        const found = dd.response||[];
+        found.forEach(fx => newAuto.push(normalizeAFFixture(fx,'team',t.id)));
+        log.push({ name:t.name, ok:true, count:found.length });
+      } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
     }
     for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${AF_BASE}/fixtures?league=${c.providerId}&season=${season}&next=30`, { headers:{'x-apisports-key':afKey} });
-        const dd = await r.json();
-        (dd.response||[]).forEach(fx => newAuto.push(normalizeAFFixture(fx,'competition',c.id)));
-      } catch(e){ console.log('API-Football league sync error:', e.message); }
+        let r = await fetch(`${AF_BASE}/fixtures?league=${c.providerId}&season=${season}&next=30`, { headers:{'x-apisports-key':afKey} });
+        let dd = await r.json();
+        if (dd.errors && Object.keys(dd.errors).length) { log.push({ name:c.name, ok:false, error: JSON.stringify(dd.errors) }); continue; }
+        let found = dd.response||[];
+        let usedFallback = false;
+        if (found.length === 0) {
+          // Season filter may not match this competition's current season yet
+          // (e.g. brand-new season just before kickoff) — retry without it.
+          r = await fetch(`${AF_BASE}/fixtures?league=${c.providerId}&next=30`, { headers:{'x-apisports-key':afKey} });
+          dd = await r.json();
+          found = dd.response||[];
+          usedFallback = true;
+        }
+        found.forEach(fx => newAuto.push(normalizeAFFixture(fx,'competition',c.id)));
+        log.push({ name:c.name, ok:true, count:found.length, note: usedFallback?'used no-season fallback':undefined });
+      } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
     }
   }
 
@@ -778,22 +798,26 @@ async function syncFixtures() {
     try {
       const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
       const dd = await r.json();
-      (dd.events||[]).forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
-    } catch(e){ console.log('TheSportsDB competition sync error:', e.message); }
+      const found = dd.events||[];
+      found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
+      log.push({ name:c.name, ok:true, count:found.length });
+    } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
   }
   for (const t of d.follows.teams.filter(x=>x.sport!=='football')) {
     try {
       const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnext.php?id=${t.providerId}`);
       const dd = await r.json();
-      (dd.events||[]).forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'team',t.id)));
-    } catch(e){ console.log('TheSportsDB team sync error:', e.message); }
+      const found = dd.events||[];
+      found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'team',t.id)));
+      log.push({ name:t.name, ok:true, count:found.length });
+    } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
   }
 
   const manual = (d.sportEvents||[]).filter(e => e.source !== 'auto');
   d.sportEvents = [...manual, ...newAuto];
   writeData(d);
-  console.log(`Synced ${newAuto.length} auto fixtures from ${d.follows.teams.length} teams + ${d.follows.competitions.length} competitions.`);
-  return newAuto.length;
+  console.log(`Synced ${newAuto.length} auto fixtures from ${d.follows.teams.length} teams + ${d.follows.competitions.length} competitions.`, JSON.stringify(log));
+  return { count: newAuto.length, log };
 }
 
 // GET /api/fixture/:provider/:id — full detail for tap-through (lineups/stats/standings for football)
