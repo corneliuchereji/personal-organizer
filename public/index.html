@@ -920,6 +920,21 @@ function renderFixtureDetailBody(ev,d){
     html+='</div>';
     return html;
   }
+  if(ev.provider==='motogp'){
+    const f=d.fixture;
+    if(!f || f.error) return '<div style="text-align:center;color:var(--txt3)">No further detail available for this event.</div>';
+    let html='<div class="sd-grid">'+
+      sdItem('Circuit',(f.circuit&&f.circuit.name)||ev.circuit||'—')+
+      sdItem('Country',(f.circuit&&f.circuit.country)||ev.country||'—')+
+      sdItem('Status',f.status||ev.status||'Scheduled')+'</div>';
+    if(f.broadcasts && f.broadcasts.length){
+      html+='<div class="slabel" style="margin-top:14px">Weekend schedule</div>';
+      html+='<div style="font-size:11px">'+f.broadcasts.filter(b=>b.category&&b.category.name==='MotoGP').map(b=>
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)"><span>'+escHtml(b.name||b.shortname)+'</span><span style="color:var(--txt3)">'+new Date(b.date_start).toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'})+'</span></div>'
+      ).join('')+'</div>';
+    }
+    return html;
+  }
   // football-data.org — fixtures/scores/standings only, no lineups or live stats on the free tier
   const fx=d.fixture;
   let html='';
@@ -1001,7 +1016,8 @@ function delGroup(id){
 const FOLLOW_SPORTS=[
   {id:'football',label:'Football (12 major competitions)'},
   {id:'football_other',label:'Football — other leagues (lower divisions, smaller countries)'},
-  {id:'motorsport',label:'Motorsport (F1, MotoGP, WEC, IMSA, endurance…)'},
+  {id:'motogp_official',label:'MotoGP (official calendar, full detail)'},
+  {id:'motorsport',label:'Other motorsport (F1, WEC, IMSA, endurance…)'},
   {id:'cycling',label:'Cycling'},
   {id:'snooker',label:'Snooker'},
   {id:'darts',label:'Darts'}
@@ -1024,7 +1040,7 @@ function openFollowManager(){
     '<div id="fmSyncStatus" style="font-size:11px;color:var(--green);min-height:14px;margin:-8px 0 8px;text-align:center"></div>'+
     '<div class="slabel">Add new</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
-      '<select id="fmSport" onchange="_fmSport=this.value;fmBrowse()" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px">'+
+      '<select id="fmSport" onchange="_fmSport=this.value;onFmSportChange();fmBrowse()" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px">'+
         FOLLOW_SPORTS.map(s=>'<option value="'+s.id+'"'+(s.id===_fmSport?' selected':'')+'>'+s.label+'</option>').join('')+
       '</select>'+
     '</div>'+
@@ -1107,6 +1123,22 @@ async function fmDebugTsdb(){
   }catch(e){
     const el=document.getElementById('fmDebugBody');
     if(el) el.innerHTML='<div style="color:var(--red)">Diagnostic failed: '+escHtml(e.message)+'</div>';
+  }
+}
+
+// Some sports only support following the whole competition (no individual
+// team/rider concept exposed by their data source) — force the radio to
+// Competition and disable Team when picked, rather than letting the user
+// hit a dead-end error.
+function onFmSportChange(){
+  const teamOnlyBlocked = _fmSport==='motogp_official';
+  const teamRadio = document.querySelector('input[name="fmKind"][value="team"]');
+  if(teamOnlyBlocked){
+    _fmKind='competition';
+    document.querySelector('input[name="fmKind"][value="competition"]').checked=true;
+    teamRadio.checked=false; teamRadio.disabled=true;
+  } else {
+    teamRadio.disabled=false;
   }
 }
 
