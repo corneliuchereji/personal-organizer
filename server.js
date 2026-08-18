@@ -785,6 +785,11 @@ app.get('/api/sports/search', async (req, res) => {
   const { sport, kind, q, compCode } = req.query; // kind: 'team' | 'competition'
   const data = readData();
   try {
+    if (sport === 'motogp_official') {
+      // No search needed — the whole championship calendar is one thing to follow.
+      if (kind === 'team') return res.json({ error: 'The MotoGP calendar only supports following the whole championship, not individual riders.' });
+      return res.json({ results: [{ id:'motogp', name:'MotoGP World Championship (race weekends)', logo:'', country:'' }] });
+    }
     if (sport === 'football') {
       if (kind === 'competition') {
         // Fixed free-tier list — no API call needed, so it's never rate-limited.
@@ -976,6 +981,27 @@ function normalizeTSDBEvent(ev, followType, followId) {
   };
 }
 
+// MotoGP's official (unofficial-but-public) API — no key needed. Each
+// "event" is a full race weekend; we anchor the calendar entry to the
+// premier-class (MotoGP, not Moto2/Moto3) race session's start time, since
+// that's what a fan means by "when is the race".
+function normalizeMotoGpEvent(ev, followId) {
+  let raceBroadcast = (ev.broadcasts||[]).find(b => b.shortname==='RAC' && b.category && b.category.name==='MotoGP');
+  if (!raceBroadcast) raceBroadcast = (ev.broadcasts||[]).find(b => b.shortname==='RAC');
+  const dt = raceBroadcast ? new Date(raceBroadcast.date_start) : new Date(ev.date_start);
+  const { date, time } = toBucharestParts(dt);
+  return {
+    id: 'motogp_'+ev.id, source:'auto', provider:'motogp', providerId:ev.id,
+    sport:'motogp', freq:'none', date, time,
+    name: (ev.name||ev.shortname||'MotoGP').replace(/™/g,'').trim(),
+    competitionId: followId, competitionName:'MotoGP', competitionLogo:'',
+    followType:'competition', followId,
+    status: ev.status||'',
+    circuit: ev.circuit && ev.circuit.name, country: ev.country,
+    score: null, notes:'', color:'#f97316'
+  };
+}
+
 // Pulls fresh fixtures for everything followed and replaces the auto-synced
 // slice of sportEvents. Manually-added sportEvents (source !== 'auto') are
 // left untouched.
@@ -1023,7 +1049,21 @@ async function syncFixtures() {
     }
   }
 
-  for (const c of d.follows.competitions.filter(x=>x.sport!=='football')) {
+  // MotoGP official calendar — no key needed, no rate limit concerns (one call covers the whole season).
+  for (const c of d.follows.competitions.filter(x=>x.sport==='motogp_official')) {
+    try {
+      const year = new Date().getFullYear();
+      const r = await fetch(`https://api.motogp.pulselive.com/motogp/v1/events?seasonYear=${year}`);
+      const events = await r.json();
+      const todayStr = getToday();
+      const upcoming = Array.isArray(events) ? events.filter(ev => ev.kind==='GP' && ev.date_end && ev.date_end.slice(0,10) >= todayStr) : [];
+      const found = upcoming.map(ev => normalizeMotoGpEvent(ev, c.id));
+      found.forEach(n => newAuto.push(n));
+      log.push({ name:c.name, ok:true, count:found.length });
+    } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
+  }
+
+  for (const c of d.follows.competitions.filter(x=>x.sport!=='football' && x.sport!=='motogp_official')) {
     try {
       const dd = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
       if (dd.error) { log.push({ name:c.name, ok:false, error:dd.error }); continue; }
@@ -1087,6 +1127,10 @@ app.get('/api/fixture/:provider/:id', async (req, res) => {
       const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${key}/lookupevent.php?id=${id}`);
       const dd = await r.json();
       return res.json({ fixture: dd.events && dd.events[0] });
+    } else if (provider === 'motogp') {
+      const r = await fetch(`https://api.motogp.pulselive.com/motogp/v1/events/${id}`);
+      const ev = await r.json();
+      return res.json({ fixture: ev });
     }
     res.status(400).json({ error: 'Unknown provider' });
   } catch (e) { res.status(500).json({ error: e.message }); }
