@@ -114,15 +114,135 @@ function eventsOnDay(data, ds) {
    });
 }
 
+// Same grouping rule as the app: a match involving a followed TEAM always
+// shows on its own with real team names. Everything else that only belongs
+// to a followed COMPETITION shows generically as the competition — even a
+// single fixture — collapsing multiple same-competition matches into one
+// expandable entry.
+function collapseSportEventsSrv(data, sportEvs){
+  const followedTeamIds = new Set(((data.follows&&data.follows.teams)||[]).map(t=>String(t.providerId)));
+  const isTeamMatch = e => e.followType==='team' || (e.home && e.away && (followedTeamIds.has(String(e.home.id)) || followedTeamIds.has(String(e.away.id))));
+  const teamSlots = sportEvs.filter(isTeamMatch).map(e=>({...e,_display:'single'}));
+  const rest = sportEvs.filter(e=>!isTeamMatch(e));
+  const manual = rest.filter(e=>e.source!=='auto').map(e=>({...e,_display:'single'}));
+  const autoRest = rest.filter(e=>e.source==='auto');
+  const groups = {};
+  autoRest.forEach(e=>{
+    const key = e.competitionId || ('single_'+e.id);
+    (groups[key] = groups[key]||[]).push(e);
+  });
+  const restSlots = Object.values(groups).map(g=>{
+    const sorted=[...g].sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time));
+    return {
+      _type:'sport', _display:'collapsed',
+      id:'collapsed_'+(sorted[0].competitionId||sorted[0].id)+'_'+sorted[0].date,
+      time: sorted[0].time, name: sorted[0].competitionName || 'Competition',
+      competitionId: sorted[0].competitionId, date: sorted[0].date,
+      count: sorted.length, fixtures: sorted
+    };
+  });
+  return [...teamSlots, ...manual, ...restSlots];
+}
+
+// Same eventsOnDay filtering, but with sport fixtures pre-grouped per the
+// rule above, re-sorted with tasks. Used everywhere a Telegram message needs
+// "what's happening on day X".
+function groupedEventsOnDay(data, ds){
+  const tasks = data.tasks.map(t=>({...t,_type:'task'})).filter(ev=>matchesDate(ev,ds));
+  const sportsRaw = (data.sportEvents||[]).map(e=>({...e,_type:'sport'})).filter(ev=>matchesDate(ev,ds));
+  const sports = collapseSportEventsSrv(data, sportsRaw);
+  return [...tasks, ...sports].sort((a,b)=>{
+    const dt=timeToMinutes(a.time)-timeToMinutes(b.time);
+    if(dt!==0) return dt;
+    if(a._type!==b._type) return a._type==='task'?-1:1;
+    return 0;
+  });
+}
+
+// Maps a group's hex color to the closest Telegram circle emoji — actual
+// background colors aren't supported in Bot API messages, so this is the
+// nearest visual equivalent.
+const CIRCLE_EMOJI = [
+  { hex:'#ef4444', e:'🔴' }, { hex:'#f97316', e:'🟠' }, { hex:'#eab308', e:'🟡' },
+  { hex:'#22c55e', e:'🟢' }, { hex:'#3b82f6', e:'🔵' }, { hex:'#a855f7', e:'🟣' },
+  { hex:'#92400e', e:'🟤' }, { hex:'#111827', e:'⚫' }, { hex:'#e2e8f0', e:'⚪' }
+];
+function hexToRgb(hex){
+  const h = hex.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function colorEmoji(hex){
+  if(!hex) return '⚪';
+  try{
+    const [r,g,b] = hexToRgb(hex);
+    // Low-saturation (grayish) colors should map to white/black, not
+    // whichever hue happens to be numerically closest in raw RGB space.
+    const maxc = Math.max(r,g,b), minc = Math.min(r,g,b);
+    if (maxc - minc < 40) {
+      const brightness = (r+g+b)/3;
+      return brightness > 128 ? '⚪' : '⚫';
+    }
+    let best=CIRCLE_EMOJI[0], bestD=Infinity;
+    for(const c of CIRCLE_EMOJI){
+      const [cr,cg,cb] = hexToRgb(c.hex);
+      const d = (r-cr)**2 + (g-cg)**2 + (b-cb)**2;
+      if(d<bestD){ bestD=d; best=c; }
+    }
+    return best.e;
+  }catch(e){ return '⚪'; }
+}
+function groupColor(data, groupId){
+  const g = (data.groups||[]).find(x=>x.id===groupId);
+  return g ? g.color : null;
+}
+
+// Formats one agenda line for a task or sport slot, plus an optional inline
+// keyboard button for collapsed competition slots (tap to expand).
+function formatEventLine(data, ev){
+  if(ev._type==='task'){
+    const emoji = colorEmoji(groupColor(data, ev.group));
+    let line = emoji+' <b>'+ev.name+'</b> — '+fmtTime(ev.time);
+    if(ev.priority && ev.priority!=='normal') line += ' · ⚠️ '+ev.priority;
+    return { line, button:null };
+  }
+  // Sport
+  if(ev._display==='collapsed'){
+    const label = ev.count>1 ? `🏆 ${ev.name} (${ev.count} matches)` : `🏆 ${ev.name}`;
+    const line = label+' — '+fmtTime(ev.time);
+    const button = { text:'📋 View '+(ev.count>1?ev.count+' fixtures':'match'), callback_data:'fx|'+ev.date+'|'+ev.competitionId };
+    return { line, button };
+  }
+  // Single: team-follow match or manual entry
+  let line = '🏆 <b>'+ev.name+'</b> — '+fmtTime(ev.time);
+  if(ev.score && ev.score.home!=null) line += ' (' + ev.score.home+'-'+ev.score.away+')';
+  return { line, button:null };
+}
+
+// The message sent when someone taps "View fixtures" on a collapsed
+// competition slot in a briefing.
+function formatFixtureListMsg(slot){
+  const d = new Date(slot.date+'T00:00:00');
+  const dateLabel = d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  let msg = '🏆 <b>'+slot.name+'</b>\n'+dateLabel+'\n\n';
+  slot.fixtures.forEach(f=>{
+    msg += '⏱ '+fmtTime(f.time)+' — <b>'+f.name+'</b>';
+    if(f.score && f.score.home!=null) msg += ' (' + f.score.home+'-'+f.score.away+')';
+    msg += '\n';
+  });
+  return msg;
+}
+
 // ═══════════════════════════════════════════════════
 // TELEGRAM SEND
 // ═══════════════════════════════════════════════════
-async function sendTg(token, chatId, text) {
+async function sendTg(token, chatId, text, replyMarkup) {
   try {
+    const body = {chat_id:chatId, text, parse_mode:'HTML'};
+    if (replyMarkup) body.reply_markup = replyMarkup;
     const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({chat_id:chatId, text, parse_mode:'HTML'})
+      body: JSON.stringify(body)
     });
     const d = await r.json();
     if(!d.ok) console.log('TG error:',d.description);
@@ -131,6 +251,14 @@ async function sendTg(token, chatId, text) {
     console.log('TG fetch error:',e.message);
     return false;
   }
+}
+async function answerCallback(token, callbackId, text){
+  try{
+    await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ callback_query_id:callbackId, text:text||'', show_alert:false })
+    });
+  }catch(e){ console.log('TG answerCallback error:', e.message); }
 }
 
 // ═══════════════════════════════════════════════════
@@ -141,23 +269,24 @@ function buildDailyMsg(data) {
   const d     = new Date(today+'T00:00:00');
   const dow   = d.toLocaleDateString('en-GB',{weekday:'long'});
   const dt    = d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  const evs   = eventsOnDay(data, today);
+  const evs   = groupedEventsOnDay(data, today);
 
   let msg = '📅 <b>Daily briefing — '+dow+', '+dt+'</b>\n\n';
+  const buttons = [];
   if(!evs.length) {
     msg += '✨ No events today. Enjoy your day!';
   } else {
-    msg += '<b>'+evs.length+' event'+(evs.length>1?'s':'')+' today:</b>\n\n';
+    msg += '<b>'+evs.length+' item'+(evs.length>1?'s':'')+' today:</b>\n\n';
     evs.forEach(ev=>{
-      const icon = ev._type==='task'?'📋':'🏆';
-      msg += icon+' <b>'+ev.name+'</b>\n   🕐 '+fmtTime(ev.time);
-      if(ev._type==='task'&&ev.priority&&ev.priority!=='normal') msg+=' · ⚠️ '+ev.priority;
-      if(ev.notes) msg+='\n   📝 '+ev.notes;
-      msg+='\n\n';
+      const { line, button } = formatEventLine(data, ev);
+      msg += line;
+      if(ev._type==='task' && ev.notes) msg += '\n   📝 '+ev.notes;
+      msg += '\n\n';
+      if(button) buttons.push([button]);
     });
   }
   msg += '—\n🗂 Personal Organizer';
-  return msg;
+  return { msg, buttons };
 }
 
 function buildWeeklyMsg(data) {
@@ -168,6 +297,7 @@ function buildWeeklyMsg(data) {
 
   let msg = '📆 <b>Weekly summary — '+dt+'</b>\n\n';
   msg += '📋 <b>'+active.length+'</b> active tasks · 🏆 <b>'+sports.length+'</b> sport events\n\n';
+  const buttons = [];
 
   const urgent = active.filter(t=>t.priority==='very');
   const high   = active.filter(t=>t.priority==='high');
@@ -177,24 +307,19 @@ function buildWeeklyMsg(data) {
   msg += '<b>This week\'s schedule:</b>\n';
   for(let i=0;i<7;i++){
     const ds = addDays(today,i);
-    const dayEvs = eventsOnDay(data,ds);
+    const dayEvs = groupedEventsOnDay(data,ds);
     if(dayEvs.length){
-      const d = new Date(ds+'T00:00:00');
-      msg += '\n<b>'+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+'</b>\n';
-      dayEvs.forEach(ev=>{ msg += (ev._type==='task'?'📋':'🏆')+' '+ev.name+' ('+fmtTime(ev.time)+')\n'; });
+      const dObj = new Date(ds+'T00:00:00');
+      msg += '\n<b>'+dObj.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+'</b>\n';
+      dayEvs.forEach(ev=>{
+        const { line, button } = formatEventLine(data, ev);
+        msg += line+'\n';
+        if(button) buttons.push([{ ...button, text: button.text+' ('+new Date(ds+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+')' }]);
+      });
     }
   }
-
-  const upcoming = sports.filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5);
-  if(upcoming.length){
-    msg += '\n🏆 <b>Next sport events:</b>\n';
-    upcoming.forEach(e=>{
-      const d=new Date(e.date+'T00:00:00');
-      msg += '• '+e.name+' — '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' at '+fmtTime(e.time)+'\n';
-    });
-  }
   msg += '\n—\n🗂 Personal Organizer';
-  return msg;
+  return { msg, buttons };
 }
 
 // ═══════════════════════════════════════════════════
@@ -325,7 +450,7 @@ async function processTgCommand(text, data) {
     if(!evs.length) return '📅 Nothing scheduled for tomorrow!';
     return '📅 <b>Tomorrow:</b>\n\n'+evs.map(e=>(e._type==='task'?'📋':'🏆')+' <b>'+e.name+'</b> — '+fmtTime(e.time)).join('\n');
   }
-  if(/^(week|sapt|saptamana|this week)/.test(txt)) return buildWeeklyMsg(data);
+  if(/^(week|sapt|saptamana|this week)/.test(txt)) return buildWeeklyMsg(data).msg; // buttons not shown via chat command, only scheduled briefings
   if(/^(tasks|taskuri|active tasks)/.test(txt)){
     const active=data.tasks.filter(t=>!t.done);
     if(!active.length) return '📋 No active tasks!';
@@ -511,6 +636,25 @@ app.post('/webhook/:token', async (req, res) => {
     const data = readData();
     console.log('Webhook received. Body keys:', Object.keys(req.body||{}));
 
+    // Handle "View fixtures" button taps from a daily/weekly briefing.
+    const cb = req.body?.callback_query;
+    if (cb) {
+      const chatId = String(cb.message.chat.id);
+      if (data.settings?.tgToken && (!data.settings.tgChatId || chatId === String(data.settings.tgChatId))) {
+        await answerCallback(data.settings.tgToken, cb.id);
+        const parts = (cb.data||'').split('|'); // "fx|date|competitionId"
+        if (parts[0] === 'fx' && parts[1] && parts[2]) {
+          const [, date, competitionId] = parts;
+          const dayRaw = (data.sportEvents||[]).map(e=>({...e,_type:'sport'})).filter(e=>matchesDate(e,date));
+          const dayGrouped = collapseSportEventsSrv(data, dayRaw);
+          const slot = dayGrouped.find(e=>e._display==='collapsed' && String(e.competitionId)===String(competitionId));
+          const text = slot ? formatFixtureListMsg(slot) : '⚠️ Those fixtures are no longer available (try syncing the app).';
+          await sendTg(data.settings.tgToken, chatId, text);
+        }
+      }
+      return;
+    }
+
     const msg = req.body?.message;
     if(!msg?.text){ console.log('No text, skip.'); return; }
 
@@ -616,6 +760,21 @@ function tsdbKeyOf(data){
   // '3' was an older shared test key that's since become unreliable —
   // auto-upgrade anyone still storing it to the current one, '123'.
   return (!k || k === '3') ? '123' : k;
+}
+// TheSportsDB's free tier is occasionally flaky (intermittent 503s even on
+// known-good requests) — retry once after a short pause before giving up.
+async function fetchTsdbWithRetry(url, attempts=2){
+  let lastErr;
+  for (let i=0;i<attempts;i++){
+    try{
+      const r = await fetch(url);
+      const text = await r.text();
+      try { return JSON.parse(text); }
+      catch { lastErr = `HTTP ${r.status}: ${text.slice(0,200)}`; }
+    } catch(e){ lastErr = e.message; }
+    if (i < attempts-1) await sleep(1500);
+  }
+  return { error: lastErr };
 }
 function fdKeyOf(data){ return data.settings && data.settings.footballDataKey; }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
@@ -866,9 +1025,8 @@ async function syncFixtures() {
 
   for (const c of d.follows.competitions.filter(x=>x.sport!=='football')) {
     try {
-      const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
-      const text = await r.text();
-      let dd; try { dd = JSON.parse(text); } catch { log.push({ name:c.name, ok:false, error:`HTTP ${r.status}: ${text.slice(0,200)}` }); continue; }
+      const dd = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
+      if (dd.error) { log.push({ name:c.name, ok:false, error:dd.error }); continue; }
       const found = dd.events||[];
       found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
       log.push({ name:c.name, ok:true, count:found.length });
@@ -876,10 +1034,10 @@ async function syncFixtures() {
   }
   for (const t of d.follows.teams.filter(x=>x.sport!=='football')) {
     try {
-      const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnext.php?id=${t.providerId}`);
-      const text = await r.text();
-      let dd; try { dd = JSON.parse(text); } catch { log.push({ name:t.name, ok:false, error:`HTTP ${r.status}: ${text.slice(0,200)}` }); continue; }
+      const dd = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnext.php?id=${t.providerId}`);
+      if (dd.error) { log.push({ name:t.name, ok:false, error:dd.error }); continue; }
       const found = dd.events||[];
+      if (found.length === 0) { log.push({ name:t.name, ok:true, count:0, note:'TheSportsDB has no scheduled fixtures listed for this team right now' }); continue; }
       found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'team',t.id)));
       log.push({ name:t.name, ok:true, count:found.length });
     } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
@@ -1058,13 +1216,15 @@ function setupCrons(settings) {
   _dailyCron = cron.schedule(`${min} ${utcH} * * *`, async ()=>{
     console.log('Sending daily briefing...');
     const d=readData();
-    await sendTg(settings.tgToken, settings.tgChatId, buildDailyMsg(d));
+    const { msg, buttons } = buildDailyMsg(d);
+    await sendTg(settings.tgToken, settings.tgChatId, msg, buttons.length?{inline_keyboard:buttons}:undefined);
   });
 
   _weeklyCron = cron.schedule(`${min} ${utcH} * * 1`, async ()=>{
     console.log('Sending weekly summary...');
     const d=readData();
-    await sendTg(settings.tgToken, settings.tgChatId, buildWeeklyMsg(d));
+    const { msg, buttons } = buildWeeklyMsg(d);
+    await sendTg(settings.tgToken, settings.tgChatId, msg, buttons.length?{inline_keyboard:buttons}:undefined);
   });
 
   console.log(`Crons set: daily at ${hour}:${min} Bucharest time`);
