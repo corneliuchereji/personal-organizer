@@ -1725,6 +1725,18 @@ loadFromServer().then(()=>{
   scheduleAllReminders(); // local browser notifications
 });
 
+// Weather auto-refresh: re-fetch every 30 minutes so the widget doesn't go
+// stale if the app is left open, plus immediately whenever the tab/app
+// becomes visible again after being backgrounded (mobile especially).
+let _lastWxRefresh = Date.now();
+setInterval(()=>{ if(!document.hidden){ loadWeather(); _lastWxRefresh = Date.now(); } }, 30*60*1000);
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && Date.now()-_lastWxRefresh > 5*60*1000){
+    _lastWxRefresh = Date.now();
+    loadWeather();
+  }
+});
+
 // Request notification permission on load and schedule all reminders
 requestNotifPermission(function(granted){
   if(granted) scheduleAllReminders();
