@@ -1032,22 +1032,22 @@ async function syncFixtures() {
       try {
         const r = await fetch(`${FD_BASE}/teams/${t.providerId}/matches?status=SCHEDULED`, { headers });
         const dd = await r.json();
-        if (dd.errorCode || dd.message) { log.push({ name:t.name, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
+        if (dd.errorCode || dd.message) { log.push({ name:t.name, followId:t.id, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
         const found = (dd.matches||[]).filter(m => new Date(m.utcDate).getTime() <= windowEndMs);
         found.forEach(m => newAuto.push(normalizeFDMatch(m,'team',t.id)));
-        log.push({ name:t.name, ok:true, count:found.length });
-      } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
+        log.push({ name:t.name, followId:t.id, ok:true, count:found.length });
+      } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
       await sleep(6500);
     }
     for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
       try {
         const r = await fetch(`${FD_BASE}/competitions/${c.providerId}/matches?status=SCHEDULED`, { headers });
         const dd = await r.json();
-        if (dd.errorCode || dd.message) { log.push({ name:c.name, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
+        if (dd.errorCode || dd.message) { log.push({ name:c.name, followId:c.id, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
         const found = (dd.matches||[]).filter(m => new Date(m.utcDate).getTime() <= windowEndMs);
         found.forEach(m => newAuto.push(normalizeFDMatch(m,'competition',c.id)));
-        log.push({ name:c.name, ok:true, count:found.length });
-      } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
+        log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
+      } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
       await sleep(6500);
     }
   }
@@ -1062,28 +1062,28 @@ async function syncFixtures() {
       const upcoming = Array.isArray(events) ? events.filter(ev => ev.kind==='GP' && ev.date_end && ev.date_end.slice(0,10) >= todayStr) : [];
       const found = upcoming.map(ev => normalizeMotoGpEvent(ev, c.id));
       found.forEach(n => newAuto.push(n));
-      log.push({ name:c.name, ok:true, count:found.length });
-    } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
+      log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
+    } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
   }
 
   for (const c of d.follows.competitions.filter(x=>x.sport!=='football' && x.sport!=='motogp_official')) {
     try {
       const dd = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
-      if (dd.error) { log.push({ name:c.name, ok:false, error:dd.error }); continue; }
+      if (dd.error) { log.push({ name:c.name, followId:c.id, ok:false, error:dd.error }); continue; }
       const found = dd.events||[];
       found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
-      log.push({ name:c.name, ok:true, count:found.length });
-    } catch(e){ log.push({ name:c.name, ok:false, error:e.message }); }
+      log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
+    } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
   }
   for (const t of d.follows.teams.filter(x=>x.sport!=='football')) {
     try {
       const dd = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnext.php?id=${t.providerId}`);
-      if (dd.error) { log.push({ name:t.name, ok:false, error:dd.error }); continue; }
+      if (dd.error) { log.push({ name:t.name, followId:t.id, ok:false, error:dd.error }); continue; }
       const found = dd.events||[];
-      if (found.length === 0) { log.push({ name:t.name, ok:true, count:0, note:'TheSportsDB has no scheduled fixtures listed for this team right now' }); continue; }
+      if (found.length === 0) { log.push({ name:t.name, followId:t.id, ok:true, count:0, note:'TheSportsDB has no scheduled fixtures listed for this team right now' }); continue; }
       found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'team',t.id)));
-      log.push({ name:t.name, ok:true, count:found.length });
-    } catch(e){ log.push({ name:t.name, ok:false, error:e.message }); }
+      log.push({ name:t.name, followId:t.id, ok:true, count:found.length });
+    } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
   }
 
   // A match can legitimately be fetched twice — once via a followed
@@ -1096,10 +1096,20 @@ async function syncFixtures() {
     const existing = dedup.get(ev.id);
     if (!existing || (existing.followType !== 'team' && ev.followType === 'team')) dedup.set(ev.id, ev);
   }
+
+  // CRITICAL: don't wipe out previously-good fixtures just because this
+  // round failed for some (or all) follows — a rate limit or transient
+  // network hiccup should never delete data that was working fine before.
+  // Only replace a follow's stored fixtures if THIS round actually
+  // succeeded for that specific follow; anything that failed keeps
+  // whatever was already on disk from the last successful sync.
+  const succeededFollowIds = new Set(log.filter(l=>l.ok && l.followId).map(l=>String(l.followId)));
+  const oldAuto = (d.sportEvents||[]).filter(e => e.source === 'auto');
+  const staleButKept = oldAuto.filter(e => !succeededFollowIds.has(String(e.followId)));
   const manual = (d.sportEvents||[]).filter(e => e.source !== 'auto');
-  d.sportEvents = [...manual, ...dedup.values()];
+  d.sportEvents = [...manual, ...staleButKept, ...dedup.values()];
   writeData(d);
-  console.log(`Synced ${newAuto.length} auto fixtures from ${d.follows.teams.length} teams + ${d.follows.competitions.length} competitions.`, JSON.stringify(log));
+  console.log(`Synced ${newAuto.length} auto fixtures from ${d.follows.teams.length} teams + ${d.follows.competitions.length} competitions (kept ${staleButKept.length} stale fixtures from failed follows).`, JSON.stringify(log));
   return { count: newAuto.length, log };
 }
 
