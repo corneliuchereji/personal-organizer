@@ -881,7 +881,10 @@ app.get('/api/sports/debug-football', async (req, res) => {
   const tests = [
     { label:'Competition lookup (Serie A)', url:`${FD_BASE}/competitions/SA` },
     { label:'Competition matches (Serie A)', url:`${FD_BASE}/competitions/SA/matches?status=SCHEDULED` },
-    { label:'Team matches (AC Milan, id 98)', url:`${FD_BASE}/teams/98/matches?status=SCHEDULED` }
+    { label:'Team matches (AC Milan, id 98)', url:`${FD_BASE}/teams/98/matches?status=SCHEDULED` },
+    { label:'Competition lookup (Champions League)', url:`${FD_BASE}/competitions/CL` },
+    { label:'Competition matches (Champions League)', url:`${FD_BASE}/competitions/CL/matches?status=SCHEDULED` },
+    { label:'Competition matches (Champions League, ALL statuses)', url:`${FD_BASE}/competitions/CL/matches` }
   ];
   const results = [];
   for (const t of tests) {
