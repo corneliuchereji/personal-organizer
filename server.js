@@ -707,6 +707,15 @@ app.get('/api/data', (req, res) => res.json(readData()));
 app.post('/api/data', (req, res) => {
   const current = readData();
   const updated = {...current, ...req.body};
+  if (req.body.sportEvents) {
+    // The client only ever sends its MANUAL sport entries — auto-synced
+    // fixtures are exclusively managed by syncFixtures(). Naively replacing
+    // sportEvents with the client's payload would silently wipe every
+    // auto-synced fixture on every ordinary save (e.g. the weather widget
+    // auto-saving your location on page load). Preserve them here instead.
+    const autoExisting = (current.sportEvents||[]).filter(e=>e.source==='auto');
+    updated.sportEvents = [...req.body.sportEvents, ...autoExisting];
+  }
   writeData(updated);
   if(req.body.settings) setupCrons(updated.settings);
   res.json({ok:true});
