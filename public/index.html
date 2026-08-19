@@ -435,6 +435,50 @@ function eventsOnDay(ds){
   });
 }
 
+// Fine-grained grouping for the day-agenda view specifically: a fresh
+// "Competition name" header appears at every distinct kickoff time that
+// competition has fixtures at, with same-time same-competition matches
+// bundled directly beneath it — rather than one header covering the whole
+// day. E.g. Premier League can appear three separate times in one day if
+// it has matches at 13:45, 17:00, and 22:00. Team-follow and manual
+// fixtures stay standalone (unchanged from the coarse grouping).
+function collapseSportEventsFine(sportEvs){
+  const followedTeamIds = new Set((S.follows&&S.follows.teams||[]).map(t=>String(t.providerId)));
+  const isTeamMatch = e => e.followType==='team' || (e.home && e.away && (followedTeamIds.has(String(e.home.id)) || followedTeamIds.has(String(e.away.id))));
+  const standalone = sportEvs.filter(e=>isTeamMatch(e) || e.source!=='auto').map(e=>({...e,_display:'single'}));
+  const groupable = sportEvs.filter(e=>!isTeamMatch(e) && e.source==='auto');
+  const cells = {};
+  groupable.forEach(e=>{
+    const key = e.time+'|'+(e.competitionId||e.id);
+    (cells[key] = cells[key]||[]).push(e);
+  });
+  const cellSlots = Object.values(cells).map(g=>{
+    const sorted=[...g].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    return {
+      _type:'sport', _display:'cell',
+      id:'cell_'+sorted[0].time+'_'+(sorted[0].competitionId||sorted[0].id)+'_'+sorted[0].date,
+      time: sorted[0].time, name: sorted[0].competitionName || 'Competition',
+      competitionLogo: sorted[0].competitionLogo, sport: sorted[0].sport,
+      count: sorted.length, fixtures: sorted, color: sorted[0].color
+    };
+  });
+  return [...standalone, ...cellSlots];
+}
+
+function agendaEventsOnDay(ds){
+  const tasks = S.tasks.map(t=>({...t,_type:'task'})).filter(ev=>matchesDate(ev,ds));
+  const sportsRaw = (S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds));
+  const sports = collapseSportEventsFine(sportsRaw);
+  return [...tasks, ...sports].sort((a,b)=>{
+    const dt=timeToMinutes(a.time)-timeToMinutes(b.time);
+    if(dt!==0) return dt;
+    if(a._type!==b._type) return a._type==='task'?-1:1;
+    // Same time, both sport: alphabetical by competition/event name.
+    if(a._type==='sport' && b._type==='sport') return (a.name||'').localeCompare(b.name||'');
+    return 0;
+  });
+}
+
 // ─── MODAL ───────────────────────────────────────────────
 function closeModal(){document.getElementById('modal').classList.remove('open')}
 function showModal(title,body,acts){
@@ -520,7 +564,7 @@ function renderLP(){
   const isToday=ds===TODAY;
   document.getElementById('lpTitle').textContent=isToday?'Today':fmtShort(d);
   document.getElementById('lpLabel').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  const evs=eventsOnDay(ds);
+  const evs=agendaEventsOnDay(ds);
   cacheEvents(evs);
   const el=document.getElementById('lpBody');
   if(!evs.length){
@@ -557,9 +601,10 @@ function renderCard(ev){
 }
 
 // Small badge <img>, falls back to a colored dot if no logo URL.
-function badgeImg(url,alt,col){
-  if(url) return '<img src="'+escHtml(url)+'" alt="'+escHtml(alt||'')+'" style="width:20px;height:20px;object-fit:contain;border-radius:3px;background:#fff1;flex-shrink:0">';
-  return '<span style="width:10px;height:10px;border-radius:50%;background:'+(col||'#94a3b8')+';flex-shrink:0;display:inline-block"></span>';
+function badgeImg(url,alt,col,size){
+  size=size||20;
+  if(url) return '<img src="'+escHtml(url)+'" alt="'+escHtml(alt||'')+'" style="width:'+size+'px;height:'+size+'px;object-fit:contain;border-radius:3px;background:#fff1;flex-shrink:0">';
+  return '<span style="width:'+Math.round(size/2)+'px;height:'+Math.round(size/2)+'px;border-radius:50%;background:'+(col||'#94a3b8')+';flex-shrink:0;display:inline-block"></span>';
 }
 
 function renderSportCard(ev){
@@ -579,12 +624,52 @@ function renderSportCard(ev){
       '</div>';
   }
 
+  if(ev._display==='cell'){
+    // Fine-grained: one header per (competition, exact kickoff time), with
+    // every match at that time bundled directly beneath it — always visible,
+    // no tap needed to see what's on. Each row still taps through to full detail.
+    const rows=ev.fixtures.map(f=>{
+      const scoreTxt = f.score && f.score.home!=null ? (f.score.home+' - '+f.score.away) : '';
+      const nameHtml = (f.home && f.away)
+        ? badgeImg(f.home.logo,f.home.name,col,14)+' <span>'+escHtml(f.home.name)+'</span> <span style="color:var(--txt3)">vs</span> '+badgeImg(f.away.logo,f.away.name,col,14)+' <span>'+escHtml(f.away.name)+'</span>'
+        : escHtml(f.name);
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0 5px 30px;font-size:11px;cursor:pointer" onclick="event.stopPropagation();showSportDetail(\''+f.id+'\')">'+
+        '<span style="color:var(--txt2);display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+nameHtml+'</span>'+
+        '<span style="color:var(--txt3);white-space:nowrap">'+(scoreTxt||fmtTime(f.time))+'</span></div>';
+    }).join('');
+    return '<div class="ecard">'+
+      '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badgeImg(ev.competitionLogo,ev.name,col)+
+      '<div class="ec-body" style="padding-left:0"><div class="ec-title">'+escHtml(ev.name)+'</div><div class="ec-meta">'+meta+'</div></div></div></div>'+
+      rows+
+      '</div>';
+  }
+
   // Single fixture (team-follow match or a lone competition fixture)
   const hasTeams = ev.home && ev.away;
   const scoreTxt = ev.score && (ev.score.home!=null) ? (ev.score.home+' - '+ev.score.away) : '';
-  const badges = hasTeams
-    ? '<div style="display:flex;align-items:center;gap:4px">'+badgeImg(ev.home.logo,ev.home.name,col)+'<span style="font-size:10px;color:var(--txt3)">vs</span>'+badgeImg(ev.away.logo,ev.away.name,col)+'</div>'
-    : badgeImg(ev.competitionLogo,ev.name,col);
+  // A real followed-team match (has home/away team data) gets a visually
+  // bigger, more prominent card than everything else — this is the match
+  // the user specifically follows, so it should stand out.
+  if(hasTeams){
+    let acts='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
+    if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
+    return '<div class="ecard" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer;padding:14px;border:1px solid '+col+'55;background:linear-gradient(135deg,'+col+'14,var(--bg2))">'+
+      '<div class="ec-top"><div class="ec-bar" style="background:'+col+';width:4px"></div>'+
+      '<div class="ec-body" style="padding-left:0">'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;font-weight:700">'+
+        badgeImg(ev.home.logo,ev.home.name,col)+'<span>'+escHtml(ev.home.name)+'</span>'+
+        '<span style="color:var(--txt3);font-weight:400;font-size:12px">vs</span>'+
+        badgeImg(ev.away.logo,ev.away.name,col)+'<span>'+escHtml(ev.away.name)+'</span>'+
+        (scoreTxt?'<span style="color:var(--txt2);margin-left:4px">'+scoreTxt+'</span>':'')+
+      '</div>'+
+      (ev.competitionName?'<div style="font-size:11px;color:var(--txt3);margin-top:3px">'+escHtml(ev.competitionName)+'</div>':'')+
+      '<div class="ec-meta" style="margin-top:5px">'+meta+'</div>'+
+      '</div></div>'+
+      '<div class="ec-actions" onclick="event.stopPropagation()">'+acts+'</div>'+
+      '</div>';
+  }
+  const badges = badgeImg(ev.competitionLogo,ev.name,col);
   let acts='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
   if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
   return '<div class="ecard" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer">'+
