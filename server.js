@@ -889,10 +889,10 @@ app.get('/api/sports/debug-football', async (req, res) => {
   const headers = { 'X-Auth-Token': key };
   const tests = [
     { label:'Competition lookup (Serie A)', url:`${FD_BASE}/competitions/SA` },
-    { label:'Competition matches (Serie A)', url:`${FD_BASE}/competitions/SA/matches?status=SCHEDULED` },
-    { label:'Team matches (AC Milan, id 98)', url:`${FD_BASE}/teams/98/matches?status=SCHEDULED` },
+    { label:'Competition matches (Serie A)', url:`${FD_BASE}/competitions/SA/matches` },
+    { label:'Team matches (AC Milan, id 98)', url:`${FD_BASE}/teams/98/matches` },
     { label:'Competition lookup (Champions League)', url:`${FD_BASE}/competitions/CL` },
-    { label:'Competition matches (Champions League)', url:`${FD_BASE}/competitions/CL/matches?status=SCHEDULED` },
+    { label:'Competition matches (Champions League)', url:`${FD_BASE}/competitions/CL/matches` },
     { label:'Competition matches (Champions League, ALL statuses)', url:`${FD_BASE}/competitions/CL/matches` }
   ];
   const results = [];
@@ -1025,10 +1025,17 @@ async function syncFixtures() {
   const fdKey = fdKeyOf(d);
   const tsdbKey = tsdbKeyOf(d);
   // football-data.org's free (TIER_ONE) key rejects requests that combine
-  // dateFrom/dateTo with status — confirmed via direct testing. So we fetch
-  // with just status=SCHEDULED (their default date window covers the rest
-  // of the season) and cap to a sane near-term window ourselves afterward.
-  const windowEndMs = Date.now() + 60*86400000;
+  // dateFrom/dateTo with status — confirmed via direct testing. We also
+  // deliberately DON'T filter by status=SCHEDULED anymore: matches move
+  // through SCHEDULED → TIMED → IN_PLAY → FINISHED, and filtering to just
+  // one status meant a fixture silently vanished the moment it changed
+  // status (e.g. once its kickoff time got confirmed, or once it kicked
+  // off) — which is why matches were disappearing and scores were going
+  // stale. Instead we fetch everything and filter by date range ourselves:
+  // from 3 days ago (so finished matches keep showing their final score for
+  // a few days) through 60 days out.
+  const windowStartMs = Date.now() - 3*86400000;
+  const windowEndMs   = Date.now() + 60*86400000;
 
   if (!fdKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
     log.push({ name:'Football follows', ok:false, error:'No football-data.org key set in Settings.' });
@@ -1039,10 +1046,10 @@ async function syncFixtures() {
     const headers = { 'X-Auth-Token': fdKey };
     for (const t of d.follows.teams.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${FD_BASE}/teams/${t.providerId}/matches?status=SCHEDULED`, { headers });
+        const r = await fetch(`${FD_BASE}/teams/${t.providerId}/matches`, { headers });
         const dd = await r.json();
         if (dd.errorCode || dd.message) { log.push({ name:t.name, followId:t.id, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
-        const found = (dd.matches||[]).filter(m => new Date(m.utcDate).getTime() <= windowEndMs);
+        const found = (dd.matches||[]).filter(m => { const t=new Date(m.utcDate).getTime(); return t>=windowStartMs && t<=windowEndMs; });
         found.forEach(m => newAuto.push(normalizeFDMatch(m,'team',t.id)));
         log.push({ name:t.name, followId:t.id, ok:true, count:found.length });
       } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
@@ -1050,10 +1057,10 @@ async function syncFixtures() {
     }
     for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${FD_BASE}/competitions/${c.providerId}/matches?status=SCHEDULED`, { headers });
+        const r = await fetch(`${FD_BASE}/competitions/${c.providerId}/matches`, { headers });
         const dd = await r.json();
         if (dd.errorCode || dd.message) { log.push({ name:c.name, followId:c.id, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
-        const found = (dd.matches||[]).filter(m => new Date(m.utcDate).getTime() <= windowEndMs);
+        const found = (dd.matches||[]).filter(m => { const t=new Date(m.utcDate).getTime(); return t>=windowStartMs && t<=windowEndMs; });
         found.forEach(m => newAuto.push(normalizeFDMatch(m,'competition',c.id)));
         log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
       } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
