@@ -851,6 +851,50 @@ app.get('/api/sports/search', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/sports/competition-teams?sport=football&leagueId=X
+// Lists every club currently in a competition, via its standings table —
+// lets someone browse "who's in the Premier League" and follow specific
+// clubs directly, instead of only following the whole competition.
+app.get('/api/sports/competition-teams', async (req, res) => {
+  const { sport, leagueId } = req.query;
+  const data = readData();
+  const key = hlKeyOf(data);
+  if (!key) return res.status(400).json({ error: 'Add your Highlightly API key in Settings first.' });
+  if (!leagueId) return res.status(400).json({ error: 'Missing leagueId' });
+  const base = hlBase(sport) || hlBase('football');
+  const headers = hlHeaders(key);
+  try {
+    // Season isn't always the current calendar year — resolve it from the
+    // league's own reported seasons if the obvious guess comes back empty.
+    const year = new Date().getFullYear();
+    async function tryStandings(season){
+      const r = await fetch(`${base}/standings?leagueId=${leagueId}&season=${season}`, { headers });
+      const d = await r.json();
+      const groups = d.groups || (Array.isArray(d) ? d : []);
+      return groups;
+    }
+    let groups = await tryStandings(year);
+    let flatTeams = (groups||[]).flatMap(g=>(g.standings||g.table||[])).map(t=>t.team).filter(Boolean);
+    if (!flatTeams.length) {
+      // Fall back to whatever season the league itself last reported.
+      const lr = await fetch(`${base}/leagues/${leagueId}`, { headers });
+      const ld = await lr.json();
+      const league = Array.isArray(ld) ? ld[0] : ld;
+      const seasons = (league && league.seasons) || [];
+      const latestSeason = seasons.length ? Math.max(...seasons.map(s=>s.season||s)) : null;
+      if (latestSeason) {
+        groups = await tryStandings(latestSeason);
+        flatTeams = (groups||[]).flatMap(g=>(g.standings||g.table||[])).map(t=>t.team).filter(Boolean);
+      }
+    }
+    const seen = new Set();
+    const teams = [];
+    flatTeams.forEach(t=>{ if(t && !seen.has(t.id)){ seen.add(t.id); teams.push({ id:t.id, name:t.name, logo:t.logo||'' }); } });
+    if (!teams.length) return res.json({ results: [], note:'No standings/team list available for this competition (may be a cup or international tournament without a season-long table).' });
+    res.json({ results: teams });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/follows', (req, res) => {
   const d = readData();
   res.json(d.follows || { teams: [], competitions: [] });
@@ -983,6 +1027,7 @@ function normalizeHLMatch(m, followType, followId, sport) {
     competitionName: m.league && m.league.name, competitionLogo: m.league && m.league.logo,
     followType, followId,
     status: m.state && m.state.description,
+    liveClock: m.state && m.state.clock,
     score: m.state && parseHLScore(m.state.score && m.state.score.current),
     notes:'', color: sport==='handball' ? '#eab308' : '#4f8ef7'
   };
