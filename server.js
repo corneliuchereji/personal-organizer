@@ -32,7 +32,7 @@ const DEFAULT_DATA = {
   settings: {
     tgToken:'', tgChatId:'', tgMorningHour:'08', tgMorningMin:'00', tgWeeklyDay:'1',
     wxLat: 45.689, wxLon: 21.903, wxLocName: 'Lugoj, RO',
-    apiFootballKey: '', footballDataKey: '', tsdbKey: '123'
+    apiFootballKey: '', footballDataKey: '', highlightlyKey: '', tsdbKey: '123'
   },
   follows: { teams: [], competitions: [] }
 };
@@ -731,37 +731,20 @@ app.get('/api/sports/next/:league', async (req, res) => {
 // ═══════════════════════════════════════════════════
 // FOLLOWS — teams & competitions the user wants tracked,
 // auto-synced into sportEvents.
-//   Football        → football-data.org — free forever, fixtures/scores/standings
+//   Football        → Highlightly — 100 req/day free, any league/team, lineups/stats/standings
 //                      for 12 major competitions, no lineups/live stats
 //   Everything else → TheSportsDB — schedule/basic result only
 // ═══════════════════════════════════════════════════
-const FD_BASE = 'https://api.football-data.org/v4';
-// The 12 competitions football-data.org's free tier covers. Fixed, documented
-// list — no need to call their API to "search" competitions.
-const FD_FREE_COMPETITIONS = [
-  { code:'PL',  name:'Premier League', country:'England' },
-  { code:'BL1', name:'Bundesliga', country:'Germany' },
-  { code:'SA',  name:'Serie A', country:'Italy' },
-  { code:'PD',  name:'La Liga', country:'Spain' },
-  { code:'FL1', name:'Ligue 1', country:'France' },
-  { code:'DED', name:'Eredivisie', country:'Netherlands' },
-  { code:'PPL', name:'Primeira Liga', country:'Portugal' },
-  { code:'ELC', name:'Championship', country:'England' },
-  { code:'CL',  name:'UEFA Champions League', country:'Europe' },
-  { code:'EC',  name:'European Championship', country:'Europe' },
-  { code:'WC',  name:'FIFA World Cup', country:'World' },
-  { code:'BSA', name:'Série A', country:'Brazil' }
-];
+// Highlightly — free tier: 100 requests/day, covers 950+ leagues in 170+
+// countries, any club or national team, with lineups/stats/standings/live
+// events included, for any team or competition worldwide.
+const HL_BASE = 'https://soccer.highlightly.net';
 // Sports on the "other" side all live under TheSportsDB's "Motorsport" bucket
 // except cycling, snooker and darts which have their own sport names there.
 const TSDB_SPORT_MAP = {
   motorsport:'Motorsport', f1:'Motorsport', motogp:'Motorsport', wec:'Motorsport',
   imsa:'Motorsport', endurance:'Motorsport',
-  cycling:'Cycling', snooker:'Snooker', darts:'Darts',
-  // football-data.org only covers 12 top-flight competitions — anything else
-  // (lower divisions, smaller leagues/countries) goes through TheSportsDB
-  // instead, which is broader but less consistently detailed.
-  football_other:'Soccer'
+  cycling:'Cycling', snooker:'Snooker', darts:'Darts'
 };
 
 function tsdbKeyOf(data){
@@ -785,13 +768,14 @@ async function fetchTsdbWithRetry(url, attempts=2){
   }
   return { error: lastErr };
 }
-function fdKeyOf(data){ return data.settings && data.settings.footballDataKey; }
+function hlKeyOf(data){ return data.settings && data.settings.highlightlyKey; }
+function hlHeaders(key){ return { 'x-rapidapi-key': key }; }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// GET /api/sports/search?sport=football&kind=team&q=Milan&compCode=SA
+// GET /api/sports/search?sport=football&kind=team&q=Milan
 // GET /api/sports/search?sport=motorsport&kind=competition&q=MotoGP
 app.get('/api/sports/search', async (req, res) => {
-  const { sport, kind, q, compCode } = req.query; // kind: 'team' | 'competition'
+  const { sport, kind, q } = req.query; // kind: 'team' | 'competition'
   const data = readData();
   try {
     if (sport === 'motogp_official') {
@@ -800,23 +784,23 @@ app.get('/api/sports/search', async (req, res) => {
       return res.json({ results: [{ id:'motogp', name:'MotoGP World Championship (race weekends)', logo:'', country:'' }] });
     }
     if (sport === 'football') {
+      const key = hlKeyOf(data);
+      if (!key) return res.status(400).json({ error: 'Add your Highlightly API key in Settings first.' });
+      if (!q || q.trim().length < 2) return res.json({ results: [] });
+      const headers = hlHeaders(key);
       if (kind === 'competition') {
-        // Fixed free-tier list — no API call needed, so it's never rate-limited.
-        let list = FD_FREE_COMPETITIONS;
-        if (q && q.trim()) list = list.filter(c=>c.name.toLowerCase().includes(q.trim().toLowerCase()));
-        return res.json({ results: list.map(c=>({ id:c.code, name:c.name, logo:`https://crests.football-data.org/${c.code}.png`, country:c.country })) });
+        const r = await fetch(`${HL_BASE}/leagues?leagueName=${encodeURIComponent(q.trim())}&limit=20`, { headers });
+        const d = await r.json();
+        if (d.message && !d.data) return res.status(400).json({ error: d.message });
+        const results = (d.data||[]).map(l=>({ id:l.id, name:l.name, logo:l.logo||'', country: l.country && l.country.name }));
+        return res.json({ results });
       }
-      // Team search: free tier has no global text search, so we search
-      // within one competition's team list (picked by the user first).
-      const key = fdKeyOf(data);
-      if (!key) return res.status(400).json({ error: 'Add your football-data.org key in Settings first.' });
-      if (!compCode) return res.status(400).json({ error: 'Pick which competition the team plays in first.' });
-      const r = await fetch(`${FD_BASE}/competitions/${compCode}/teams`, { headers:{'X-Auth-Token':key} });
+      // Team search — works for both clubs and national squads in one search.
+      const r = await fetch(`${HL_BASE}/teams?name=${encodeURIComponent(q.trim())}&limit=20`, { headers });
       const d = await r.json();
-      if (d.errorCode || d.message) return res.status(400).json({ error: d.message || 'football-data.org error' });
-      let teams = d.teams||[];
-      if (q && q.trim()) teams = teams.filter(t=>t.name.toLowerCase().includes(q.trim().toLowerCase()) || (t.shortName||'').toLowerCase().includes(q.trim().toLowerCase()));
-      return res.json({ results: teams.map(t=>({ id:t.id, name:t.name, logo:t.crest||'', country:'' })) });
+      if (d.message && !d.data) return res.status(400).json({ error: d.message });
+      const results = (d.data||[]).map(t=>({ id:t.id, name:t.name + (t.type && t.type!=='club' ? ' (National team)' : ''), logo:t.logo||'', country:'' }));
+      return res.json({ results });
     } else {
       const key = tsdbKeyOf(data);
       const sportName = TSDB_SPORT_MAP[sport] || sport;
@@ -852,7 +836,7 @@ app.post('/api/follows', async (req, res) => {
   if (!kind || !sport || !providerId || !name) return res.status(400).json({ error: 'Missing fields' });
   const d = readData();
   if (!d.follows) d.follows = { teams: [], competitions: [] };
-  const provider = sport === 'football' ? 'football-data' : 'thesportsdb';
+  const provider = sport === 'football' ? 'highlightly' : (sport === 'motogp_official' ? 'motogp' : 'thesportsdb');
   const listKey = kind === 'team' ? 'teams' : 'competitions';
   if (!d.follows[listKey].find(x => x.providerId === String(providerId) && x.provider === provider)) {
     d.follows[listKey].push({ id: uid(), kind, sport, provider, providerId: String(providerId), name, logo: logo||'' });
@@ -879,21 +863,19 @@ app.post('/api/sports/sync-now', async (req, res) => {
   catch(e){ res.status(500).json({ error: e.message }); }
 });
 
-// One-off raw diagnostic against football-data.org, using whatever key is
-// currently saved in Settings — shows exact HTTP status + body for three
+// One-off raw diagnostic against Highlightly, using whatever key is
+// currently saved in Settings — shows exact HTTP status + body for a few
 // representative calls so we can see precisely what the account allows.
 app.get('/api/sports/debug-football', async (req, res) => {
   const d = readData();
-  const key = fdKeyOf(d);
-  if (!key) return res.json({ error: 'No football-data.org key saved in Settings.' });
-  const headers = { 'X-Auth-Token': key };
+  const key = hlKeyOf(d);
+  if (!key) return res.json({ error: 'No Highlightly key saved in Settings.' });
+  const headers = hlHeaders(key);
+  const year = new Date().getFullYear();
   const tests = [
-    { label:'Competition lookup (Serie A)', url:`${FD_BASE}/competitions/SA` },
-    { label:'Competition matches (Serie A)', url:`${FD_BASE}/competitions/SA/matches` },
-    { label:'Team matches (AC Milan, id 98)', url:`${FD_BASE}/teams/98/matches` },
-    { label:'Competition lookup (Champions League)', url:`${FD_BASE}/competitions/CL` },
-    { label:'Competition matches (Champions League)', url:`${FD_BASE}/competitions/CL/matches` },
-    { label:'Competition matches (Champions League, ALL statuses)', url:`${FD_BASE}/competitions/CL/matches` }
+    { label:'League search (Serie A)', url:`${HL_BASE}/leagues?leagueName=Serie%20A&limit=5` },
+    { label:'Team search (AC Milan)', url:`${HL_BASE}/teams?name=Milan&limit=5` },
+    { label:'League search (Champions League)', url:`${HL_BASE}/leagues?leagueName=Champions%20League&limit=5` }
   ];
   const results = [];
   for (const t of tests) {
@@ -938,7 +920,7 @@ app.get('/api/sports/debug-tsdb', async (req, res) => {
   res.json({ key, results });
 });
 
-// Both football-data.org and TheSportsDB return fixture times in UTC. Everywhere
+// Both Highlightly and TheSportsDB return fixture times in UTC. Everywhere
 // else in this app, a stored "date"+"time" pair is assumed to already be in
 // the user's local time (Europe/Bucharest) — so fixtures must be converted
 // here, once, rather than displayed raw. This also means the calendar date
@@ -953,22 +935,27 @@ function toBucharestParts(dateObj) {
   return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
 }
 
-function normalizeFDMatch(m, followType, followId) {
-  const dt = new Date(m.utcDate); // ISO UTC from football-data.org
+// Parses Highlightly's "3 - 1" score string into {home, away} ints.
+function parseHLScore(current){
+  if(!current) return null;
+  const m = String(current).match(/(\d+)\s*-\s*(\d+)/);
+  return m ? { home:Number(m[1]), away:Number(m[2]) } : null;
+}
+function normalizeHLMatch(m, followType, followId) {
+  const dt = new Date(m.date); // ISO UTC from Highlightly
   const { date, time } = toBucharestParts(dt);
-  const ft = m.score && m.score.fullTime;
   return {
-    id: 'fd_'+m.id, source:'auto', provider:'football-data', providerId:String(m.id),
+    id: 'hl_'+m.id, source:'auto', provider:'highlightly', providerId:String(m.id),
     sport:'football', freq:'none', date, time,
     name: m.homeTeam.name+' vs '+m.awayTeam.name,
-    home: { id:m.homeTeam.id, name:m.homeTeam.name, logo:m.homeTeam.crest||'' },
-    away: { id:m.awayTeam.id, name:m.awayTeam.name, logo:m.awayTeam.crest||'' },
+    home: { id:m.homeTeam.id, name:m.homeTeam.name, logo:m.homeTeam.logo||'' },
+    away: { id:m.awayTeam.id, name:m.awayTeam.name, logo:m.awayTeam.logo||'' },
     competitionId: followType==='competition' ? followId : null,
-    competitionCode: m.competition && m.competition.code,
-    competitionName: m.competition && m.competition.name, competitionLogo: m.competition && m.competition.emblem,
+    competitionHLId: m.league && m.league.id, competitionSeason: m.league && m.league.season,
+    competitionName: m.league && m.league.name, competitionLogo: m.league && m.league.logo,
     followType, followId,
-    status: m.status,
-    score: (ft && ft.home!=null) ? { home:ft.home, away:ft.away } : null,
+    status: m.state && m.state.description,
+    score: m.state && parseHLScore(m.state.score && m.state.score.current),
     notes:'', color:'#4f8ef7'
   };
 }
@@ -1022,49 +1009,44 @@ async function syncFixtures() {
   if (!d.follows) return { count: 0, log: [] };
   const newAuto = [];
   const log = []; // per-follow diagnostic trail, returned to the UI so failures aren't silent
-  const fdKey = fdKeyOf(d);
+  const hlKey = hlKeyOf(d);
   const tsdbKey = tsdbKeyOf(d);
-  // football-data.org's free (TIER_ONE) key rejects requests that combine
-  // dateFrom/dateTo with status — confirmed via direct testing. We also
-  // deliberately DON'T filter by status=SCHEDULED anymore: matches move
-  // through SCHEDULED → TIMED → IN_PLAY → FINISHED, and filtering to just
-  // one status meant a fixture silently vanished the moment it changed
-  // status (e.g. once its kickoff time got confirmed, or once it kicked
-  // off) — which is why matches were disappearing and scores were going
-  // stale. Instead we fetch everything and filter by date range ourselves:
-  // from 3 days ago (so finished matches keep showing their final score for
-  // a few days) through 60 days out.
   const windowStartMs = Date.now() - 3*86400000;
   const windowEndMs   = Date.now() + 60*86400000;
+  const inWindow = m => { const t=new Date(m.date).getTime(); return t>=windowStartMs && t<=windowEndMs; };
 
-  if (!fdKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
-    log.push({ name:'Football follows', ok:false, error:'No football-data.org key set in Settings.' });
+  if (!hlKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
+    log.push({ name:'Football follows', ok:false, error:'No Highlightly key set in Settings.' });
   }
 
-  if (fdKey) {
-    // football-data.org free tier: 10 requests/minute — pace calls out to stay under that.
-    const headers = { 'X-Auth-Token': fdKey };
+  if (hlKey) {
+    const headers = hlHeaders(hlKey);
+    const year = new Date().getFullYear();
     for (const t of d.follows.teams.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${FD_BASE}/teams/${t.providerId}/matches`, { headers });
-        const dd = await r.json();
-        if (dd.errorCode || dd.message) { log.push({ name:t.name, followId:t.id, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
-        const found = (dd.matches||[]).filter(m => { const t=new Date(m.utcDate).getTime(); return t>=windowStartMs && t<=windowEndMs; });
-        found.forEach(m => newAuto.push(normalizeFDMatch(m,'team',t.id)));
-        log.push({ name:t.name, followId:t.id, ok:true, count:found.length });
+        const [rh, ra] = await Promise.all([
+          fetch(`${HL_BASE}/matches?homeTeamId=${t.providerId}&season=${year}&limit=100`, { headers }),
+          fetch(`${HL_BASE}/matches?awayTeamId=${t.providerId}&season=${year}&limit=100`, { headers })
+        ]);
+        const [dh, da] = await Promise.all([rh.json(), ra.json()]);
+        if ((dh.message && !dh.data) || (da.message && !da.data)) { log.push({ name:t.name, followId:t.id, ok:false, error: dh.message||da.message }); await sleep(1200); continue; }
+        const all = [...(dh.data||[]), ...(da.data||[])].filter(inWindow);
+        const seen = new Set();
+        all.forEach(m => { if(!seen.has(m.id)){ seen.add(m.id); newAuto.push(normalizeHLMatch(m,'team',t.id)); } });
+        log.push({ name:t.name, followId:t.id, ok:true, count:seen.size });
       } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
-      await sleep(6500);
+      await sleep(1200);
     }
     for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
       try {
-        const r = await fetch(`${FD_BASE}/competitions/${c.providerId}/matches`, { headers });
+        const r = await fetch(`${HL_BASE}/matches?leagueId=${c.providerId}&season=${year}&limit=100`, { headers });
         const dd = await r.json();
-        if (dd.errorCode || dd.message) { log.push({ name:c.name, followId:c.id, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
-        const found = (dd.matches||[]).filter(m => { const t=new Date(m.utcDate).getTime(); return t>=windowStartMs && t<=windowEndMs; });
-        found.forEach(m => newAuto.push(normalizeFDMatch(m,'competition',c.id)));
+        if (dd.message && !dd.data) { log.push({ name:c.name, followId:c.id, ok:false, error: dd.message }); await sleep(1200); continue; }
+        const found = (dd.data||[]).filter(inWindow);
+        found.forEach(m => newAuto.push(normalizeHLMatch(m,'competition',c.id)));
         log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
       } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
-      await sleep(6500);
+      await sleep(1200);
     }
   }
 
@@ -1134,23 +1116,28 @@ app.get('/api/fixture/:provider/:id', async (req, res) => {
   const { provider, id } = req.params;
   const d = readData();
   try {
-    if (provider === 'football-data') {
-      const key = fdKeyOf(d);
-      if (!key) return res.status(400).json({ error: 'No football-data.org key set' });
-      const headers = { 'X-Auth-Token': key };
-      const r = await fetch(`${FD_BASE}/matches/${id}`, { headers });
-      const fixture = await r.json();
-      if (fixture.errorCode || fixture.message) return res.status(400).json({ error: fixture.message||'football-data.org error' });
+    if (provider === 'highlightly') {
+      const key = hlKeyOf(d);
+      if (!key) return res.status(400).json({ error: 'No Highlightly key set' });
+      const headers = hlHeaders(key);
+      const [fxR, lineupR] = await Promise.all([
+        fetch(`${HL_BASE}/matches/${id}`, { headers }),
+        fetch(`${HL_BASE}/lineups/${id}`, { headers })
+      ]);
+      const fxData = await fxR.json();
+      const fixture = Array.isArray(fxData) ? fxData[0] : fxData;
+      if (!fixture || fixture.message) return res.status(400).json({ error: (fixture&&fixture.message)||'Highlightly error' });
+      let lineups = null;
+      try { const l = await lineupR.json(); if(!l.message) lineups = l; } catch(e) {}
       let standings = null;
-      if (fixture.competition && fixture.competition.code) {
+      if (fixture.league && fixture.league.id && fixture.league.season) {
         try {
-          const stR = await fetch(`${FD_BASE}/competitions/${fixture.competition.code}/standings`, { headers });
+          const stR = await fetch(`${HL_BASE}/standings?leagueId=${fixture.league.id}&season=${fixture.league.season}`, { headers });
           const stD = await stR.json();
-          standings = stD.standings && stD.standings.find(s=>s.type==='TOTAL');
+          standings = stD.groups && stD.groups[0] && stD.groups[0].standings;
         } catch(e) {}
       }
-      // No lineups/statistics on the free tier — flagged so the UI shows an honest message.
-      return res.json({ fixture, lineups: [], statistics: [], standings: standings ? standings.table : null, noDeepStats:true });
+      return res.json({ fixture, lineups, statistics: fixture.statistics||[], standings });
     } else if (provider === 'thesportsdb') {
       const key = tsdbKeyOf(d);
       const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${key}/lookupevent.php?id=${id}`);
