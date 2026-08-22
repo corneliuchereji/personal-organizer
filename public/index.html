@@ -287,7 +287,7 @@ function uid(){return 'e'+Date.now().toString(36)+Math.random().toString(36).sli
 const DFLT = {
   weekOffset:0, dayOffset:0, ftKey:'', tgToken:'', tgChatId:'', tgMorningHour:'08',
   wxLat:45.689, wxLon:21.903, wxLocName:'Lugoj, RO',
-  apiFootballKey:'', footballDataKey:'', tsdbKey:'123', follows:{teams:[],competitions:[]},
+  apiFootballKey:'', footballDataKey:'', highlightlyKey:'', tsdbKey:'123', follows:{teams:[],competitions:[]},
   wx:null, // filled in by loadWeather() on boot — null shows a loading state, never fake data
   tasks:[], sportEvents:[],
   groups:[
@@ -323,7 +323,7 @@ function saveState(){
           tgMorningHour: S.tgMorningHour||'08',
           tgMorningMin: S.tgMorningMin||'00',
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
-          apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', tsdbKey: S.tsdbKey||'123'
+          apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123'
         }
       })
     }).catch(e=>console.log('Save error:',e));
@@ -348,6 +348,7 @@ async function loadFromServer(){
       wxLocName: d.settings?.wxLocName || DFLT.wxLocName,
       apiFootballKey: d.settings?.apiFootballKey||'',
       footballDataKey: d.settings?.footballDataKey||'',
+      highlightlyKey: d.settings?.highlightlyKey||'',
       tsdbKey: d.settings?.tsdbKey||'123',
       follows: d.follows || {teams:[],competitions:[]},
       weekOffset:0, dayOffset:0
@@ -967,7 +968,7 @@ function showManualSportDetail(ev){
 
 // Auto-synced fixture (from a followed team/competition). Fetches full
 // detail from the backend — lineups/stats/standings for football via
-// football-data.org, best-available info for everything else via TheSportsDB.
+// Highlightly, best-available info for everything else via TheSportsDB.
 async function showAutoFixtureDetail(ev){
   const col=ev.color||sportColor(ev.sport,ev);
   const d=parseD(ev.date);
@@ -1020,27 +1021,53 @@ function renderFixtureDetailBody(ev,d){
     }
     return html;
   }
-  // football-data.org — fixtures/scores/standings only, no lineups or live stats on the free tier
-  const fx=d.fixture;
-  let html='';
-  if(fx){
-    const statusLabel={SCHEDULED:'Scheduled',TIMED:'Scheduled',IN_PLAY:'Live',PAUSED:'Half-time',FINISHED:'Full-time',POSTPONED:'Postponed',SUSPENDED:'Suspended',CANCELLED:'Cancelled'}[fx.status]||fx.status;
-    html+='<div class="sd-grid">'+sdItem('Status',statusLabel)+sdItem('Venue',fx.venue||'—');
-    if(fx.score&&fx.score.fullTime&&fx.score.fullTime.home!=null) html+=sdItem('Score',fx.score.fullTime.home+' - '+fx.score.fullTime.away,true);
+  if(ev.provider==='highlightly'){
+    const fx=d.fixture;
+    if(!fx) return '<div style="text-align:center;color:var(--txt3)">No further detail available for this event.</div>';
+    let html='<div class="sd-grid">'+
+      sdItem('Status',(fx.state&&fx.state.description)||'Scheduled')+
+      sdItem('Venue',(fx.venue&&fx.venue.name)||'—');
+    if(fx.state&&fx.state.score&&fx.state.score.current) html+=sdItem('Score',fx.state.score.current,true);
     html+='</div>';
+    if(fx.events && fx.events.length){
+      const notable=fx.events.filter(e=>['Goal','Own Goal','Penalty','Red Card'].includes(e.type));
+      if(notable.length){
+        html+='<div class="slabel" style="margin-top:14px">Key events</div><div style="font-size:11px">'+
+          notable.map(e=>'<div style="display:flex;gap:6px;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--txt3);width:34px">'+escHtml(e.time||'')+'\'</span><span>'+(e.type==='Goal'||e.type==='Penalty'?'⚽':e.type==='Own Goal'?'⚽(OG)':'🟥')+' '+escHtml(e.player||'')+'</span></div>').join('')+
+          '</div>';
+      }
+    }
+    if(d.lineups && d.lineups.homeTeam && d.lineups.awayTeam){
+      html+='<div class="slabel" style="margin-top:14px">Lineups</div><div style="display:flex;gap:10px">';
+      [d.lineups.homeTeam, d.lineups.awayTeam].forEach(side=>{
+        html+='<div style="flex:1;font-size:11px"><div style="font-weight:700;margin-bottom:4px">'+escHtml(side.name)+' <span style="color:var(--txt3);font-weight:400">('+escHtml(side.formation||'')+')</span></div>';
+        (side.initialLineup||[]).flat().forEach(p=>{ html+='<div style="padding:2px 0;color:var(--txt2)">'+(p.number||'')+' · '+escHtml(p.name)+' <span style="color:var(--txt3)">'+(p.position||'')+'</span></div>'; });
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+    if(fx.statistics && fx.statistics.length===2){
+      const [home,away]=fx.statistics;
+      html+='<div class="slabel" style="margin-top:14px">Statistics</div>';
+      (home.statistics||[]).forEach((s,i)=>{
+        const b=(away.statistics[i]&&away.statistics[i].value) ?? '—';
+        html+='<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+s.value+'</span><span style="color:var(--txt3)">'+escHtml(s.displayName)+'</span><span>'+b+'</span></div>';
+      });
+    }
+    if(d.standings && d.standings.length){
+      html+='<div class="slabel" style="margin-top:14px">Standings</div><div style="font-size:11px">'+d.standings.slice(0,10).map(t=>
+        '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border)">'+
+        '<span style="width:16px;color:var(--txt3)">'+t.position+'</span>'+badgeImg(t.team.logo,t.team.name)+
+        '<span style="flex:1">'+escHtml(t.team.name)+'</span><span style="color:var(--txt3)">'+t.total.games+'p</span><span style="color:var(--txt2);font-weight:700">'+t.points+' pts</span></div>'
+      ).join('')+'</div>';
+    }
+    if(fx.predictions && fx.predictions.prematch && fx.predictions.prematch[0]){
+      const p=fx.predictions.prematch[0].probabilities;
+      html+='<div class="slabel" style="margin-top:14px">Prediction</div><div style="font-size:11px;display:flex;justify-content:space-between"><span>Home '+p.home+'</span><span>Draw '+p.draw+'</span><span>Away '+p.away+'</span></div>';
+    }
+    return html;
   }
-  // Standings
-  if(d.standings&&d.standings.length){
-    html+='<div class="slabel" style="margin-top:14px">Standings</div>';
-    html+='<div style="font-size:11px">'+d.standings.slice(0,10).map(t=>
-      '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border)">'+
-      '<span style="width:16px;color:var(--txt3)">'+t.position+'</span>'+badgeImg(t.team.crest,t.team.name)+
-      '<span style="flex:1">'+escHtml(t.team.name)+'</span><span style="color:var(--txt3)">'+t.playedGames+'p</span><span style="color:var(--txt2);font-weight:700">'+t.points+' pts</span></div>'
-    ).join('')+'</div>';
-  }
-  if(d.noDeepStats) html+='<div style="font-size:10px;color:var(--txt3);text-align:center;margin-top:12px">Lineups and live match stats aren\'t available on the free data tier.</div>';
-  if(!html) html='<div style="text-align:center;color:var(--txt3)">No further detail available yet — check back closer to kickoff.</div>';
-  return html;
+  return '<div style="text-align:center;color:var(--txt3)">No further detail available yet — check back closer to kickoff.</div>';
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
@@ -1050,8 +1077,8 @@ function openSettings(){
     '<div>'+S.groups.map(g=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="width:10px;height:10px;border-radius:50%;background:'+g.color+';flex-shrink:0;display:inline-block"></span><span style="flex:1;font-size:13px">'+escHtml(g.name)+'</span><button class="btn sm" onclick="editGroup(\''+g.id+'\')"><i class="ti ti-edit"></i></button><button class="btn sm red" onclick="delGroup(\''+g.id+'\')"><i class="ti ti-trash"></i></button></div>').join('')+'</div>'+
     '<button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="newGroup()"><i class="ti ti-plus"></i> New group</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-ball-football"></i> Sport data & follows</div>'+
-    '<div style="display:flex;gap:6px"><input id="fdKIn" value="'+(S.footballDataKey||'')+'" placeholder="football-data.org key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.footballDataKey=document.getElementById(\'fdKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key at <a href="https://www.football-data.org/client/register" target="_blank" style="color:var(--accent)">football-data.org</a> — fixtures, scores & standings for 12 major competitions (Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League, World Cup and more). No lineups or live stats on the free tier.</div>'+
+    '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day) at <a href="https://highlightly.net/football-api/" target="_blank" style="color:var(--accent)">highlightly.net</a> — any competition or team worldwide (club or national), with lineups, statistics and standings.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
     '<div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.6">'+
@@ -1099,8 +1126,7 @@ function delGroup(id){
 
 // ─── SPORT FOLLOWS ─────────────────────────────────────────
 const FOLLOW_SPORTS=[
-  {id:'football',label:'Football (12 major competitions)'},
-  {id:'football_other',label:'Football — other leagues (lower divisions, smaller countries)'},
+  {id:'football',label:'Football (any competition or team worldwide)'},
   {id:'motogp_official',label:'MotoGP (official calendar, full detail)'},
   {id:'motorsport',label:'Other motorsport (F1, WEC, IMSA, endurance…)'},
   {id:'cycling',label:'Cycling'},
@@ -1120,7 +1146,7 @@ function openFollowManager(){
     '<div class="slabel">Currently following</div>'+
     '<div id="fmFollowedList" style="margin-bottom:6px">'+followedHtml+'</div>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmSyncNow()"><i class="ti ti-refresh"></i> Sync fixtures now</button>'+
-    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugFootball()"><i class="ti ti-bug"></i> Run football-data.org diagnostic</button>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugFootball()"><i class="ti ti-bug"></i> Run Highlightly diagnostic</button>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmDebugTsdb()"><i class="ti ti-bug"></i> Run TheSportsDB diagnostic</button>'+
     '<div id="fmSyncStatus" style="font-size:11px;color:var(--green);min-height:14px;margin:-8px 0 8px;text-align:center"></div>'+
     '<div class="slabel">Add new</div>'+
@@ -1132,10 +1158,6 @@ function openFollowManager(){
     '<div style="display:flex;gap:6px;margin-bottom:8px">'+
       '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="team" '+(_fmKind==='team'?'checked':'')+' onchange="_fmKind=\'team\';fmBrowse()"> Team</label>'+
       '<label style="flex:1;display:flex;align-items:center;gap:4px;font-size:11px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:7px 9px;cursor:pointer"><input type="radio" name="fmKind" value="competition" '+(_fmKind==='competition'?'checked':'')+' onchange="_fmKind=\'competition\';fmBrowse()"> Competition</label>'+
-    '</div>'+
-    '<div id="fmCompWrap" style="display:none;margin-bottom:8px">'+
-      '<select id="fmCompCode" onchange="fmSearch()" style="width:100%;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px"></select>'+
-      '<div style="font-size:10px;color:var(--txt3);margin-top:3px">Football team search only works within one of the 12 free competitions — pick which one the team plays in.</div>'+
     '</div>'+
     '<div style="display:flex;gap:6px"><input id="fmQ" placeholder="Search, or leave blank to browse…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none" onkeydown="if(event.key===\'Enter\')fmSearch()"><button class="btn sm acc" onclick="fmSearch()"><i class="ti ti-search"></i></button></div>'+
     '<div id="fmResults" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>',
@@ -1161,7 +1183,7 @@ async function fmSyncNow(){
 }
 
 async function fmDebugFootball(){
-  showModal('football-data.org diagnostic','<div id="fmDebugBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Running 3 test requests…</div>',
+  showModal('Highlightly diagnostic','<div id="fmDebugBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Running 3 test requests…</div>',
     '<button class="btn" onclick="openFollowManager()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
   try{
     const r=await fetch('/api/sports/debug-football');
@@ -1227,26 +1249,17 @@ function onFmSportChange(){
   }
 }
 
-// Loads a starting list with no query typed — search results for non-football
-// sports, or the popular-leagues picklist for football competitions. For
-// football team search, populates (and requires) the "which competition"
-// dropdown, since the free tier has no global team search.
-async function fmBrowse(){
+// Loads a starting list with no query typed. Football now has a true global
+// search via Highlightly (no "pick a competition first" restriction needed
+// for team search anymore), so this just clears the box and reminds the
+// user to type — except for sports where empty-query browsing works
+// (non-football competition lists via TheSportsDB).
+function fmBrowse(){
   document.getElementById('fmQ').value='';
-  const compWrap=document.getElementById('fmCompWrap');
-  if(_fmSport==='football' && _fmKind==='team'){
-    compWrap.style.display='block';
-    const sel=document.getElementById('fmCompCode');
-    if(!sel.dataset.loaded){
-      const r=await fetch('/api/sports/search?sport=football&kind=competition');
-      const d=await r.json();
-      sel.innerHTML=(d.results||[]).map(c=>'<option value="'+c.id+'">'+escHtml(c.name)+'</option>').join('');
-      sel.dataset.loaded='1';
-    }
-    document.getElementById('fmResults').innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Pick a competition above, then search for a team within it.</div>';
+  if(_fmSport==='football'){
+    document.getElementById('fmResults').innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search — any club, national team, or competition worldwide.</div>';
     return;
   }
-  compWrap.style.display='none';
   fmSearch();
 }
 
@@ -1260,14 +1273,8 @@ function followRow(f,kind){
 async function fmSearch(){
   const q=(document.getElementById('fmQ').value||'').trim();
   const resEl=document.getElementById('fmResults');
-  const isFootballTeam = _fmSport==='football' && _fmKind==='team';
-  if(_fmKind==='team' && !isFootballTeam && !q){resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search.</div>';return;}
-  let url='/api/sports/search?sport='+encodeURIComponent(_fmSport)+'&kind='+_fmKind+'&q='+encodeURIComponent(q);
-  if(isFootballTeam){
-    const compCode=document.getElementById('fmCompCode').value;
-    if(!compCode){resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Pick a competition first.</div>';return;}
-    url+='&compCode='+encodeURIComponent(compCode);
-  }
+  if(!q){resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search.</div>';return;}
+  const url='/api/sports/search?sport='+encodeURIComponent(_fmSport)+'&kind='+_fmKind+'&q='+encodeURIComponent(q);
   resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0"><i class="ti ti-loader-2"></i> Loading…</div>';
   try{
     const r=await fetch(url);
