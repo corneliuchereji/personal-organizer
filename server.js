@@ -738,7 +738,12 @@ app.get('/api/sports/next/:league', async (req, res) => {
 // Highlightly — free tier: 100 requests/day, covers 950+ leagues in 170+
 // countries, any club or national team, with lineups/stats/standings/live
 // events included, for any team or competition worldwide.
-const HL_BASE = 'https://soccer.highlightly.net';
+// Highlightly — one API key works across all their sport-specific APIs
+// (football, handball, basketball, etc.) — same schema, same auth, just a
+// different subdomain per sport. Free tier: 100 requests/day, SHARED across
+// every Highlightly sport used.
+const HL_BASES = { football:'https://soccer.highlightly.net', handball:'https://handball.highlightly.net' };
+function hlBase(sport){ return HL_BASES[sport]; }
 // Sports on the "other" side all live under TheSportsDB's "Motorsport" bucket
 // except cycling, snooker and darts which have their own sport names there.
 const TSDB_SPORT_MAP = {
@@ -770,6 +775,25 @@ async function fetchTsdbWithRetry(url, attempts=2){
 }
 function hlKeyOf(data){ return data.settings && data.settings.highlightlyKey; }
 function hlHeaders(key){ return { 'x-rapidapi-key': key }; }
+// Fetches Highlightly matches for a query, retrying without the season
+// param if the first attempt comes back empty — a brand-new season isn't
+// always indexed under the current year yet (same issue we hit with other
+// providers), so this avoids reporting "0 fixtures" when data does exist
+// under a different season labeling.
+async function hlFetchMatches(base, headers, params){
+  const year = new Date().getFullYear();
+  const qs1 = new URLSearchParams({ ...params, season:String(year), limit:'100' });
+  let r = await fetch(`${base}/matches?${qs1}`, { headers });
+  let d = await r.json();
+  if (d.message && !d.data) return { error: d.message };
+  if ((d.data||[]).length === 0) {
+    const qs2 = new URLSearchParams({ ...params, limit:'100' });
+    r = await fetch(`${base}/matches?${qs2}`, { headers });
+    d = await r.json();
+    if (d.message && !d.data) return { error: d.message };
+  }
+  return { data: d.data||[] };
+}
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 // GET /api/sports/search?sport=football&kind=team&q=Milan
@@ -783,20 +807,21 @@ app.get('/api/sports/search', async (req, res) => {
       if (kind === 'team') return res.json({ error: 'The MotoGP calendar only supports following the whole championship, not individual riders.' });
       return res.json({ results: [{ id:'motogp', name:'MotoGP World Championship (race weekends)', logo:'', country:'' }] });
     }
-    if (sport === 'football') {
+    if (sport === 'football' || sport === 'handball') {
       const key = hlKeyOf(data);
       if (!key) return res.status(400).json({ error: 'Add your Highlightly API key in Settings first.' });
       if (!q || q.trim().length < 2) return res.json({ results: [] });
       const headers = hlHeaders(key);
+      const base = hlBase(sport);
       if (kind === 'competition') {
-        const r = await fetch(`${HL_BASE}/leagues?leagueName=${encodeURIComponent(q.trim())}&limit=20`, { headers });
+        const r = await fetch(`${base}/leagues?leagueName=${encodeURIComponent(q.trim())}&limit=20`, { headers });
         const d = await r.json();
         if (d.message && !d.data) return res.status(400).json({ error: d.message });
         const results = (d.data||[]).map(l=>({ id:l.id, name:l.name, logo:l.logo||'', country: l.country && l.country.name }));
         return res.json({ results });
       }
       // Team search — works for both clubs and national squads in one search.
-      const r = await fetch(`${HL_BASE}/teams?name=${encodeURIComponent(q.trim())}&limit=20`, { headers });
+      const r = await fetch(`${base}/teams?name=${encodeURIComponent(q.trim())}&limit=20`, { headers });
       const d = await r.json();
       if (d.message && !d.data) return res.status(400).json({ error: d.message });
       const results = (d.data||[]).map(t=>({ id:t.id, name:t.name + (t.type && t.type!=='club' ? ' (National team)' : ''), logo:t.logo||'', country:'' }));
@@ -836,7 +861,7 @@ app.post('/api/follows', async (req, res) => {
   if (!kind || !sport || !providerId || !name) return res.status(400).json({ error: 'Missing fields' });
   const d = readData();
   if (!d.follows) d.follows = { teams: [], competitions: [] };
-  const provider = sport === 'football' ? 'highlightly' : (sport === 'motogp_official' ? 'motogp' : 'thesportsdb');
+  const provider = (sport === 'football' || sport === 'handball') ? 'highlightly' : (sport === 'motogp_official' ? 'motogp' : 'thesportsdb');
   const listKey = kind === 'team' ? 'teams' : 'competitions';
   if (!d.follows[listKey].find(x => x.providerId === String(providerId) && x.provider === provider)) {
     d.follows[listKey].push({ id: uid(), kind, sport, provider, providerId: String(providerId), name, logo: logo||'' });
@@ -873,9 +898,11 @@ app.get('/api/sports/debug-football', async (req, res) => {
   const headers = hlHeaders(key);
   const year = new Date().getFullYear();
   const tests = [
-    { label:'League search (Serie A)', url:`${HL_BASE}/leagues?leagueName=Serie%20A&limit=5` },
-    { label:'Team search (AC Milan)', url:`${HL_BASE}/teams?name=Milan&limit=5` },
-    { label:'League search (Champions League)', url:`${HL_BASE}/leagues?leagueName=Champions%20League&limit=5` }
+    { label:'League search (Serie A)', url:`${hlBase('football')}/leagues?leagueName=Serie%20A&limit=5` },
+    { label:'Team search (AC Milan)', url:`${hlBase('football')}/teams?name=Milan&limit=5` },
+    { label:'AC Milan matches (with season)', url:`${hlBase('football')}/matches?homeTeamId=458&season=${year}&limit=5` },
+    { label:'AC Milan matches (no season)', url:`${hlBase('football')}/matches?homeTeamId=458&limit=5` },
+    { label:'Handball: league search (EHF)', url:`${hlBase('handball')}/leagues?leagueName=EHF&limit=5` }
   ];
   const results = [];
   for (const t of tests) {
@@ -941,12 +968,13 @@ function parseHLScore(current){
   const m = String(current).match(/(\d+)\s*-\s*(\d+)/);
   return m ? { home:Number(m[1]), away:Number(m[2]) } : null;
 }
-function normalizeHLMatch(m, followType, followId) {
+function normalizeHLMatch(m, followType, followId, sport) {
+  sport = sport || 'football';
   const dt = new Date(m.date); // ISO UTC from Highlightly
   const { date, time } = toBucharestParts(dt);
   return {
-    id: 'hl_'+m.id, source:'auto', provider:'highlightly', providerId:String(m.id),
-    sport:'football', freq:'none', date, time,
+    id: 'hl_'+sport+'_'+m.id, source:'auto', provider:'highlightly', providerSport:sport, providerId:String(m.id),
+    sport, freq:'none', date, time,
     name: m.homeTeam.name+' vs '+m.awayTeam.name,
     home: { id:m.homeTeam.id, name:m.homeTeam.name, logo:m.homeTeam.logo||'' },
     away: { id:m.awayTeam.id, name:m.awayTeam.name, logo:m.awayTeam.logo||'' },
@@ -956,7 +984,7 @@ function normalizeHLMatch(m, followType, followId) {
     followType, followId,
     status: m.state && m.state.description,
     score: m.state && parseHLScore(m.state.score && m.state.score.current),
-    notes:'', color:'#4f8ef7'
+    notes:'', color: sport==='handball' ? '#eab308' : '#4f8ef7'
   };
 }
 function normalizeTSDBEvent(ev, followType, followId) {
@@ -1014,39 +1042,45 @@ async function syncFixtures() {
   const windowStartMs = Date.now() - 3*86400000;
   const windowEndMs   = Date.now() + 60*86400000;
   const inWindow = m => { const t=new Date(m.date).getTime(); return t>=windowStartMs && t<=windowEndMs; };
+  const HL_SPORTS = ['football','handball'];
 
-  if (!hlKey && (d.follows.teams.some(x=>x.sport==='football') || d.follows.competitions.some(x=>x.sport==='football'))) {
-    log.push({ name:'Football follows', ok:false, error:'No Highlightly key set in Settings.' });
+  if (!hlKey && (d.follows.teams.some(x=>HL_SPORTS.includes(x.sport)) || d.follows.competitions.some(x=>HL_SPORTS.includes(x.sport)))) {
+    log.push({ name:'Highlightly follows', ok:false, error:'No Highlightly key set in Settings.' });
   }
 
   if (hlKey) {
     const headers = hlHeaders(hlKey);
-    const year = new Date().getFullYear();
-    for (const t of d.follows.teams.filter(x=>x.sport==='football')) {
-      try {
-        const [rh, ra] = await Promise.all([
-          fetch(`${HL_BASE}/matches?homeTeamId=${t.providerId}&season=${year}&limit=100`, { headers }),
-          fetch(`${HL_BASE}/matches?awayTeamId=${t.providerId}&season=${year}&limit=100`, { headers })
-        ]);
-        const [dh, da] = await Promise.all([rh.json(), ra.json()]);
-        if ((dh.message && !dh.data) || (da.message && !da.data)) { log.push({ name:t.name, followId:t.id, ok:false, error: dh.message||da.message }); await sleep(1200); continue; }
-        const all = [...(dh.data||[]), ...(da.data||[])].filter(inWindow);
-        const seen = new Set();
-        all.forEach(m => { if(!seen.has(m.id)){ seen.add(m.id); newAuto.push(normalizeHLMatch(m,'team',t.id)); } });
-        log.push({ name:t.name, followId:t.id, ok:true, count:seen.size });
-      } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
-      await sleep(1200);
-    }
-    for (const c of d.follows.competitions.filter(x=>x.sport==='football')) {
-      try {
-        const r = await fetch(`${HL_BASE}/matches?leagueId=${c.providerId}&season=${year}&limit=100`, { headers });
-        const dd = await r.json();
-        if (dd.message && !dd.data) { log.push({ name:c.name, followId:c.id, ok:false, error: dd.message }); await sleep(1200); continue; }
-        const found = (dd.data||[]).filter(inWindow);
-        found.forEach(m => newAuto.push(normalizeHLMatch(m,'competition',c.id)));
-        log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
-      } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
-      await sleep(1200);
+    for (const sport of HL_SPORTS) {
+      const base = hlBase(sport);
+      for (const t of d.follows.teams.filter(x=>x.sport===sport)) {
+        // A follow added before a provider switch can be left with a
+        // stale, non-numeric providerId (e.g. an old football-data.org
+        // code) — catch that clearly instead of sending "NaN" to the API.
+        if (!/^\d+$/.test(String(t.providerId))) { log.push({ name:t.name, followId:t.id, ok:false, error:'This follow has an old/invalid ID (likely from before a data source change) — remove it and re-add via search.' }); continue; }
+        try {
+          const [rh, ra] = await Promise.all([
+            hlFetchMatches(base, headers, { homeTeamId:t.providerId }),
+            hlFetchMatches(base, headers, { awayTeamId:t.providerId })
+          ]);
+          if (rh.error || ra.error) { log.push({ name:t.name, followId:t.id, ok:false, error: rh.error||ra.error }); await sleep(1200); continue; }
+          const all = [...rh.data, ...ra.data].filter(inWindow);
+          const seen = new Set();
+          all.forEach(m => { if(!seen.has(m.id)){ seen.add(m.id); newAuto.push(normalizeHLMatch(m,'team',t.id,sport)); } });
+          log.push({ name:t.name, followId:t.id, ok:true, count:seen.size });
+        } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
+        await sleep(1200);
+      }
+      for (const c of d.follows.competitions.filter(x=>x.sport===sport)) {
+        if (!/^\d+$/.test(String(c.providerId))) { log.push({ name:c.name, followId:c.id, ok:false, error:'This follow has an old/invalid ID (likely from before a data source change) — remove it and re-add via search.' }); continue; }
+        try {
+          const r = await hlFetchMatches(base, headers, { leagueId:c.providerId });
+          if (r.error) { log.push({ name:c.name, followId:c.id, ok:false, error: r.error }); await sleep(1200); continue; }
+          const found = r.data.filter(inWindow);
+          found.forEach(m => newAuto.push(normalizeHLMatch(m,'competition',c.id,sport)));
+          log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
+        } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
+        await sleep(1200);
+      }
     }
   }
 
@@ -1111,18 +1145,20 @@ async function syncFixtures() {
   return { count: newAuto.length, log };
 }
 
-// GET /api/fixture/:provider/:id — full detail for tap-through
+// GET /api/fixture/:provider/:id?sport=football — full detail for tap-through
 app.get('/api/fixture/:provider/:id', async (req, res) => {
   const { provider, id } = req.params;
+  const sport = req.query.sport || 'football';
   const d = readData();
   try {
     if (provider === 'highlightly') {
       const key = hlKeyOf(d);
       if (!key) return res.status(400).json({ error: 'No Highlightly key set' });
       const headers = hlHeaders(key);
+      const base = hlBase(sport) || hlBase('football');
       const [fxR, lineupR] = await Promise.all([
-        fetch(`${HL_BASE}/matches/${id}`, { headers }),
-        fetch(`${HL_BASE}/lineups/${id}`, { headers })
+        fetch(`${base}/matches/${id}`, { headers }),
+        fetch(`${base}/lineups/${id}`, { headers })
       ]);
       const fxData = await fxR.json();
       const fixture = Array.isArray(fxData) ? fxData[0] : fxData;
@@ -1132,7 +1168,7 @@ app.get('/api/fixture/:provider/:id', async (req, res) => {
       let standings = null;
       if (fixture.league && fixture.league.id && fixture.league.season) {
         try {
-          const stR = await fetch(`${HL_BASE}/standings?leagueId=${fixture.league.id}&season=${fixture.league.season}`, { headers });
+          const stR = await fetch(`${base}/standings?leagueId=${fixture.league.id}&season=${fixture.league.season}`, { headers });
           const stD = await stR.json();
           standings = stD.groups && stD.groups[0] && stD.groups[0].standings;
         } catch(e) {}
