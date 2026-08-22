@@ -178,6 +178,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
 </head>
 <body>
@@ -481,7 +482,7 @@ function agendaEventsOnDay(ds){
 }
 
 // ─── MODAL ───────────────────────────────────────────────
-function closeModal(){document.getElementById('modal').classList.remove('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open');if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}}
 function showModal(title,body,acts){
   document.getElementById('mTitle').textContent=title;
   document.getElementById('mBody').innerHTML=body;
@@ -608,6 +609,19 @@ function badgeImg(url,alt,col,size){
   return '<span style="width:'+Math.round(size/2)+'px;height:'+Math.round(size/2)+'px;border-radius:50%;background:'+(col||'#94a3b8')+';flex-shrink:0;display:inline-block"></span>';
 }
 
+// Detects whether a fixture's status text indicates it's currently in
+// progress (Highlightly's state.description is free text like "1st Half",
+// "Half Time", "Not Started", "Full Time" — anything that isn't clearly
+// pre/post-match counts as live).
+function isLiveStatus(status){
+  if(!status) return false;
+  return !/not started|scheduled|full[\s-]?time|finished|postponed|cancelled|suspended/i.test(status);
+}
+function liveBadge(ev){
+  if(!isLiveStatus(ev.status)) return '';
+  return '<span style="display:inline-flex;align-items:center;gap:3px;background:#ef444422;color:#ef4444;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:6px"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite"></span>LIVE'+(ev.liveClock?' '+escHtml(ev.liveClock):'')+'</span>';
+}
+
 function renderSportCard(ev){
   const col=ev._color||sportColor(ev.sport,ev);
   const gName=ev.sport||'sport';
@@ -635,7 +649,7 @@ function renderSportCard(ev){
         ? badgeImg(f.home.logo,f.home.name,col,14)+' <span>'+escHtml(f.home.name)+'</span> <span style="color:var(--txt3)">vs</span> '+badgeImg(f.away.logo,f.away.name,col,14)+' <span>'+escHtml(f.away.name)+'</span>'
         : escHtml(f.name);
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0 5px 30px;font-size:11px;cursor:pointer" onclick="event.stopPropagation();showSportDetail(\''+f.id+'\')">'+
-        '<span style="color:var(--txt2);display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+nameHtml+'</span>'+
+        '<span style="color:var(--txt2);display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+nameHtml+liveBadge(f)+'</span>'+
         '<span style="color:var(--txt3);white-space:nowrap">'+(scoreTxt||fmtTime(f.time))+'</span></div>';
     }).join('');
     return '<div class="ecard">'+
@@ -662,7 +676,7 @@ function renderSportCard(ev){
         badgeImg(ev.home.logo,ev.home.name,col)+'<span>'+escHtml(ev.home.name)+'</span>'+
         '<span style="color:var(--txt3);font-weight:400;font-size:12px">vs</span>'+
         badgeImg(ev.away.logo,ev.away.name,col)+'<span>'+escHtml(ev.away.name)+'</span>'+
-        (scoreTxt?'<span style="color:var(--txt2);margin-left:4px">'+scoreTxt+'</span>':'')+
+        (scoreTxt?'<span style="color:var(--txt2);margin-left:4px">'+scoreTxt+'</span>':'')+liveBadge(ev)+
       '</div>'+
       (ev.competitionName?'<div style="font-size:11px;color:var(--txt3);margin-top:3px">'+escHtml(ev.competitionName)+'</div>':'')+
       '<div class="ec-meta" style="margin-top:5px">'+meta+'</div>'+
@@ -923,6 +937,7 @@ function reminderBadge(reminder){
 // inside collapsed competition slots) so click handlers can look up full
 // data by id without re-deriving it.
 let _evCache={};
+let _fxRefreshTimer=null;
 function cacheEvents(evs){
   evs.forEach(e=>{ _evCache[e.id]=e; if(e.fixtures) e.fixtures.forEach(f=>_evCache[f.id]=f); });
 }
@@ -970,6 +985,7 @@ function showManualSportDetail(ev){
 // detail from the backend — lineups/stats/standings for football via
 // Highlightly, best-available info for everything else via TheSportsDB.
 async function showAutoFixtureDetail(ev){
+  if(_fxRefreshTimer){ clearInterval(_fxRefreshTimer); _fxRefreshTimer=null; }
   const col=ev.color||sportColor(ev.sport,ev);
   const d=parseD(ev.date);
   const headerBadges=ev.home&&ev.away
@@ -983,17 +999,28 @@ async function showAutoFixtureDetail(ev){
     '<div id="fxDetailBody" style="font-size:12px;color:var(--txt2);text-align:center;padding:20px 0"><i class="ti ti-loader-2"></i> Loading details…</div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
 
-  try{
-    const r=await fetch('/api/fixture/'+ev.provider+'/'+ev.providerId+'?sport='+encodeURIComponent(ev.sport||''));
-    const d2=await r.json();
-    const el=document.getElementById('fxDetailBody');
-    if(!el)return; // modal was closed before this resolved
-    if(d2.error){ el.innerHTML='<div style="color:var(--red)">Could not load details: '+escHtml(d2.error)+'</div>'; return; }
-    el.innerHTML=renderFixtureDetailBody(ev,d2);
-  }catch(e){
-    const el=document.getElementById('fxDetailBody');
-    if(el) el.innerHTML='<div style="color:var(--red)">Network error loading details.</div>';
-  }
+  const load = async ()=>{
+    try{
+      const r=await fetch('/api/fixture/'+ev.provider+'/'+ev.providerId+'?sport='+encodeURIComponent(ev.sport||''));
+      const d2=await r.json();
+      const el=document.getElementById('fxDetailBody');
+      if(!el){ if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;} return; } // modal closed
+      if(d2.error){ el.innerHTML='<div style="color:var(--red)">Could not load details: '+escHtml(d2.error)+'</div>'; return; }
+      el.innerHTML=renderFixtureDetailBody(ev,d2);
+      // If the match is live, keep polling for fresh score/events every 60s
+      // while this modal stays open — stop once it's no longer live.
+      const liveNow = d2.fixture && isLiveStatus((d2.fixture.state&&d2.fixture.state.description)||ev.status);
+      if(liveNow && !_fxRefreshTimer){
+        _fxRefreshTimer=setInterval(load, 60000);
+      } else if(!liveNow && _fxRefreshTimer){
+        clearInterval(_fxRefreshTimer); _fxRefreshTimer=null;
+      }
+    }catch(e){
+      const el=document.getElementById('fxDetailBody');
+      if(el) el.innerHTML='<div style="color:var(--red)">Network error loading details.</div>';
+    }
+  };
+  await load();
 }
 function badgeImgLg(url,alt){ return url?'<img src="'+escHtml(url)+'" alt="'+escHtml(alt||'')+'" style="width:40px;height:40px;object-fit:contain">':'<div style="width:40px;height:40px;border-radius:50%;background:var(--bg3);margin:0 auto"></div>'; }
 
@@ -1308,12 +1335,48 @@ async function fmSearch(){
     if(d.error){ resEl.innerHTML='<div style="font-size:11px;color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
     _fmResults=d.results||[];
     if(!_fmResults.length){ resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">No results.</div>'; return; }
+    const canBrowseClubs = _fmKind==='competition' && (_fmSport==='football' || _fmSport==='handball');
+    if(canBrowseClubs){ renderCompetitionResults(); return; }
     resEl.innerHTML=_fmResults.map((x,i)=>
       '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
       badgeImg(x.logo,x.name)+'<span style="flex:1;font-size:12px">'+escHtml(x.name)+(x.country?' <span style="color:var(--txt3);font-size:10px">'+escHtml(x.country)+'</span>':'')+'</span>'+
       '<button class="btn sm acc" onclick="fmAdd('+i+')"><i class="ti ti-plus"></i> Follow</button></div>'
     ).join('');
   }catch(e){ resEl.innerHTML='<div style="font-size:11px;color:var(--red)">Search failed: '+escHtml(e.message)+'</div>'; }
+}
+
+// Shows every club in a competition (via its standings table) with its own
+// Follow button — lets someone browse "who's in the Premier League" rather
+// than only being able to follow the whole competition at once.
+async function fmViewClubs(i){
+  const comp=_fmResults[i]; if(!comp)return;
+  const originalResults=_fmResults; // so "Back" can restore the competition list, not re-search
+  const resEl=document.getElementById('fmResults');
+  resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0"><i class="ti ti-loader-2"></i> Loading clubs in '+escHtml(comp.name)+'…</div>';
+  try{
+    const r=await fetch('/api/sports/competition-teams?sport='+encodeURIComponent(_fmSport)+'&leagueId='+encodeURIComponent(comp.id));
+    const d=await r.json();
+    if(d.error){ resEl.innerHTML='<div style="font-size:11px;color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+    if(!d.results||!d.results.length){ resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">'+escHtml(d.note||'No club list available for this competition.')+'</div>'; return; }
+    _fmResults=d.results; // reuse fmAdd's index-based lookup, now as teams
+    _fmKind='team';
+    window._fmBackToCompetitions=()=>{ _fmResults=originalResults; _fmKind='competition'; renderCompetitionResults(); };
+    resEl.innerHTML='<div style="font-size:11px;color:var(--txt2);margin-bottom:6px"><button class="btn sm" onclick="_fmBackToCompetitions()"><i class="ti ti-arrow-left"></i> Back</button> Clubs in '+escHtml(comp.name)+'</div>'+
+      _fmResults.map((x,idx)=>
+        '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
+        badgeImg(x.logo,x.name)+'<span style="flex:1;font-size:12px">'+escHtml(x.name)+'</span>'+
+        '<button class="btn sm acc" onclick="fmAdd('+idx+')"><i class="ti ti-plus"></i> Follow</button></div>'
+      ).join('');
+  }catch(e){ resEl.innerHTML='<div style="font-size:11px;color:var(--red)">Failed to load clubs: '+escHtml(e.message)+'</div>'; }
+}
+function renderCompetitionResults(){
+  const resEl=document.getElementById('fmResults');
+  resEl.innerHTML=_fmResults.map((x,i)=>
+    '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
+    badgeImg(x.logo,x.name)+'<span style="flex:1;font-size:12px">'+escHtml(x.name)+(x.country?' <span style="color:var(--txt3);font-size:10px">'+escHtml(x.country)+'</span>':'')+'</span>'+
+    '<button class="btn sm" onclick="fmViewClubs('+i+')" title="See clubs in this competition"><i class="ti ti-users"></i></button>'+
+    '<button class="btn sm acc" onclick="fmAdd('+i+')"><i class="ti ti-plus"></i> Follow</button></div>'
+  ).join('');
 }
 
 async function fmAdd(i){
