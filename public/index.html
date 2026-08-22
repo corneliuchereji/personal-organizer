@@ -984,7 +984,7 @@ async function showAutoFixtureDetail(ev){
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
 
   try{
-    const r=await fetch('/api/fixture/'+ev.provider+'/'+ev.providerId);
+    const r=await fetch('/api/fixture/'+ev.provider+'/'+ev.providerId+'?sport='+encodeURIComponent(ev.sport||''));
     const d2=await r.json();
     const el=document.getElementById('fxDetailBody');
     if(!el)return; // modal was closed before this resolved
@@ -1078,7 +1078,7 @@ function openSettings(){
     '<button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="newGroup()"><i class="ti ti-plus"></i> New group</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-ball-football"></i> Sport data & follows</div>'+
     '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day) at <a href="https://highlightly.net/football-api/" target="_blank" style="color:var(--accent)">highlightly.net</a> — any competition or team worldwide (club or national), with lineups, statistics and standings.</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a> — powers Football and Handball: any competition or team worldwide (club or national), with lineups, statistics and standings.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
     '<div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.6">'+
@@ -1127,12 +1127,26 @@ function delGroup(id){
 // ─── SPORT FOLLOWS ─────────────────────────────────────────
 const FOLLOW_SPORTS=[
   {id:'football',label:'Football (any competition or team worldwide)'},
+  {id:'handball',label:'Handball (any competition or team worldwide)'},
   {id:'motogp_official',label:'MotoGP (official calendar, full detail)'},
   {id:'motorsport',label:'Other motorsport (F1, WEC, IMSA, endurance…)'},
   {id:'cycling',label:'Cycling'},
   {id:'snooker',label:'Snooker'},
   {id:'darts',label:'Darts'}
 ];
+// Quick-pick shortcuts — tapping one fills the search box with a known-good
+// query and runs it for real (not hardcoded IDs, which could drift/be
+// wrong), so you get a one-tap "choose from a list" feel without guessing.
+const POPULAR_PICKS = {
+  football: {
+    competition: ['Premier League','La Liga','Serie A','Bundesliga','Ligue 1','UEFA Champions League','UEFA Europa League','FIFA World Cup'],
+    team: ['Real Madrid','Barcelona','Manchester United','Manchester City','Liverpool','Bayern Munich','Paris Saint-Germain','Juventus','AC Milan','Inter']
+  },
+  handball: {
+    competition: ['EHF Champions League','EHF European League'],
+    team: []
+  }
+};
 let _fmSport='football', _fmKind='team', _fmResults=[];
 
 function openFollowManager(){
@@ -1256,10 +1270,22 @@ function onFmSportChange(){
 // (non-football competition lists via TheSportsDB).
 function fmBrowse(){
   document.getElementById('fmQ').value='';
-  if(_fmSport==='football'){
-    document.getElementById('fmResults').innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search — any club, national team, or competition worldwide.</div>';
-    return;
-  }
+  document.getElementById('fmResults').innerHTML=popularPicksHtml();
+  if(_fmSport!=='football' && _fmSport!=='handball') fmSearch();
+}
+
+// Renders tappable chips for common picks — tapping one fills the search
+// box with that exact name and runs a real search (not a hardcoded ID).
+function popularPicksHtml(){
+  const picks = (POPULAR_PICKS[_fmSport] && POPULAR_PICKS[_fmSport][_fmKind]) || [];
+  if(!picks.length) return '<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search.</div>';
+  return '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">Popular — tap to search, or type your own above</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+    picks.map(name=>'<button class="btn sm" style="font-size:11px" onclick="fmQuickPick(\''+name.replace(/'/g,"\\'")+'\')">'+escHtml(name)+'</button>').join('')+
+    '</div>';
+}
+function fmQuickPick(name){
+  document.getElementById('fmQ').value=name;
   fmSearch();
 }
 
