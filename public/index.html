@@ -1188,7 +1188,8 @@ function openFollowManager(){
     '<div id="fmFollowedList" style="margin-bottom:6px">'+followedHtml+'</div>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmSyncNow()"><i class="ti ti-refresh"></i> Sync fixtures now</button>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugFootball()"><i class="ti ti-bug"></i> Run Highlightly diagnostic</button>'+
-    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmDebugTsdb()"><i class="ti ti-bug"></i> Run TheSportsDB diagnostic</button>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugTsdb()"><i class="ti ti-bug"></i> Run TheSportsDB diagnostic</button>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmDebugCompetition()"><i class="ti ti-bug"></i> Diagnose a competition match list</button>'+
     '<div id="fmSyncStatus" style="font-size:11px;color:var(--green);min-height:14px;margin:-8px 0 8px;text-align:center"></div>'+
     '<div class="slabel">Add new</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
@@ -1268,6 +1269,32 @@ async function fmDebugTsdb(){
           '<pre style="font-size:10px;color:var(--txt2);white-space:pre-wrap;word-break:break-all;max-height:120px;overflow-y:auto;margin:0">'+escHtml(bodyStr.slice(0,500))+'</pre>'+
           '</div>';
       }).join('');
+  }catch(e){
+    const el=document.getElementById('fmDebugBody');
+    if(el) el.innerHTML='<div style="color:var(--red)">Diagnostic failed: '+escHtml(e.message)+'</div>';
+  }
+}
+
+async function fmDebugCompetition(){
+  const name=prompt('Competition name to diagnose (exact-ish, e.g. "Serie A", "Premier League"):','Serie A');
+  if(!name)return;
+  showModal('Competition match-list diagnostic','<div id="fmDebugBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Checking '+escHtml(name)+'…</div>',
+    '<button class="btn" onclick="openFollowManager()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
+  try{
+    const r=await fetch('/api/sports/debug-competition?sport=football&name='+encodeURIComponent(name));
+    const d=await r.json();
+    const el=document.getElementById('fmDebugBody');
+    if(!el)return;
+    if(d.error){ el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+    const fmt=x=>x?('<div>Count: <b>'+x.count+'</b> · Range: '+escHtml(x.earliestDate||'—')+' → '+escHtml(x.latestDate||'—')+'</div>'+
+      '<div style="margin-top:4px;color:var(--txt3)">First 5:</div>'+(x.first5||[]).map(m=>'<div>'+escHtml(m.date)+' — '+escHtml(m.home)+' vs '+escHtml(m.away)+' ('+escHtml(m.status||'')+')</div>').join('')+
+      '<div style="margin-top:4px;color:var(--txt3)">Last 5:</div>'+(x.last5||[]).map(m=>'<div>'+escHtml(m.date)+' — '+escHtml(m.home)+' vs '+escHtml(m.away)+' ('+escHtml(m.status||'')+')</div>').join(''))
+      :'<div style="color:var(--red)">'+escHtml((x&&x.error)||'error')+'</div>';
+    el.innerHTML='<div style="margin-bottom:6px">League: <b>'+escHtml(d.league.name)+'</b> (id '+d.league.id+')</div>'+
+      '<div style="margin-bottom:6px">Today: '+escHtml(d.todayIs)+'</div>'+
+      '<div style="margin-bottom:10px">Seasons on file: '+escHtml(JSON.stringify(d.league.seasons))+'</div>'+
+      '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);margin-bottom:8px;font-size:11px"><b>With season param:</b>'+fmt(d.withSeason)+'</div>'+
+      '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);font-size:11px"><b>Without season param:</b>'+fmt(d.noSeason)+'</div>';
   }catch(e){
     const el=document.getElementById('fmDebugBody');
     if(el) el.innerHTML='<div style="color:var(--red)">Diagnostic failed: '+escHtml(e.message)+'</div>';
