@@ -962,6 +962,47 @@ app.get('/api/sports/debug-football', async (req, res) => {
   res.json({ keyPrefix: key.slice(0,6)+'…'+key.slice(-4), results });
 });
 
+// Diagnostic specifically for the "competition follow shows almost nothing"
+// bug: searches for the named league, then pulls its match list both with
+// and without a season param, and summarizes total counts + date range so
+// we can see exactly what's being returned instead of guessing.
+app.get('/api/sports/debug-competition', async (req, res) => {
+  const d = readData();
+  const key = hlKeyOf(d);
+  if (!key) return res.json({ error: 'No Highlightly key saved in Settings.' });
+  const sport = req.query.sport || 'football';
+  const leagueName = req.query.name || 'Serie A';
+  const base = hlBase(sport);
+  const headers = hlHeaders(key);
+  const year = new Date().getFullYear();
+  try {
+    const lr = await fetch(`${base}/leagues?leagueName=${encodeURIComponent(leagueName)}&limit=5`, { headers });
+    const ld = await lr.json();
+    const league = ld.data && ld.data[0];
+    if (!league) return res.json({ error: 'League not found: '+leagueName, raw: ld });
+
+    async function summarize(url){
+      const r = await fetch(url, { headers });
+      const d2 = await r.json();
+      if (d2.message && !d2.data) return { error: d2.message };
+      const matches = d2.data || [];
+      const dates = matches.map(m=>m.date).sort();
+      return {
+        count: matches.length,
+        earliestDate: dates[0]||null,
+        latestDate: dates[dates.length-1]||null,
+        first5: matches.slice(0,5).map(m=>({date:m.date, home:m.homeTeam.name, away:m.awayTeam.name, status:m.state&&m.state.description})),
+        last5: matches.slice(-5).map(m=>({date:m.date, home:m.homeTeam.name, away:m.awayTeam.name, status:m.state&&m.state.description}))
+      };
+    }
+    const withSeason = await summarize(`${base}/matches?leagueId=${league.id}&season=${year}&limit=100`);
+    const noSeason    = await summarize(`${base}/matches?leagueId=${league.id}&limit=100`);
+    const leagueSeasons = league.seasons || null;
+
+    res.json({ league:{ id:league.id, name:league.name, seasons:leagueSeasons }, withSeason, noSeason, todayIs: getToday() });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // Diagnostic for TheSportsDB — tests a specific team id plus a known-good
 // one (Manchester United, 133612) side by side, so we can tell whether a
 // failure is "this team id is bad" vs "the endpoint/key is broken generally".
