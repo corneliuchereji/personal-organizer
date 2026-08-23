@@ -1285,7 +1285,12 @@ async function fmDebugCompetition(){
     const d=await r.json();
     const el=document.getElementById('fmDebugBody');
     if(!el)return;
-    if(d.error){ el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+    if(d.error){
+      const rawStr = d.raw ? JSON.stringify(d.raw,null,2) : '';
+      el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'+
+        (rawStr?'<div style="margin-top:8px;color:var(--txt3)">Raw API response:</div><pre style="font-size:10px;color:var(--txt2);white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto">'+escHtml(rawStr.slice(0,1000))+'</pre>':'');
+      return;
+    }
     const fmt=x=>x?('<div>Count: <b>'+x.count+'</b> · Range: '+escHtml(x.earliestDate||'—')+' → '+escHtml(x.latestDate||'—')+'</div>'+
       '<div style="margin-top:4px;color:var(--txt3)">First 5:</div>'+(x.first5||[]).map(m=>'<div>'+escHtml(m.date)+' — '+escHtml(m.home)+' vs '+escHtml(m.away)+' ('+escHtml(m.status||'')+')</div>').join('')+
       '<div style="margin-top:4px;color:var(--txt3)">Last 5:</div>'+(x.last5||[]).map(m=>'<div>'+escHtml(m.date)+' — '+escHtml(m.home)+' vs '+escHtml(m.away)+' ('+escHtml(m.status||'')+')</div>').join(''))
