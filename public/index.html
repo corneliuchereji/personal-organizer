@@ -1275,29 +1275,35 @@ async function fmDebugTsdb(){
   }
 }
 
-async function fmDebugCompetition(){
-  const name=prompt('Competition name to diagnose (exact-ish, e.g. "Serie A", "Premier League"):','Serie A');
-  if(!name)return;
-  showModal('Competition match-list diagnostic','<div id="fmDebugBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Checking '+escHtml(name)+'…</div>',
+function fmDebugCompetition(){
+  const comps = (S.follows && S.follows.competitions || []).filter(c=>c.sport==='football'||c.sport==='handball');
+  if(!comps.length){ alert('No football/handball competitions followed yet.'); return; }
+  showModal('Diagnose a followed competition',
+    '<div style="font-size:11px;color:var(--txt2);margin-bottom:10px">Pick one — this checks the exact ID already saved for it, not a fresh ambiguous search (e.g. "Premier League" alone matches 20 different countries).</div>'+
+    comps.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
+      badgeImg(c.logo,c.name)+'<span style="flex:1;font-size:12px">'+escHtml(c.name)+'</span>'+
+      '<button class="btn sm acc" onclick="fmDebugFollowedCompetition(\''+c.id+'\')">Check</button></div>'
+    ).join(''),
+    '<button class="btn" onclick="openFollowManager()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
+}
+
+async function fmDebugFollowedCompetition(followId){
+  showModal('Competition match-list diagnostic','<div id="fmDebugBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Checking…</div>',
     '<button class="btn" onclick="openFollowManager()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
   try{
-    const r=await fetch('/api/sports/debug-competition?sport=football&name='+encodeURIComponent(name));
+    const r=await fetch('/api/sports/debug-followed-competition?followId='+encodeURIComponent(followId));
     const d=await r.json();
     const el=document.getElementById('fmDebugBody');
     if(!el)return;
-    if(d.error){
-      const rawStr = d.raw ? JSON.stringify(d.raw,null,2) : '';
-      el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'+
-        (rawStr?'<div style="margin-top:8px;color:var(--txt3)">Raw API response:</div><pre style="font-size:10px;color:var(--txt2);white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto">'+escHtml(rawStr.slice(0,1000))+'</pre>':'');
-      return;
-    }
+    if(d.error){ el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
     const fmt=x=>x?('<div>Count: <b>'+x.count+'</b> · Range: '+escHtml(x.earliestDate||'—')+' → '+escHtml(x.latestDate||'—')+'</div>'+
       '<div style="margin-top:4px;color:var(--txt3)">First 5:</div>'+(x.first5||[]).map(m=>'<div>'+escHtml(m.date)+' — '+escHtml(m.home)+' vs '+escHtml(m.away)+' ('+escHtml(m.status||'')+')</div>').join('')+
       '<div style="margin-top:4px;color:var(--txt3)">Last 5:</div>'+(x.last5||[]).map(m=>'<div>'+escHtml(m.date)+' — '+escHtml(m.home)+' vs '+escHtml(m.away)+' ('+escHtml(m.status||'')+')</div>').join(''))
       :'<div style="color:var(--red)">'+escHtml((x&&x.error)||'error')+'</div>';
-    el.innerHTML='<div style="margin-bottom:6px">League: <b>'+escHtml(d.league.name)+'</b> (id '+d.league.id+')</div>'+
+    el.innerHTML='<div style="margin-bottom:6px">Following: <b>'+escHtml(d.follow.name)+'</b> (id '+escHtml(d.follow.providerId)+')</div>'+
+      (d.leagueDetail?'<div style="margin-bottom:6px">Actual league on file: <b>'+escHtml(d.leagueDetail.name)+'</b>'+(d.leagueDetail.country?' ('+escHtml(d.leagueDetail.country)+')':'')+'</div>':'')+
       '<div style="margin-bottom:6px">Today: '+escHtml(d.todayIs)+'</div>'+
-      '<div style="margin-bottom:10px">Seasons on file: '+escHtml(JSON.stringify(d.league.seasons))+'</div>'+
+      '<div style="margin-bottom:10px">Seasons on file: '+escHtml(JSON.stringify(d.leagueDetail&&d.leagueDetail.seasons))+'</div>'+
       '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);margin-bottom:8px;font-size:11px"><b>With season param:</b>'+fmt(d.withSeason)+'</div>'+
       '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);font-size:11px"><b>Without season param:</b>'+fmt(d.noSeason)+'</div>';
   }catch(e){
