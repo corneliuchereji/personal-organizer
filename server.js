@@ -794,6 +794,35 @@ async function hlFetchMatches(base, headers, params){
   }
   return { data: d.data||[] };
 }
+// Competition-level match lists don't reliably start from "today" — a full
+// season easily exceeds the 100-match page size, and the first page can
+// land anywhere in the season rather than the near-term games we actually
+// want (confirmed directly: Premier League's first page was entirely
+// Oct–Dec while near-term August fixtures existed elsewhere). So page
+// through (capped, to protect the shared daily quota) until a page
+// actually contains something inside our target window, or we run out of
+// pages/budget.
+async function hlFetchCompetitionMatches(base, headers, leagueId, windowStartMs, windowEndMs, maxPages=3){
+  const inWindow = m => { const t=new Date(m.date).getTime(); return t>=windowStartMs && t<=windowEndMs; };
+  let all = [];
+  for (let page=0; page<maxPages; page++){
+    const offset = page*100;
+    const qs = new URLSearchParams({ leagueId:String(leagueId), limit:'100', offset:String(offset) });
+    let r, d;
+    try {
+      r = await fetch(`${base}/matches?${qs}`, { headers });
+      d = await r.json();
+    } catch(e) { return { error: e.message }; }
+    if (d.message && !d.data) return page===0 ? { error: d.message } : { data: all }; // later pages failing just means we stop, not a hard error
+    const batch = d.data || [];
+    all = all.concat(batch);
+    const hasWindowHit = batch.some(inWindow);
+    if (batch.length < 100) break; // reached the end of the dataset
+    if (hasWindowHit) break; // found our target range — no need to keep paging
+    await sleep(600);
+  }
+  return { data: all };
+}
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 // GET /api/sports/search?sport=football&kind=team&q=Milan
@@ -1042,10 +1071,22 @@ app.get('/api/sports/debug-followed-competition', async (req, res) => {
       leagueDetail = Array.isArray(ld) ? ld[0] : ld;
     } catch(e) {}
 
+    // What the real sync now actually does (paginated, window-filtered) —
+    // shows directly whether the fix works, without needing a full sync.
+    const windowStartMs = Date.now() - 3*86400000;
+    const windowEndMs   = Date.now() + 60*86400000;
+    const paged = await hlFetchCompetitionMatches(base, headers, follow.providerId, windowStartMs, windowEndMs);
+    const pagedInWindow = paged.error ? null : paged.data.filter(m=>{ const t=new Date(m.date).getTime(); return t>=windowStartMs && t<=windowEndMs; });
+
     res.json({
       follow: { name:follow.name, providerId:follow.providerId, sport:follow.sport },
       leagueDetail: leagueDetail ? { name:leagueDetail.name, country: leagueDetail.country && leagueDetail.country.name, seasons: leagueDetail.seasons } : null,
-      withSeason, noSeason, todayIs: getToday()
+      withSeason, noSeason, todayIs: getToday(),
+      livePagedResult: paged.error ? { error: paged.error } : {
+        totalFetchedAcrossPages: paged.data.length,
+        matchesInWindow: pagedInWindow.length,
+        sample: pagedInWindow.slice(0,5).map(m=>({date:m.date, home:m.homeTeam.name, away:m.awayTeam.name}))
+      }
     });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -1206,7 +1247,7 @@ async function syncFixtures() {
       for (const c of d.follows.competitions.filter(x=>x.sport===sport)) {
         if (!/^\d+$/.test(String(c.providerId))) { log.push({ name:c.name, followId:c.id, ok:false, error:'This follow has an old/invalid ID (likely from before a data source change) — remove it and re-add via search.' }); continue; }
         try {
-          const r = await hlFetchMatches(base, headers, { leagueId:c.providerId });
+          const r = await hlFetchCompetitionMatches(base, headers, c.providerId, windowStartMs, windowEndMs);
           if (r.error) { log.push({ name:c.name, followId:c.id, ok:false, error: r.error }); await sleep(1200); continue; }
           const found = r.data.filter(inWindow);
           found.forEach(m => newAuto.push(normalizeHLMatch(m,'competition',c.id,sport)));
