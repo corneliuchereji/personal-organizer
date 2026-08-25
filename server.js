@@ -1003,6 +1003,53 @@ app.get('/api/sports/debug-competition', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// Same diagnostic, but using the EXACT id already saved for a currently
+// followed competition — avoids the ambiguity of re-searching by name
+// (e.g. 20 different countries all have a "Premier League"), so this shows
+// precisely what the real sync is actually querying.
+app.get('/api/sports/debug-followed-competition', async (req, res) => {
+  const d = readData();
+  const key = hlKeyOf(d);
+  if (!key) return res.json({ error: 'No Highlightly key saved in Settings.' });
+  const followId = req.query.followId;
+  const follow = (d.follows && d.follows.competitions || []).find(c=>c.id===followId);
+  if (!follow) return res.json({ error: 'Follow not found' });
+  const base = hlBase(follow.sport);
+  if (!base) return res.json({ error: 'Not a Highlightly-backed sport: '+follow.sport });
+  const headers = hlHeaders(key);
+  const year = new Date().getFullYear();
+  try {
+    async function summarize(url){
+      const r = await fetch(url, { headers });
+      const d2 = await r.json();
+      if (d2.message && !d2.data) return { error: d2.message, status:r.status };
+      const matches = d2.data || [];
+      const dates = matches.map(m=>m.date).sort();
+      return {
+        count: matches.length,
+        earliestDate: dates[0]||null,
+        latestDate: dates[dates.length-1]||null,
+        first5: matches.slice(0,5).map(m=>({date:m.date, home:m.homeTeam.name, away:m.awayTeam.name, status:m.state&&m.state.description})),
+        last5: matches.slice(-5).map(m=>({date:m.date, home:m.homeTeam.name, away:m.awayTeam.name, status:m.state&&m.state.description}))
+      };
+    }
+    const withSeason = await summarize(`${base}/matches?leagueId=${follow.providerId}&season=${year}&limit=100`);
+    const noSeason    = await summarize(`${base}/matches?leagueId=${follow.providerId}&limit=100`);
+    let leagueDetail = null;
+    try {
+      const lr = await fetch(`${base}/leagues/${follow.providerId}`, { headers });
+      const ld = await lr.json();
+      leagueDetail = Array.isArray(ld) ? ld[0] : ld;
+    } catch(e) {}
+
+    res.json({
+      follow: { name:follow.name, providerId:follow.providerId, sport:follow.sport },
+      leagueDetail: leagueDetail ? { name:leagueDetail.name, country: leagueDetail.country && leagueDetail.country.name, seasons: leagueDetail.seasons } : null,
+      withSeason, noSeason, todayIs: getToday()
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // Diagnostic for TheSportsDB — tests a specific team id plus a known-good
 // one (Manchester United, 133612) side by side, so we can tell whether a
 // failure is "this team id is bad" vs "the endpoint/key is broken generally".
