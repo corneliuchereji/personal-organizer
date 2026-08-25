@@ -1304,8 +1304,11 @@ async function fmDebugFollowedCompetition(followId){
       (d.leagueDetail?'<div style="margin-bottom:6px">Actual league on file: <b>'+escHtml(d.leagueDetail.name)+'</b>'+(d.leagueDetail.country?' ('+escHtml(d.leagueDetail.country)+')':'')+'</div>':'')+
       '<div style="margin-bottom:6px">Today: '+escHtml(d.todayIs)+'</div>'+
       '<div style="margin-bottom:10px">Seasons on file: '+escHtml(JSON.stringify(d.leagueDetail&&d.leagueDetail.seasons))+'</div>'+
-      '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);margin-bottom:8px;font-size:11px"><b>With season param:</b>'+fmt(d.withSeason)+'</div>'+
-      '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);font-size:11px"><b>Without season param:</b>'+fmt(d.noSeason)+'</div>';
+      (d.livePagedResult?('<div style="padding:8px;background:'+(d.livePagedResult.error||!d.livePagedResult.matchesInWindow?'#ef444422':'#22c55e22')+';border-radius:var(--r);margin-bottom:10px;font-size:11px"><b>Live sync result (with pagination fix):</b> '+
+        (d.livePagedResult.error?escHtml(d.livePagedResult.error):('Fetched '+d.livePagedResult.totalFetchedAcrossPages+' matches across pages, <b>'+d.livePagedResult.matchesInWindow+' in your window</b>. '+(d.livePagedResult.sample||[]).map(m=>'<div>'+escHtml(m.date)+' — '+escHtml(m.home)+' vs '+escHtml(m.away)+'</div>').join('')))+
+        '</div>'):'')+
+      '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);margin-bottom:8px;font-size:11px"><b>With season param (page 1 only):</b>'+fmt(d.withSeason)+'</div>'+
+      '<div style="padding:8px;background:var(--bg2);border-radius:var(--r);font-size:11px"><b>Without season param (page 1 only):</b>'+fmt(d.noSeason)+'</div>';
   }catch(e){
     const el=document.getElementById('fmDebugBody');
     if(el) el.innerHTML='<div style="color:var(--red)">Diagnostic failed: '+escHtml(e.message)+'</div>';
