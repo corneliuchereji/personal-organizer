@@ -1104,8 +1104,12 @@ function openSettings(){
     '<div>'+S.groups.map(g=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="width:10px;height:10px;border-radius:50%;background:'+g.color+';flex-shrink:0;display:inline-block"></span><span style="flex:1;font-size:13px">'+escHtml(g.name)+'</span><button class="btn sm" onclick="editGroup(\''+g.id+'\')"><i class="ti ti-edit"></i></button><button class="btn sm red" onclick="delGroup(\''+g.id+'\')"><i class="ti ti-trash"></i></button></div>').join('')+'</div>'+
     '<button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="newGroup()"><i class="ti ti-plus"></i> New group</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-ball-football"></i> Sport data & follows</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:4px">football-data.org key — powers Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League and 6 other major competitions:</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:8px"><input id="fdKIn" value="'+(S.footballDataKey||'')+'" placeholder="football-data.org key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.footballDataKey=document.getElementById(\'fdKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:10px">Free key at <a href="https://www.football-data.org/client/register" target="_blank" style="color:var(--accent)">football-data.org</a>.</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:4px">Highlightly key — powers Football & Handball TEAMS/national squads (any club worldwide) plus Handball competitions:</div>'+
     '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a> — powers Football and Handball: any competition or team worldwide (club or national), with lineups, statistics and standings.</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
     '<div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.6">'+
@@ -1276,8 +1280,11 @@ async function fmDebugTsdb(){
 }
 
 function fmDebugCompetition(){
-  const comps = (S.follows && S.follows.competitions || []).filter(c=>c.sport==='football'||c.sport==='handball');
-  if(!comps.length){ alert('No football/handball competitions followed yet.'); return; }
+  // Highlightly's leagueId-based diagnostic only makes sense for handball
+  // now — football competitions run through football-data.org, which uses
+  // fixed 3-letter codes (PL, SA, PD...) and was already proven reliable.
+  const comps = (S.follows && S.follows.competitions || []).filter(c=>c.sport==='handball');
+  if(!comps.length){ alert('No handball competitions followed yet (football competitions use football-data.org now, which doesn\'t need this diagnostic).'); return; }
   showModal('Diagnose a followed competition',
     '<div style="font-size:11px;color:var(--txt2);margin-bottom:10px">Pick one — this checks the exact ID already saved for it, not a fresh ambiguous search (e.g. "Premier League" alone matches 20 different countries).</div>'+
     comps.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
@@ -1338,6 +1345,11 @@ function onFmSportChange(){
 // (non-football competition lists via TheSportsDB).
 function fmBrowse(){
   document.getElementById('fmQ').value='';
+  if(_fmSport==='football' && _fmKind==='competition'){
+    // Fixed 12-competition list from football-data.org — browse immediately, no typing needed.
+    fmSearch();
+    return;
+  }
   document.getElementById('fmResults').innerHTML=popularPicksHtml();
   if(_fmSport!=='football' && _fmSport!=='handball') fmSearch();
 }
@@ -1367,7 +1379,8 @@ function followRow(f,kind){
 async function fmSearch(){
   const q=(document.getElementById('fmQ').value||'').trim();
   const resEl=document.getElementById('fmResults');
-  if(!q){resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search.</div>';return;}
+  const isFdCompetitionBrowse = _fmSport==='football' && _fmKind==='competition'; // fixed list, browsable with no query
+  if(!q && !isFdCompetitionBrowse){resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">Type a name to search.</div>';return;}
   const url='/api/sports/search?sport='+encodeURIComponent(_fmSport)+'&kind='+_fmKind+'&q='+encodeURIComponent(q);
   resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0"><i class="ti ti-loader-2"></i> Loading…</div>';
   try{
@@ -1376,7 +1389,10 @@ async function fmSearch(){
     if(d.error){ resEl.innerHTML='<div style="font-size:11px;color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
     _fmResults=d.results||[];
     if(!_fmResults.length){ resEl.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:8px 0">No results.</div>'; return; }
-    const canBrowseClubs = _fmKind==='competition' && (_fmSport==='football' || _fmSport==='handball');
+    // "View clubs" browse uses Highlightly's standings endpoint — only
+    // valid for handball competitions now (football competitions use
+    // football-data.org codes, a different ID scheme entirely).
+    const canBrowseClubs = _fmKind==='competition' && _fmSport==='handball';
     if(canBrowseClubs){ renderCompetitionResults(); return; }
     resEl.innerHTML=_fmResults.map((x,i)=>
       '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
