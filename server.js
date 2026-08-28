@@ -801,6 +801,26 @@ const FD_FREE_COMPETITIONS = [
   { code:'BSA', name:'Série A', country:'Brazil' }
 ];
 function fdKeyOf(data){ return data.settings && data.settings.footballDataKey; }
+
+// Looks a football-data.org competition up on Highlightly by name and
+// returns its near-term matches — used as an automatic fallback when
+// football-data.org has no fixtures in our window for that competition.
+async function hlFallbackForCompetition(follow, hlKey, windowStartMs, windowEndMs){
+  try{
+    const base = hlBase('football');
+    const headers = hlHeaders(hlKey);
+    const r = await fetch(`${base}/leagues?leagueName=${encodeURIComponent(follow.name)}&limit=5`, { headers });
+    const d = await r.json();
+    if (!d.data || !d.data.length) return null;
+    // Prefer an exact-ish name match to avoid picking a same-named league
+    // from a different country.
+    const wanted = follow.name.toLowerCase();
+    const league = d.data.find(l=>(l.name||'').toLowerCase()===wanted) || d.data[0];
+    const res = await hlFetchCompetitionMatches(base, headers, league.id, windowStartMs, windowEndMs);
+    if (res.error) return null;
+    return res.data.filter(m=>{ const t=new Date(m.date).getTime(); return t>=windowStartMs && t<=windowEndMs; });
+  }catch(e){ return null; }
+}
 function normalizeFDMatch(m, followType, followId) {
   const dt = new Date(m.utcDate);
   const { date, time } = toBucharestParts(dt);
@@ -1333,6 +1353,19 @@ async function syncFixtures() {
         const dd = await r.json();
         if (dd.errorCode || dd.message) { log.push({ name:c.name, followId:c.id, ok:false, error: dd.message||JSON.stringify(dd) }); await sleep(6500); continue; }
         const found = (dd.matches||[]).filter(m=>{ const t=new Date(m.utcDate).getTime(); return t>=windowStartMs && t<=windowEndMs; });
+        if (found.length === 0 && hlKey) {
+          // football-data.org's free tier can be thin for some competitions
+          // in the near term (notably Champions League before the league
+          // phase is fully published). Fall back to Highlightly rather than
+          // showing an empty competition.
+          const hlFound = await hlFallbackForCompetition(c, hlKey, windowStartMs, windowEndMs);
+          if (hlFound && hlFound.length) {
+            hlFound.forEach(m => newAuto.push(normalizeHLMatch(m,'competition',c.id,'football')));
+            log.push({ name:c.name, followId:c.id, ok:true, count:hlFound.length, note:'via Highlightly fallback' });
+            await sleep(6500);
+            continue;
+          }
+        }
         found.forEach(m => newAuto.push(normalizeFDMatch(m,'competition',c.id)));
         log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
       } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
