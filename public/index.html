@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1310,7 +1309,7 @@ async function fmSyncNow(){
   try{
     const r=await fetch('/api/sports/sync-now',{method:'POST'});
     const d=await r.json();
-    if(d.error){ el.style.color='var(--red)'; el.textContent='Sync failed: '+d.error; return; }
+    if(d.error){ el.style.color='var(--red)'; el.innerHTML='Sync failed: '+escHtml(d.error)+(d.stack?'<div style="font-size:9px;color:var(--txt3);margin-top:4px;word-break:break-all">'+escHtml(d.stack)+'</div>':''); return; }
     const lines=(d.log||[]).map(x=>{
       if(!x.ok) return '<div style="color:var(--red)">✗ '+escHtml(x.name)+': '+escHtml(x.error)+'</div>';
       return '<div style="color:var(--txt2)">✓ '+escHtml(x.name)+': '+x.count+' fixture'+(x.count===1?'':'s')+(x.note?' <span style="color:var(--txt3)">('+escHtml(x.note)+')</span>':'')+'</div>';
