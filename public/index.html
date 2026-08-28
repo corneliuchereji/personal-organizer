@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -400,6 +401,7 @@ function timeToMinutes(t){
 function collapseSportEvents(sportEvs){
   const followedTeamIds = new Set((S.follows&&S.follows.teams||[]).map(t=>String(t.providerId)));
   const isTeamMatch = e => e.followType==='team' || (e.home && e.away && (followedTeamIds.has(String(e.home.id)) || followedTeamIds.has(String(e.away.id))));
+  sportEvs = dedupeByMatchIdentity(sportEvs, isTeamMatch); // same cross-provider duplicate problem as the agenda view
   const teamSlots = sportEvs.filter(isTeamMatch).map(e=>({...e,_display:'single'}));
   const rest = sportEvs.filter(e=>!isTeamMatch(e));
   // Manually-added events (no competitionId, not auto-synced) always show
@@ -447,8 +449,17 @@ function eventsOnDay(ds){
 function collapseSportEventsFine(sportEvs){
   const followedTeamIds = new Set((S.follows&&S.follows.teams||[]).map(t=>String(t.providerId)));
   const isTeamMatch = e => e.followType==='team' || (e.home && e.away && (followedTeamIds.has(String(e.home.id)) || followedTeamIds.has(String(e.away.id))));
-  const standalone = sportEvs.filter(e=>isTeamMatch(e) || e.source!=='auto').map(e=>({...e,_display:'single'}));
-  const groupable = sportEvs.filter(e=>!isTeamMatch(e) && e.source==='auto');
+
+  // The SAME real match can be stored twice under different provider IDs —
+  // e.g. AC Milan vs Venezia arrives once via the AC Milan team follow
+  // (Highlightly) and again via the Serie A competition follow
+  // (football-data.org). Those IDs never collide, so dedupe on match
+  // identity instead: same kickoff time + same two teams. Keep the
+  // team-follow copy so it renders as the highlighted card.
+  const deduped = dedupeByMatchIdentity(sportEvs, isTeamMatch);
+
+  const standalone = deduped.filter(e=>isTeamMatch(e) || e.source!=='auto').map(e=>({...e,_display:'single'}));
+  const groupable = deduped.filter(e=>!isTeamMatch(e) && e.source==='auto');
   const cells = {};
   groupable.forEach(e=>{
     const key = e.time+'|'+(e.competitionId||e.id);
@@ -465,6 +476,71 @@ function collapseSportEventsFine(sportEvs){
     };
   });
   return [...standalone, ...cellSlots];
+}
+
+// Removes cross-provider duplicates of the same real match (same date,
+// kickoff and teams), preferring the followed-team copy so it renders as
+// the highlighted card rather than folded into a competition group.
+function dedupeByMatchIdentity(sportEvs, isTeamMatch){
+  const identityKey = e => {
+    if(!e.home || !e.away) return null;
+    const names = [normTeamName(e.home.name), normTeamName(e.away.name)].sort().join('|');
+    return e.date+'|'+fmtTime(e.time)+'|'+names;
+  };
+  const byIdentity = new Map();
+  const noIdentity = [];
+  sportEvs.forEach(e=>{
+    const k = identityKey(e);
+    if(!k){ noIdentity.push(e); return; }
+    const existing = byIdentity.get(k);
+    if(!existing){ byIdentity.set(k,e); return; }
+    if(!isTeamMatch(existing) && isTeamMatch(e)) byIdentity.set(k,e);
+  });
+  let result = [...byIdentity.values(), ...noIdentity];
+
+  // Second pass for naming variants strict normalisation can't reconcile
+  // ("Bayern München" vs "Bayern Munich", differing word order). Same
+  // date+kickoff AND a strong fuzzy resemblance on BOTH sides is required,
+  // so distinct fixtures (e.g. AC Milan vs Inter Milan) never merge.
+  const out = [];
+  result.forEach(e=>{
+    if(!e.home || !e.away){ out.push(e); return; }
+    const dupIdx = out.findIndex(o=>o.home && o.away &&
+      o.date===e.date && fmtTime(o.time)===fmtTime(e.time) &&
+      teamsResemble(o, e));
+    if(dupIdx === -1){ out.push(e); return; }
+    // Keep whichever is the followed-team copy.
+    if(!isTeamMatch(out[dupIdx]) && isTeamMatch(e)) out[dupIdx] = e;
+  });
+  return out;
+}
+// True when two fixtures look like the same match: both teams resemble
+// each other (either orientation), using a conservative prefix/containment
+// test on normalised names.
+function teamsResemble(a, b){
+  const like = (x,y)=>{
+    const nx=normTeamName(x), ny=normTeamName(y);
+    if(!nx || !ny) return false;
+    if(nx===ny) return true;
+    if(nx.length>=5 && ny.length>=5 && (nx.startsWith(ny.slice(0,5)) || ny.startsWith(nx.slice(0,5)))) return true;
+    return nx.includes(ny) || ny.includes(nx);
+  };
+  const sameOrder = like(a.home.name,b.home.name) && like(a.away.name,b.away.name);
+  const swapped   = like(a.home.name,b.away.name) && like(a.away.name,b.home.name);
+  return sameOrder || swapped;
+}
+
+// Team names differ slightly between providers ("Venezia" vs "Venezia FC",
+// "FC Bayern München" vs "Bayern Munich"), so normalise before comparing:
+// lowercase, strip accents, drop common club-type suffixes/prefixes.
+function normTeamName(n){
+  if(!n) return '';
+  return String(n)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/\b(fc|cf|afc|sc|ac|as|ss|ssc|us|bsc|vfb|vfl|tsg|sv|fk|cd|ud|rc|club|calcio|futbol|football)\b/g,'')
+    .replace(/[^a-z0-9]/g,'')
+    .trim();
 }
 
 function agendaEventsOnDay(ds){
