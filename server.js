@@ -716,6 +716,10 @@ app.post('/api/data', (req, res) => {
     const autoExisting = (current.sportEvents||[]).filter(e=>e.source==='auto');
     updated.sportEvents = [...req.body.sportEvents, ...autoExisting];
   }
+  // sentReminders is server-owned bookkeeping (which reminders already
+  // fired) — the client never manages it, so never let a client payload
+  // clear it, or reminders would re-fire after every save.
+  updated.sentReminders = current.sentReminders || {};
   writeData(updated);
   if(req.body.settings) setupCrons(updated.settings);
   res.json({ok:true});
@@ -1418,6 +1422,15 @@ async function syncFixtures() {
     if (!existing || (existing.followType !== 'team' && ev.followType === 'team')) dedup.set(ev.id, ev);
   }
 
+  // Carry over any reminder the user set on an auto-synced fixture — the
+  // fixture object itself is replaced wholesale on each sync, so without
+  // this a reminder set on a match would silently vanish at the next sync.
+  const prevById = new Map((d.sportEvents||[]).filter(e=>e.source==='auto').map(e=>[e.id,e]));
+  for (const [id, ev] of dedup) {
+    const prev = prevById.get(id);
+    if (prev && prev.reminder) ev.reminder = prev.reminder;
+  }
+
   // CRITICAL: don't wipe out previously-good fixtures just because this
   // round failed for some (or all) follows — a rate limit or transient
   // network hiccup should never delete data that was working fine before.
@@ -1644,6 +1657,95 @@ function setupCrons(settings) {
 let _fixtureSyncCron = cron.schedule('17 */6 * * *', async () => {
   console.log('Running scheduled fixture sync...');
   try { await syncFixtures(); } catch(e){ console.log('Scheduled sync error:', e.message); }
+});
+
+// ═══════════════════════════════════════════════════
+// EVENT REMINDERS — server-side, so they fire via Telegram whether or not
+// the app is open in a browser (the old browser-notification-only version
+// silently did nothing when the tab was closed).
+// ═══════════════════════════════════════════════════
+function eventStartMs(ev){
+  if(!ev.date) return NaN;
+  const t = fmtTime(ev.time||'00:00');
+  // Stored dates/times are already local (Europe/Bucharest). Build the UTC
+  // instant that corresponds to that local wall-clock time.
+  const [y,mo,dd] = ev.date.split('-').map(Number);
+  const [hh,mi] = t.split(':').map(Number);
+  // Determine Bucharest's UTC offset for that date (handles DST correctly).
+  const guess = Date.UTC(y, mo-1, dd, hh, mi);
+  const asBuch = new Date(guess).toLocaleString('en-US',{timeZone:'Europe/Bucharest'});
+  const offsetMs = new Date(guess).getTime() - new Date(asBuch+' UTC').getTime();
+  return guess + offsetMs;
+}
+
+// Which upcoming occurrences need a reminder right now. Handles recurring
+// tasks by resolving the reminder against today's/tomorrow's occurrence.
+function dueReminders(data, nowMs, windowMs){
+  const due = [];
+  const sent = data.sentReminders || {};
+  const candidates = [
+    ...(data.tasks||[]).filter(t=>!t.done).map(t=>({...t,_type:'task'})),
+    ...(data.sportEvents||[]).map(e=>({...e,_type:'sport'}))
+  ];
+  // Look at today and tomorrow so a late-night event with a long lead time
+  // (e.g. "1 day before") still resolves correctly.
+  const days = [getToday(), addDays(getToday(),1)];
+  for (const ev of candidates) {
+    const mins = parseInt(ev.reminder);
+    if (!ev.reminder || isNaN(mins) || mins <= 0) continue;
+    for (const ds of days) {
+      if (!matchesDate(ev, ds)) continue;
+      const startMs = eventStartMs({ ...ev, date: ds });
+      if (isNaN(startMs)) continue;
+      const fireMs = startMs - mins*60000;
+      // Fire if we're inside the window and haven't already sent this one.
+      const key = ev.id + '|' + ds;
+      if (sent[key]) continue;
+      if (fireMs <= nowMs && nowMs - fireMs < windowMs && startMs > nowMs) {
+        due.push({ ev, ds, startMs, mins, key });
+      }
+    }
+  }
+  return due;
+}
+
+function reminderLabel(mins){
+  if (mins >= 1440) return (mins/1440)+' day'+(mins>=2880?'s':'');
+  if (mins >= 60) return (mins/60)+' hour'+(mins>=120?'s':'');
+  return mins+' min';
+}
+
+let _reminderCron = cron.schedule('* * * * *', async () => {
+  try {
+    const d = readData();
+    const token = d.settings && d.settings.tgToken;
+    const chatId = d.settings && d.settings.tgChatId;
+    if (!token || !chatId) return;
+    const nowMs = Date.now();
+    // 10-minute grace window so a brief restart/outage doesn't drop a reminder.
+    const due = dueReminders(d, nowMs, 10*60000);
+    if (!due.length) return;
+    const data = readData();
+    if (!data.sentReminders) data.sentReminders = {};
+    for (const item of due) {
+      const ev = item.ev;
+      const emoji = ev._type === 'task' ? colorEmoji(groupColor(data, ev.group)) : '🏆';
+      let msg = '⏰ <b>Starting in '+reminderLabel(item.mins)+'</b>\n\n';
+      msg += emoji+' <b>'+ev.name+'</b>\n';
+      msg += '🕐 '+fmtTime(ev.time)+(item.ds!==getToday()?' · '+item.ds:'')+'\n';
+      if (ev.competitionName) msg += '🏆 '+ev.competitionName+'\n';
+      if (ev.notes) msg += '📝 '+ev.notes+'\n';
+      await sendTg(token, chatId, msg);
+      data.sentReminders[item.key] = nowMs;
+      console.log('Sent reminder for:', ev.name, item.ds);
+    }
+    // Prune records older than 3 days so this doesn't grow forever.
+    const cutoff = nowMs - 3*86400000;
+    for (const k of Object.keys(data.sentReminders)) {
+      if (data.sentReminders[k] < cutoff) delete data.sentReminders[k];
+    }
+    writeData(data);
+  } catch(e) { console.log('Reminder cron error:', e.message); }
 });
 
 // ═══════════════════════════════════════════════════
