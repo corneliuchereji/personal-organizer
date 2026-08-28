@@ -613,12 +613,29 @@ function badgeImg(url,alt,col,size){
 // progress (Highlightly's state.description is free text like "1st Half",
 // "Half Time", "Not Started", "Full Time" — anything that isn't clearly
 // pre/post-match counts as live).
-function isLiveStatus(status){
+// Whether a fixture is actually in progress right now. This is a positive
+// allow-list, NOT a "not finished/not scheduled" negative test — the
+// negative version wrongly treated every unrecognised status (notably
+// football-data.org's "TIMED", used for normal upcoming matches) as live,
+// which made the whole day's schedule show LIVE badges hours early.
+// Also requires kickoff to have actually passed, as a second safety net.
+function isLiveStatus(status, ev){
   if(!status) return false;
-  return !/not started|scheduled|full[\s-]?time|finished|postponed|cancelled|suspended/i.test(status);
+  const s = String(status).toLowerCase();
+  const liveWords = /(in[\s_-]?play|live|1st half|2nd half|first half|second half|half[\s-]?time|halftime|paused|extra time|penalt|added time|break time|interrupted)/i;
+  if(!liveWords.test(s)) return false;
+  // Sanity check against the clock: never show LIVE before kickoff time.
+  if(ev && ev.date && ev.time){
+    const start = new Date(ev.date+'T'+fmtTime(ev.time)+':00').getTime();
+    if(isNaN(start)) return true;
+    const now = Date.now();
+    // Allow a generous 4h window after kickoff; nothing before it.
+    if(now < start || now > start + 4*3600*1000) return false;
+  }
+  return true;
 }
 function liveBadge(ev){
-  if(!isLiveStatus(ev.status)) return '';
+  if(!isLiveStatus(ev.status, ev)) return '';
   return '<span style="display:inline-flex;align-items:center;gap:3px;background:#ef444422;color:#ef4444;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:6px"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite"></span>LIVE'+(ev.liveClock?' '+escHtml(ev.liveClock):'')+'</span>';
 }
 
@@ -1009,7 +1026,7 @@ async function showAutoFixtureDetail(ev){
       el.innerHTML=renderFixtureDetailBody(ev,d2);
       // If the match is live, keep polling for fresh score/events every 60s
       // while this modal stays open — stop once it's no longer live.
-      const liveNow = d2.fixture && isLiveStatus((d2.fixture.state&&d2.fixture.state.description)||ev.status);
+      const liveNow = d2.fixture && isLiveStatus((d2.fixture.state&&d2.fixture.state.description)||ev.status, ev);
       if(liveNow && !_fxRefreshTimer){
         _fxRefreshTimer=setInterval(load, 60000);
       } else if(!liveNow && _fxRefreshTimer){
