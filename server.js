@@ -1038,7 +1038,10 @@ app.delete('/api/follows/:kind/:id', (req, res) => {
 
 app.post('/api/sports/sync-now', async (req, res) => {
   try { const { count, log } = await syncFixtures(); res.json({ ok:true, synced:count, log }); }
-  catch(e){ res.status(500).json({ error: e.message }); }
+  catch(e){
+    console.log('Sync-now failed:', e.stack || e.message);
+    res.status(500).json({ error: e.message, stack: (e.stack||'').split('\n').slice(0,5).join(' | ') });
+  }
 });
 
 // One-off raw diagnostic against Highlightly, using whatever key is
