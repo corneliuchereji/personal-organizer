@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -744,12 +743,15 @@ function renderSportCard(ev){
     // no tap needed to see what's on. Each row still taps through to full detail.
     const rows=ev.fixtures.map(f=>{
       const scoreTxt = f.score && f.score.home!=null ? (f.score.home+' - '+f.score.away) : '';
+      // Same fixed two-row shape as the highlighted cards, so every fixture
+      // in the app reads identically: home on top, away underneath.
       const nameHtml = (f.home && f.away)
-        ? badgeImg(f.home.logo,f.home.name,col,14)+' <span>'+escHtml(f.home.name)+'</span> <span style="color:var(--txt3)">vs</span> '+badgeImg(f.away.logo,f.away.name,col,14)+' <span>'+escHtml(f.away.name)+'</span>'
-        : escHtml(f.name);
-      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0 5px 30px;font-size:11px;cursor:pointer" onclick="event.stopPropagation();showSportDetail(\''+f.id+'\')">'+
-        '<span style="color:var(--txt2);display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+nameHtml+liveBadge(f)+'</span>'+
-        '<span style="color:var(--txt3);white-space:nowrap">'+(scoreTxt||fmtTime(f.time))+'</span></div>';
+        ? '<div style="display:flex;align-items:center;gap:5px"><span style="flex-shrink:0">'+badgeImg(f.home.logo,f.home.name,col,14)+'</span><span>'+escHtml(f.home.name)+'</span><span style="color:var(--txt3);font-size:10px">vs</span></div>'+
+          '<div style="display:flex;align-items:center;gap:5px"><span style="flex-shrink:0">'+badgeImg(f.away.logo,f.away.name,col,14)+'</span><span>'+escHtml(f.away.name)+'</span>'+liveBadge(f)+'</div>'
+        : '<div>'+escHtml(f.name)+liveBadge(f)+'</div>';
+      return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:6px 0 6px 30px;font-size:11px;cursor:pointer" onclick="event.stopPropagation();showSportDetail(\''+f.id+'\')">'+
+        '<div style="color:var(--txt2);line-height:1.5;min-width:0">'+nameHtml+'</div>'+
+        '<span style="color:var(--txt3);white-space:nowrap;flex-shrink:0">'+(scoreTxt||fmtTime(f.time))+'</span></div>';
     }).join('');
     return '<div class="ecard">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
@@ -771,11 +773,21 @@ function renderSportCard(ev){
     return '<div class="ecard" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer;padding:14px;border:1px solid '+col+'55;background:linear-gradient(135deg,'+col+'14,var(--bg2))">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+';width:4px"></div>'+
       '<div class="ec-body" style="padding-left:0">'+
-      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;font-weight:700">'+
-        badgeImg(ev.home.logo,ev.home.name,col)+'<span>'+escHtml(ev.home.name)+'</span>'+
-        '<span style="color:var(--txt3);font-weight:400;font-size:12px">vs</span>'+
-        badgeImg(ev.away.logo,ev.away.name,col)+'<span>'+escHtml(ev.away.name)+'</span>'+
-        (scoreTxt?'<span style="color:var(--txt2);margin-left:4px">'+scoreTxt+'</span>':'')+liveBadge(ev)+
+      // Always two fixed rows (home on top, away below) rather than a
+      // wrapping single line — flex-wrap made the break point depend on
+      // name length, so some fixtures showed "A vs B" and others split
+      // awkwardly mid-pair. Fixed rows keep every card identical.
+      '<div style="font-size:15px;font-weight:700;line-height:1.45">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          badgeImg(ev.home.logo,ev.home.name,col)+
+          '<span style="flex:1;min-width:0">'+escHtml(ev.home.name)+'</span>'+
+          '<span style="color:var(--txt3);font-weight:400;font-size:12px;flex-shrink:0">vs</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          badgeImg(ev.away.logo,ev.away.name,col)+
+          '<span style="flex:1;min-width:0">'+escHtml(ev.away.name)+'</span>'+
+          (scoreTxt?'<span style="color:var(--txt2);flex-shrink:0">'+scoreTxt+'</span>':'')+liveBadge(ev)+
+        '</div>'+
       '</div>'+
       (ev.competitionName?'<div style="font-size:11px;color:var(--txt3);margin-top:3px">'+escHtml(ev.competitionName)+'</div>':'')+
       '<div class="ec-meta" style="margin-top:5px">'+meta+'</div>'+
