@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -695,19 +696,25 @@ function badgeImg(url,alt,col,size){
 // which made the whole day's schedule show LIVE badges hours early.
 // Also requires kickoff to have actually passed, as a second safety net.
 function isLiveStatus(status, ev){
+  // THE CLOCK IS THE PRIMARY TEST, and it fails CLOSED: if we can't prove
+  // from the stored date/time that kickoff has already passed, we never
+  // show LIVE. An earlier version trusted the provider's status text first
+  // and only used the clock as a secondary check, which meant an
+  // unrecognised status (e.g. football-data.org's "TIMED" for ordinary
+  // upcoming matches) lit up the entire day's schedule hours early.
+  if(!ev || !ev.date || !ev.time) return false;
+  const start = new Date(ev.date+'T'+fmtTime(ev.time)+':00').getTime();
+  if(isNaN(start)) return false;
+  const now = Date.now();
+  if(now < start) return false;                    // hasn't kicked off yet
+  if(now > start + 4*3600*1000) return false;      // long over
+  // Only inside that window do we consult the provider's status text, as a
+  // positive allow-list (never a "not finished" negative test).
   if(!status) return false;
   const s = String(status).toLowerCase();
+  if(/(not started|scheduled|timed|postponed|cancell|full[\s-]?time|finished|ended|abandoned)/i.test(s)) return false;
   const liveWords = /(in[\s_-]?play|live|1st half|2nd half|first half|second half|half[\s-]?time|halftime|paused|extra time|penalt|added time|break time|interrupted)/i;
-  if(!liveWords.test(s)) return false;
-  // Sanity check against the clock: never show LIVE before kickoff time.
-  if(ev && ev.date && ev.time){
-    const start = new Date(ev.date+'T'+fmtTime(ev.time)+':00').getTime();
-    if(isNaN(start)) return true;
-    const now = Date.now();
-    // Allow a generous 4h window after kickoff; nothing before it.
-    if(now < start || now > start + 4*3600*1000) return false;
-  }
-  return true;
+  return liveWords.test(s);
 }
 function liveBadge(ev){
   if(!isLiveStatus(ev.status, ev)) return '';
