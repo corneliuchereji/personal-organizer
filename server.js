@@ -1157,7 +1157,7 @@ app.get('/api/sports/debug-followed-competition', async (req, res) => {
     // What the real sync now actually does (paginated, window-filtered) —
     // shows directly whether the fix works, without needing a full sync.
     const windowStartMs = Date.now() - 3*86400000;
-    const windowEndMs   = Date.now() + 60*86400000;
+    const windowEndMs   = Date.now() + 120*86400000; // 120d: long enough to cover a full Champions League phase and multi-week stage races
     const paged = await hlFetchCompetitionMatches(base, headers, follow.providerId, windowStartMs, windowEndMs);
     const pagedInWindow = paged.error ? null : paged.data.filter(m=>{ const t=new Date(m.date).getTime(); return t>=windowStartMs && t<=windowEndMs; });
 
@@ -1298,7 +1298,7 @@ async function syncFixtures() {
   const fdKey = fdKeyOf(d);
   const tsdbKey = tsdbKeyOf(d);
   const windowStartMs = Date.now() - 3*86400000;
-  const windowEndMs   = Date.now() + 60*86400000;
+  const windowEndMs   = Date.now() + 120*86400000; // 120d: long enough to cover a full Champions League phase and multi-week stage races
   const inWindow = m => { const t=new Date(m.date).getTime(); return t>=windowStartMs && t<=windowEndMs; };
   const HL_SPORTS = ['football','handball']; // teams (both) + handball competitions go through Highlightly
 
@@ -1396,11 +1396,32 @@ async function syncFixtures() {
 
   for (const c of d.follows.competitions.filter(x=>x.sport!=='football' && x.sport!=='motogp_official')) {
     try {
-      const dd = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
-      if (dd.error) { log.push({ name:c.name, followId:c.id, ok:false, error:dd.error }); continue; }
-      const found = dd.events||[];
-      found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
-      log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
+      // eventsnextleague only returns the next ~15 events, which for a
+      // stage race (Vuelta/Giro/Tour) or a long season means you see a
+      // single upcoming stage rather than the whole competition. Pull the
+      // full season schedule first and fall back to next-15 only if the
+      // season endpoint has nothing.
+      const season = new Date().getFullYear();
+      let found = [];
+      let note;
+      const seasonRes = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsseason.php?id=${c.providerId}&s=${season}`);
+      if (!seasonRes.error && seasonRes.events && seasonRes.events.length) {
+        found = seasonRes.events;
+        note = 'full season';
+      } else {
+        const nextRes = await fetchTsdbWithRetry(`https://www.thesportsdb.com/api/v1/json/${tsdbKey}/eventsnextleague.php?id=${c.providerId}`);
+        if (nextRes.error) { log.push({ name:c.name, followId:c.id, ok:false, error:nextRes.error }); continue; }
+        found = nextRes.events||[];
+        note = 'next events only';
+      }
+      // Season lists span the whole year, so trim to our near-term window.
+      const windowed = found.filter(ev=>{
+        const iso = ev.strTimestamp ? ev.strTimestamp.replace(' ','T')+(ev.strTimestamp.includes('Z')?'':'Z') : `${ev.dateEvent}T${ev.strTime||'00:00:00'}Z`;
+        const t = new Date(iso).getTime();
+        return !isNaN(t) && t>=windowStartMs && t<=windowEndMs;
+      });
+      windowed.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
+      log.push({ name:c.name, followId:c.id, ok:true, count:windowed.length, note });
     } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
   }
   for (const t of d.follows.teams.filter(x=>x.sport!=='football')) {
