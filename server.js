@@ -827,7 +827,8 @@ async function hlFallbackForCompetition(follow, hlKey, windowStartMs, windowEndM
 }
 function normalizeFDMatch(m, followType, followId) {
   const dt = new Date(m.utcDate);
-  const { date, time } = toBucharestParts(dt);
+  const _p = toBucharestParts(dt); if(!_p) return null;
+  const { date, time } = _p;
   const ft = m.score && m.score.fullTime;
   return {
     id: 'fd_'+m.id, source:'auto', provider:'football-data', providerId:String(m.id),
@@ -1210,6 +1211,10 @@ app.get('/api/sports/debug-tsdb', async (req, res) => {
 // a late-kickoff fixture lands on is correct even when UTC and Bucharest
 // time fall on different calendar days.
 function toBucharestParts(dateObj) {
+  // Guard against invalid dates: an unparseable value used to fall through
+  // and yield a nonsense-but-identical date for every affected fixture,
+  // which made whole competitions appear stacked on one day.
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return null;
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Bucharest',
     year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false
@@ -1227,7 +1232,9 @@ function parseHLScore(current){
 function normalizeHLMatch(m, followType, followId, sport) {
   sport = sport || 'football';
   const dt = new Date(m.date); // ISO UTC from Highlightly
-  const { date, time } = toBucharestParts(dt);
+  const parts = toBucharestParts(dt);
+  if (!parts) return null; // undated/unparseable — caller filters these out
+  const { date, time } = parts;
   return {
     id: 'hl_'+sport+'_'+m.id, source:'auto', provider:'highlightly', providerSport:sport, providerId:String(m.id),
     sport, freq:'none', date, time,
@@ -1249,7 +1256,9 @@ function normalizeTSDBEvent(ev, followType, followId) {
   const iso = ev.strTimestamp ? ev.strTimestamp.replace(' ','T')+(ev.strTimestamp.includes('Z')?'':'Z')
     : `${ev.dateEvent}T${ev.strTime||'00:00:00'}Z`;
   const dt = new Date(iso);
-  const { date, time } = isNaN(dt) ? { date: ev.dateEvent, time:(ev.strTime||'00:00').slice(0,5) } : toBucharestParts(dt);
+  const _p = isNaN(dt) ? (ev.dateEvent ? { date: ev.dateEvent, time:(ev.strTime||'00:00').slice(0,5) } : null) : toBucharestParts(dt);
+  if (!_p || !_p.date) return null; // no usable date — skip rather than store a bogus one
+  const { date, time } = _p;
   return {
     id: 'tsdb_'+ev.idEvent, source:'auto', provider:'thesportsdb', providerId:ev.idEvent,
     sport: (ev.strSport||'').toLowerCase(), freq:'none', date, time,
@@ -1273,7 +1282,8 @@ function normalizeMotoGpEvent(ev, followId) {
   let raceBroadcast = (ev.broadcasts||[]).find(b => b.shortname==='RAC' && b.category && b.category.name==='MotoGP');
   if (!raceBroadcast) raceBroadcast = (ev.broadcasts||[]).find(b => b.shortname==='RAC');
   const dt = raceBroadcast ? new Date(raceBroadcast.date_start) : new Date(ev.date_start);
-  const { date, time } = toBucharestParts(dt);
+  const _p = toBucharestParts(dt); if(!_p) return null;
+  const { date, time } = _p;
   return {
     id: 'motogp_'+ev.id, source:'auto', provider:'motogp', providerId:ev.id,
     sport:'motogp', freq:'none', date, time,
@@ -1328,7 +1338,7 @@ async function syncFixtures() {
           if (rh.error || ra.error) { log.push({ name:t.name, followId:t.id, ok:false, error: rh.error||ra.error }); await sleep(1200); continue; }
           const all = [...rh.data, ...ra.data].filter(inWindow);
           const seen = new Set();
-          all.forEach(m => { if(!seen.has(m.id)){ seen.add(m.id); newAuto.push(normalizeHLMatch(m,'team',t.id,sport)); } });
+          all.forEach(m => { if(!seen.has(m.id)){ seen.add(m.id); const n=normalizeHLMatch(m,'team',t.id,sport); if(n) newAuto.push(n); } });
           log.push({ name:t.name, followId:t.id, ok:true, count:seen.size });
         } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
         await sleep(1200);
@@ -1342,7 +1352,7 @@ async function syncFixtures() {
             const r = await hlFetchCompetitionMatches(base, headers, c.providerId, windowStartMs, windowEndMs);
             if (r.error) { log.push({ name:c.name, followId:c.id, ok:false, error: r.error }); await sleep(1200); continue; }
             const found = r.data.filter(inWindow);
-            found.forEach(m => newAuto.push(normalizeHLMatch(m,'competition',c.id,sport)));
+            found.forEach(m => { const n=normalizeHLMatch(m,'competition',c.id,sport); if(n) newAuto.push(n); });
             log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
           } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
           await sleep(1200);
@@ -1367,13 +1377,13 @@ async function syncFixtures() {
           // showing an empty competition.
           const hlFound = await hlFallbackForCompetition(c, hlKey, windowStartMs, windowEndMs);
           if (hlFound && hlFound.length) {
-            hlFound.forEach(m => newAuto.push(normalizeHLMatch(m,'competition',c.id,'football')));
+            hlFound.forEach(m => { const n=normalizeHLMatch(m,'competition',c.id,'football'); if(n) newAuto.push(n); });
             log.push({ name:c.name, followId:c.id, ok:true, count:hlFound.length, note:'via Highlightly fallback' });
             await sleep(6500);
             continue;
           }
         }
-        found.forEach(m => newAuto.push(normalizeFDMatch(m,'competition',c.id)));
+        found.forEach(m => { const n=normalizeFDMatch(m,'competition',c.id); if(n) newAuto.push(n); });
         log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
       } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
       await sleep(6500); // football-data.org free tier: 10 req/min
@@ -1388,7 +1398,7 @@ async function syncFixtures() {
       const events = await r.json();
       const todayStr = getToday();
       const upcoming = Array.isArray(events) ? events.filter(ev => ev.kind==='GP' && ev.date_end && ev.date_end.slice(0,10) >= todayStr) : [];
-      const found = upcoming.map(ev => normalizeMotoGpEvent(ev, c.id));
+      const found = upcoming.map(ev => normalizeMotoGpEvent(ev, c.id)).filter(Boolean);
       found.forEach(n => newAuto.push(n));
       log.push({ name:c.name, followId:c.id, ok:true, count:found.length });
     } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
@@ -1420,7 +1430,7 @@ async function syncFixtures() {
         const t = new Date(iso).getTime();
         return !isNaN(t) && t>=windowStartMs && t<=windowEndMs;
       });
-      windowed.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'competition',c.id)));
+      windowed.forEach(ev => { const n=normalizeTSDBEvent(ev,'competition',c.id); if(n) newAuto.push(n); });
       log.push({ name:c.name, followId:c.id, ok:true, count:windowed.length, note });
     } catch(e){ log.push({ name:c.name, followId:c.id, ok:false, error:e.message }); }
   }
@@ -1430,7 +1440,7 @@ async function syncFixtures() {
       if (dd.error) { log.push({ name:t.name, followId:t.id, ok:false, error:dd.error }); continue; }
       const found = dd.events||[];
       if (found.length === 0) { log.push({ name:t.name, followId:t.id, ok:true, count:0, note:'TheSportsDB has no scheduled fixtures listed for this team right now' }); continue; }
-      found.forEach(ev => newAuto.push(normalizeTSDBEvent(ev,'team',t.id)));
+      found.forEach(ev => { const n=normalizeTSDBEvent(ev,'team',t.id); if(n) newAuto.push(n); });
       log.push({ name:t.name, followId:t.id, ok:true, count:found.length });
     } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
   }
