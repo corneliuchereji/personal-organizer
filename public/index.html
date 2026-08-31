@@ -1405,18 +1405,47 @@ async function fmDebugTsdb(){
 }
 
 function fmDebugCompetition(){
-  // Highlightly's leagueId-based diagnostic only makes sense for handball
-  // now — football competitions run through football-data.org, which uses
-  // fixed 3-letter codes (PL, SA, PD...) and was already proven reliable.
-  const comps = (S.follows && S.follows.competitions || []).filter(c=>c.sport==='handball');
-  if(!comps.length){ alert('No handball competitions followed yet (football competitions use football-data.org now, which doesn\'t need this diagnostic).'); return; }
+  // Handball goes through Highlightly (leagueId based); cycling, snooker,
+  // darts and motorsport go through TheSportsDB (different endpoints), so
+  // route each to the right diagnostic. Football competitions use
+  // football-data.org's fixed codes and don't need this.
+  const TSDB_SPORTS = ['cycling','snooker','darts','motorsport'];
+  const comps = (S.follows && S.follows.competitions || []).filter(c=>c.sport==='handball' || TSDB_SPORTS.includes(c.sport));
+  if(!comps.length){ alert('No handball/cycling/snooker/darts/motorsport competitions followed yet.'); return; }
   showModal('Diagnose a followed competition',
-    '<div style="font-size:11px;color:var(--txt2);margin-bottom:10px">Pick one — this checks the exact ID already saved for it, not a fresh ambiguous search (e.g. "Premier League" alone matches 20 different countries).</div>'+
-    comps.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
-      badgeImg(c.logo,c.name)+'<span style="flex:1;font-size:12px">'+escHtml(c.name)+'</span>'+
-      '<button class="btn sm acc" onclick="fmDebugFollowedCompetition(\''+c.id+'\')">Check</button></div>'
-    ).join(''),
+    '<div style="font-size:11px;color:var(--txt2);margin-bottom:10px">Pick one — this checks the exact ID already saved for it and shows what each data endpoint actually returns.</div>'+
+    comps.map(c=>{
+      const fn = TSDB_SPORTS.includes(c.sport) ? 'fmDebugTsdbCompetition' : 'fmDebugFollowedCompetition';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
+        badgeImg(c.logo,c.name)+'<span style="flex:1;font-size:12px">'+escHtml(c.name)+'<span style="color:var(--txt3);font-size:10px"> · '+escHtml(c.sport)+'</span></span>'+
+        '<button class="btn sm acc" onclick="'+fn+'(\''+c.id+'\')">Check</button></div>';
+    }).join(''),
     '<button class="btn" onclick="openFollowManager()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
+}
+
+async function fmDebugTsdbCompetition(followId){
+  showModal('Competition data diagnostic','<div id="fmDebugBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Checking endpoints…</div>',
+    '<button class="btn" onclick="openFollowManager()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
+  try{
+    const r=await fetch('/api/sports/debug-tsdb-competition?followId='+encodeURIComponent(followId));
+    const d=await r.json();
+    const el=document.getElementById('fmDebugBody');
+    if(!el)return;
+    if(d.error){ el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+    el.innerHTML='<div style="margin-bottom:6px">Following: <b>'+escHtml(d.follow.name)+'</b> (id '+escHtml(d.follow.providerId)+', '+escHtml(d.follow.sport)+')</div>'+
+      '<div style="margin-bottom:10px">Today: '+escHtml(d.todayIs)+' · key '+escHtml(d.key)+'</div>'+
+      d.tests.map(t=>{
+        if(t.error) return '<div style="padding:8px;background:#ef444422;border-radius:var(--r);margin-bottom:8px;font-size:11px"><b>'+escHtml(t.label)+'</b><div style="color:var(--red)">'+escHtml(t.error)+'</div></div>';
+        return '<div style="padding:8px;background:'+(t.count?'#22c55e22':'var(--bg2)')+';border-radius:var(--r);margin-bottom:8px;font-size:11px">'+
+          '<b>'+escHtml(t.label)+'</b> — <b>'+t.count+'</b> events'+
+          (t.count?' · '+escHtml(t.earliest||'')+' → '+escHtml(t.latest||''):'')+
+          (t.sample&&t.sample.length?'<div style="margin-top:4px;color:var(--txt3)">'+t.sample.map(s=>'<div>'+escHtml(s.date||'')+' '+escHtml(s.time||'')+' — '+escHtml(s.name||'')+'</div>').join('')+'</div>':'')+
+          '</div>';
+      }).join('');
+  }catch(e){
+    const el=document.getElementById('fmDebugBody');
+    if(el) el.innerHTML='<div style="color:var(--red)">Diagnostic failed: '+escHtml(e.message)+'</div>';
+  }
 }
 
 async function fmDebugFollowedCompetition(followId){
