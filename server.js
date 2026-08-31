@@ -1037,6 +1037,48 @@ app.delete('/api/follows/:kind/:id', (req, res) => {
   res.json({ ok:true });
 });
 
+// One-off seed for AC Milan's 2026-27 Europa League league-phase fixtures.
+// Stored as MANUAL events (source:'manual') so the fixture sync never wipes
+// them. Kickoff times below are already converted from Italian local time
+// to Romanian local time — Italy and Romania observe DST on identical
+// dates, so the offset is a constant +1 hour for every fixture here.
+const ACM_EL_FIXTURES = [
+  { date:'2026-09-16', time:'22:00', home:'AC Milan',      away:'S.L. Benfica' },
+  { date:'2026-10-15', time:'19:45', home:'Salzburg',      away:'AC Milan' },
+  { date:'2026-10-22', time:'22:00', home:'Bournemouth',   away:'AC Milan' },
+  { date:'2026-11-05', time:'19:45', home:'AC Milan',      away:'Ferencváros' },
+  { date:'2026-11-26', time:'19:45', home:'Olympiacos',    away:'AC Milan' },
+  { date:'2026-12-10', time:'22:00', home:'AC Milan',      away:'Sunderland' },
+  { date:'2027-01-21', time:'22:00', home:'Levski Sofia',  away:'AC Milan' },
+  { date:'2027-01-28', time:'22:00', home:'AC Milan',      away:'Ararat-Armenia' }
+];
+app.post('/api/sports/seed-acm-el', (req, res) => {
+  try {
+    const d = readData();
+    if (!d.sportEvents) d.sportEvents = [];
+    let added = 0, skipped = 0;
+    for (const f of ACM_EL_FIXTURES) {
+      const id = 'acmel_' + f.date;
+      if (d.sportEvents.find(e => e.id === id)) { skipped++; continue; }
+      d.sportEvents.push({
+        id, source:'manual', provider:'manual', sport:'football', freq:'none',
+        date: f.date, time: f.time,
+        name: f.home + ' vs ' + f.away,
+        home: { name: f.home, logo:'' },
+        away: { name: f.away, logo:'' },
+        competitionId: null,
+        competitionName: 'UEFA Europa League', competitionLogo: '',
+        followType: 'team',   // renders as a highlighted card, like other AC Milan games
+        status: 'Not started', score: null,
+        notes: '', color: '#f97316'
+      });
+      added++;
+    }
+    writeData(d);
+    res.json({ ok:true, added, skipped, total: ACM_EL_FIXTURES.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/sports/sync-now', async (req, res) => {
   try { const { count, log } = await syncFixtures(); res.json({ ok:true, synced:count, log }); }
   catch(e){
