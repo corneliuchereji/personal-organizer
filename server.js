@@ -1052,6 +1052,37 @@ const ACM_EL_FIXTURES = [
   { date:'2027-01-21', time:'22:00', home:'Levski Sofia',  away:'AC Milan' },
   { date:'2027-01-28', time:'22:00', home:'AC Milan',      away:'Ararat-Armenia' }
 ];
+// Removes auto-synced fixtures that share an identical date+time with
+// other fixtures involving the same team — the signature of a provider
+// placeholder date (a whole campaign stamped onto one slot). Manual events
+// are never touched.
+app.post('/api/sports/purge-placeholders', (req, res) => {
+  try {
+    const d = readData();
+    const auto = (d.sportEvents||[]).filter(e => e.source === 'auto');
+    const others = (d.sportEvents||[]).filter(e => e.source !== 'auto');
+    // Count, per team, how many fixtures fall on each exact date+time slot.
+    const teamSlot = {};
+    auto.forEach(e => {
+      const slot = e.date+'T'+e.time;
+      [e.home && e.home.name, e.away && e.away.name].filter(Boolean).forEach(team => {
+        const k = team+'|'+slot;
+        teamSlot[k] = (teamSlot[k]||0)+1;
+      });
+    });
+    const isPlaceholder = e => {
+      const slot = e.date+'T'+e.time;
+      return [e.home && e.home.name, e.away && e.away.name].filter(Boolean)
+        .some(team => teamSlot[team+'|'+slot] > 1);
+    };
+    const kept = auto.filter(e => !isPlaceholder(e));
+    const removed = auto.length - kept.length;
+    d.sportEvents = [...others, ...kept];
+    writeData(d);
+    res.json({ ok:true, removed, remaining: d.sportEvents.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/sports/seed-acm-el', (req, res) => {
   try {
     const d = readData();
@@ -1412,8 +1443,26 @@ async function syncFixtures() {
           if (rh.error || ra.error) { log.push({ name:t.name, followId:t.id, ok:false, error: rh.error||ra.error }); await sleep(1200); continue; }
           const all = [...rh.data, ...ra.data].filter(inWindow);
           const seen = new Set();
-          all.forEach(m => { if(!seen.has(m.id)){ seen.add(m.id); const n=normalizeHLMatch(m,'team',t.id,sport); if(n) newAuto.push(n); } });
-          log.push({ name:t.name, followId:t.id, ok:true, count:seen.size });
+          let normalized = [];
+          all.forEach(m => { if(!seen.has(m.id)){ seen.add(m.id); const n=normalizeHLMatch(m,'team',t.id,sport); if(n) normalized.push(n); } });
+          // A single team physically cannot play two fixtures at the same
+          // minute. When a provider hasn't got real kickoff times yet (e.g.
+          // a European league phase drawn but not yet scheduled) it stamps
+          // every fixture with the same placeholder date/time — which used
+          // to dump the whole campaign onto one day. Detect those clusters
+          // and drop them rather than showing wrong dates.
+          const slotCounts = {};
+          normalized.forEach(n => { const k = n.date+'T'+n.time; slotCounts[k] = (slotCounts[k]||0)+1; });
+          const placeholderSlots = Object.keys(slotCounts).filter(k => slotCounts[k] > 1);
+          let droppedPlaceholders = 0;
+          if (placeholderSlots.length) {
+            const before = normalized.length;
+            normalized = normalized.filter(n => !placeholderSlots.includes(n.date+'T'+n.time));
+            droppedPlaceholders = before - normalized.length;
+          }
+          normalized.forEach(n => newAuto.push(n));
+          log.push({ name:t.name, followId:t.id, ok:true, count:normalized.length,
+            note: droppedPlaceholders ? droppedPlaceholders+' fixture(s) skipped — provider has no real kickoff times for them yet' : undefined });
         } catch(e){ log.push({ name:t.name, followId:t.id, ok:false, error:e.message }); }
         await sleep(1200);
       }
