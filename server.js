@@ -1220,6 +1220,38 @@ app.get('/api/sports/debug-followed-competition', async (req, res) => {
 // Diagnostic for TheSportsDB — tests a specific team id plus a known-good
 // one (Manchester United, 133612) side by side, so we can tell whether a
 // failure is "this team id is bad" vs "the endpoint/key is broken generally".
+// Diagnostic for a followed TheSportsDB COMPETITION (cycling, snooker,
+// darts, motorsport): compares the full-season endpoint against the
+// next-events endpoint, and lists what each actually returns, so we can
+// see exactly why something like the Vuelta shows only one stage.
+app.get('/api/sports/debug-tsdb-competition', async (req, res) => {
+  const d = readData();
+  const key = tsdbKeyOf(d);
+  const followId = req.query.followId;
+  const follow = (d.follows && d.follows.competitions || []).find(c=>c.id===followId);
+  if (!follow) return res.json({ error: 'Follow not found' });
+  const year = new Date().getFullYear();
+  const out = { follow:{ name:follow.name, providerId:follow.providerId, sport:follow.sport }, key, todayIs:getToday(), tests:[] };
+  const urls = [
+    { label:'Full season ('+year+')', url:`https://www.thesportsdb.com/api/v1/json/${key}/eventsseason.php?id=${follow.providerId}&s=${year}` },
+    { label:'Full season ('+year+'-'+(year+1)+')', url:`https://www.thesportsdb.com/api/v1/json/${key}/eventsseason.php?id=${follow.providerId}&s=${year}-${year+1}` },
+    { label:'Next events (next 15)', url:`https://www.thesportsdb.com/api/v1/json/${key}/eventsnextleague.php?id=${follow.providerId}` }
+  ];
+  for (const t of urls) {
+    const r = await fetchTsdbWithRetry(t.url);
+    if (r.error) { out.tests.push({ label:t.label, url:t.url, error:r.error }); continue; }
+    const evs = r.events || [];
+    const dates = evs.map(e=>e.dateEvent).filter(Boolean).sort();
+    out.tests.push({
+      label: t.label, url: t.url,
+      count: evs.length,
+      earliest: dates[0]||null, latest: dates[dates.length-1]||null,
+      sample: evs.slice(0,8).map(e=>({ date:e.dateEvent, time:(e.strTime||'').slice(0,5), name:e.strEvent }))
+    });
+  }
+  res.json(out);
+});
+
 app.get('/api/sports/debug-tsdb', async (req, res) => {
   const d = readData();
   const key = tsdbKeyOf(d);
