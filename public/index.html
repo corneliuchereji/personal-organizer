@@ -1304,7 +1304,8 @@ function openFollowManager(){
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmSyncNow()"><i class="ti ti-refresh"></i> Sync fixtures now</button>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugFootball()"><i class="ti ti-bug"></i> Run Highlightly diagnostic</button>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugTsdb()"><i class="ti ti-bug"></i> Run TheSportsDB diagnostic</button>'+
-    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmDebugCompetition()"><i class="ti ti-bug"></i> Diagnose a competition match list</button>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugCompetition()"><i class="ti ti-bug"></i> Diagnose a competition match list</button>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmSeedAcmEl()"><i class="ti ti-download"></i> Import AC Milan Europa League fixtures</button>'+
     '<div id="fmSyncStatus" style="font-size:11px;color:var(--green);min-height:14px;margin:-8px 0 8px;text-align:center"></div>'+
     '<div class="slabel">Add new</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
@@ -1320,6 +1321,19 @@ function openFollowManager(){
     '<div id="fmResults" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>',
     '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   fmBrowse(); // show a starting list immediately (competitions) so there's always something to tap
+}
+
+async function fmSeedAcmEl(){
+  const el=document.getElementById('fmSyncStatus');
+  el.style.color='var(--txt3)'; el.style.textAlign='center'; el.innerHTML='<i class="ti ti-loader-2"></i> Importing…';
+  try{
+    const r=await fetch('/api/sports/seed-acm-el',{method:'POST'});
+    const d=await r.json();
+    if(d.error){ el.style.color='var(--red)'; el.textContent='Import failed: '+d.error; return; }
+    el.style.color='var(--green)';
+    el.textContent='✅ Imported '+d.added+' fixture'+(d.added===1?'':'s')+(d.skipped?' ('+d.skipped+' already present)':'')+'.';
+    await loadFromServer(); renderAll();
+  }catch(e){ el.style.color='var(--red)'; el.textContent='Import failed: '+e.message; }
 }
 
 async function fmSyncNow(){
