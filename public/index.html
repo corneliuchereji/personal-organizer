@@ -1305,7 +1305,8 @@ function openFollowManager(){
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugFootball()"><i class="ti ti-bug"></i> Run Highlightly diagnostic</button>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugTsdb()"><i class="ti ti-bug"></i> Run TheSportsDB diagnostic</button>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmDebugCompetition()"><i class="ti ti-bug"></i> Diagnose a competition match list</button>'+
-    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmSeedAcmEl()"><i class="ti ti-download"></i> Import AC Milan Europa League fixtures</button>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:6px" onclick="fmSeedAcmEl()"><i class="ti ti-download"></i> Import AC Milan Europa League fixtures</button>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:14px" onclick="fmPurgePlaceholders()"><i class="ti ti-eraser"></i> Remove wrongly-dated fixtures</button>'+
     '<div id="fmSyncStatus" style="font-size:11px;color:var(--green);min-height:14px;margin:-8px 0 8px;text-align:center"></div>'+
     '<div class="slabel">Add new</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
@@ -1321,6 +1322,19 @@ function openFollowManager(){
     '<div id="fmResults" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>',
     '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   fmBrowse(); // show a starting list immediately (competitions) so there's always something to tap
+}
+
+async function fmPurgePlaceholders(){
+  const el=document.getElementById('fmSyncStatus');
+  el.style.color='var(--txt3)'; el.style.textAlign='center'; el.innerHTML='<i class="ti ti-loader-2"></i> Cleaning…';
+  try{
+    const r=await fetch('/api/sports/purge-placeholders',{method:'POST'});
+    const d=await r.json();
+    if(d.error){ el.style.color='var(--red)'; el.textContent='Cleanup failed: '+d.error; return; }
+    el.style.color='var(--green)';
+    el.textContent='✅ Removed '+d.removed+' wrongly-dated fixture'+(d.removed===1?'':'s')+'.';
+    await loadFromServer(); renderAll();
+  }catch(e){ el.style.color='var(--red)'; el.textContent='Cleanup failed: '+e.message; }
 }
 
 async function fmSeedAcmEl(){
