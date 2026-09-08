@@ -1056,6 +1056,49 @@ const ACM_EL_FIXTURES = [
 // other fixtures involving the same team — the signature of a provider
 // placeholder date (a whole campaign stamped onto one slot). Manual events
 // are never touched.
+// ═══════════════════════════════════════════════════
+// BACKUP / RESTORE — lets the whole dataset be exported as a file and
+// re-imported on another host, so migrating between platforms doesn't
+// mean losing tasks, follows, settings and imported fixtures.
+// ═══════════════════════════════════════════════════
+app.get('/api/backup', (req, res) => {
+  try {
+    const d = readData();
+    const stamp = new Date().toISOString().slice(0,10);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="organizer-backup-${stamp}.json"`);
+    res.send(JSON.stringify(d, null, 2));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/restore', (req, res) => {
+  try {
+    const incoming = req.body;
+    if (!incoming || typeof incoming !== 'object') return res.status(400).json({ error: 'Body must be a JSON object' });
+    // Basic shape check so a wrong file can't wipe everything silently.
+    if (!Array.isArray(incoming.tasks) && !Array.isArray(incoming.sportEvents) && !incoming.settings) {
+      return res.status(400).json({ error: "This doesn't look like an organizer backup (no tasks/sportEvents/settings)." });
+    }
+    const current = readData();
+    const merged = {
+      tasks: Array.isArray(incoming.tasks) ? incoming.tasks : (current.tasks||[]),
+      sportEvents: Array.isArray(incoming.sportEvents) ? incoming.sportEvents : (current.sportEvents||[]),
+      groups: Array.isArray(incoming.groups) && incoming.groups.length ? incoming.groups : current.groups,
+      follows: incoming.follows || current.follows || { teams:[], competitions:[] },
+      settings: { ...(current.settings||{}), ...(incoming.settings||{}) },
+      sentReminders: incoming.sentReminders || current.sentReminders || {}
+    };
+    writeData(merged);
+    if (merged.settings) setupCrons(merged.settings);
+    res.json({
+      ok:true,
+      tasks: merged.tasks.length,
+      sportEvents: merged.sportEvents.length,
+      follows: (merged.follows.teams||[]).length + (merged.follows.competitions||[]).length
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/sports/purge-placeholders', (req, res) => {
   try {
     const d = readData();
