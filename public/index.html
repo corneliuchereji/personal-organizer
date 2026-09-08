@@ -1222,6 +1222,14 @@ function openSettings(){
     '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
     '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-database"></i> Backup & restore</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">Download everything (tasks, follows, settings, fixtures) as a file, or restore it on another host.</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<a class="btn sm" style="flex:1;justify-content:center;text-decoration:none" href="/api/backup"><i class="ti ti-download"></i> Download backup</a>'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="document.getElementById(\'restoreFile\').click()"><i class="ti ti-upload"></i> Restore</button>'+
+    '</div>'+
+    '<input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="doRestore(this)">'+
+    '<div id="restoreStatus" style="font-size:11px;margin-top:6px;text-align:center"></div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
     '<div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.6">'+
       '1. Open Telegram → search <b>@BotFather</b> → send <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">/newbot</code> → copy token<br>'+
@@ -1322,6 +1330,26 @@ function openFollowManager(){
     '<div id="fmResults" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>',
     '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   fmBrowse(); // show a starting list immediately (competitions) so there's always something to tap
+}
+
+async function doRestore(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const el = document.getElementById('restoreStatus');
+  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Restoring…';
+  try{
+    const text = await file.text();
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch(e){ el.style.color='var(--red)'; el.textContent='That file isn\'t valid JSON.'; return; }
+    const r = await fetch('/api/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(parsed)});
+    const d = await r.json();
+    if(d.error){ el.style.color='var(--red)'; el.textContent='Restore failed: '+d.error; return; }
+    el.style.color='var(--green)';
+    el.textContent='✅ Restored '+d.tasks+' tasks, '+d.sportEvents+' sport events, '+d.follows+' follows.';
+    await loadFromServer(); renderAll(); renderWx();
+  }catch(e){ el.style.color='var(--red)'; el.textContent='Restore failed: '+e.message; }
+  finally { input.value=''; }
 }
 
 async function fmPurgePlaceholders(){
