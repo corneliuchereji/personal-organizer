@@ -564,7 +564,13 @@ function showModal(title,body,acts){
   document.getElementById('mActs').innerHTML=acts;
   document.getElementById('modal').classList.add('open');
 }
-document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+// Close on backdrop click only — and only when the click BEGAN on the
+// backdrop. Without the mousedown check, selecting text inside the dialog
+// and releasing the mouse outside it would register as a backdrop click
+// and close the dialog mid-edit.
+let _mouseDownOnBackdrop = false;
+document.getElementById('modal').addEventListener('mousedown',function(e){ _mouseDownOnBackdrop = (e.target===this); });
+document.getElementById('modal').addEventListener('click',function(e){ if(e.target===this && _mouseDownOnBackdrop) closeModal(); });
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 // ─── WEATHER ─────────────────────────────────────────────
@@ -2077,10 +2083,18 @@ loadFromServer().then(()=>{
 // Weather auto-refresh: re-fetch every 30 minutes so the widget doesn't go
 // stale if the app is left open, plus immediately whenever the tab/app
 // becomes visible again after being backgrounded (mobile especially).
+// Weather auto-refresh must never disturb an open dialog. Refreshing
+// re-renders (and can trigger a save), which is disruptive if you're
+// mid-way through typing or pasting into Settings — e.g. tabbing away to
+// copy an API key and coming back would fire the visibility refresh.
 let _lastWxRefresh = Date.now();
-setInterval(()=>{ if(!document.hidden){ loadWeather(); _lastWxRefresh = Date.now(); } }, 30*60*1000);
+function modalIsOpen(){
+  const m = document.getElementById('modal');
+  return !!(m && m.classList.contains('open'));
+}
+setInterval(()=>{ if(!document.hidden && !modalIsOpen()){ loadWeather(); _lastWxRefresh = Date.now(); } }, 30*60*1000);
 document.addEventListener('visibilitychange', ()=>{
-  if(!document.hidden && Date.now()-_lastWxRefresh > 5*60*1000){
+  if(!document.hidden && !modalIsOpen() && Date.now()-_lastWxRefresh > 5*60*1000){
     _lastWxRefresh = Date.now();
     loadWeather();
   }
