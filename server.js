@@ -196,9 +196,18 @@ function matchesDate(ev, ds) {
   return false;
 }
 
+// Repeating tasks track completion per occurrence (doneDates), so ticking
+// off one month doesn't mark every month done. Non-repeating tasks keep a
+// simple boolean.
+function isDoneOn(task, ds){
+  if(!task) return false;
+  if(!task.freq || task.freq==='none') return !!task.done;
+  return Array.isArray(task.doneDates) && task.doneDates.includes(ds);
+}
+
 function eventsOnDay(data, ds) {
   return [
-    ...data.tasks.map(t=>({...t,_type:'task'})),
+    ...data.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})),
     ...(data.sportEvents||[]).map(e=>({...e,_type:'sport'}))
   ].filter(ev=>matchesDate(ev,ds))
    .sort((a,b)=>{
@@ -244,7 +253,7 @@ function collapseSportEventsSrv(data, sportEvs){
 // rule above, re-sorted with tasks. Used everywhere a Telegram message needs
 // "what's happening on day X".
 function groupedEventsOnDay(data, ds){
-  const tasks = data.tasks.map(t=>({...t,_type:'task'})).filter(ev=>matchesDate(ev,ds));
+  const tasks = data.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})).filter(ev=>matchesDate(ev,ds));
   const sportsRaw = (data.sportEvents||[]).map(e=>({...e,_type:'sport'})).filter(ev=>matchesDate(ev,ds));
   const sports = collapseSportEventsSrv(data, sportsRaw);
   return [...tasks, ...sports].sort((a,b)=>{
@@ -580,7 +589,20 @@ async function processTgCommand(text, data) {
   if(doneM){
     const q=doneM[1].toLowerCase();
     const t=data.tasks.find(x=>x.name.toLowerCase().includes(q));
-    if(t){ t.done=!t.done; writeData(data); return '✅ Marked <b>'+t.name+'</b> as '+(t.done?'done':'not done'); }
+    if(t){
+      if(!t.freq || t.freq==='none'){
+        t.done=!t.done;
+        writeData(data);
+        return '✅ Marked <b>'+t.name+'</b> as '+(t.done?'done':'not done');
+      }
+      // Repeating: toggle just today's occurrence.
+      if(!Array.isArray(t.doneDates)) t.doneDates=[];
+      const i=t.doneDates.indexOf(today);
+      let nowDone;
+      if(i===-1){ t.doneDates.push(today); nowDone=true; } else { t.doneDates.splice(i,1); nowDone=false; }
+      writeData(data);
+      return '✅ Marked <b>'+t.name+'</b> ('+today+') as '+(nowDone?'done':'not done')+'\n<i>Other occurrences are unaffected.</i>';
+    }
     return '❌ Could not find that task.';
   }
 
@@ -708,10 +730,11 @@ async function processTgCommand(text, data) {
       if(dashM){name=dashM[1].trim();}
     }
 
-    // 6. Fallback: pick the most name-like comma-separated part. Preferring
-    //    the LONGEST non-date/time fragment beats taking the first, because
-    //    the descriptive text usually trails the date and time
-    //    ("... tomorrow at 07:00, mergi la Dancea dupa proba").
+    // 6. Fallback: split on commas. When several descriptive fragments
+    //    remain, the FIRST is the task name and the rest become notes —
+    //    "go to market, don't forget the bags" should keep both halves
+    //    rather than discarding one.
+    let extraNotes = '';
     if(!name){
       const parts=work.split(',').map(s=>s.trim()).filter(Boolean);
       const looksLikeMeta = p =>
@@ -721,11 +744,12 @@ async function processTgCommand(text, data) {
         /^(at|la|on)\b/i.test(p) ||           // leftover connectors
         p.length <= 1;
       const candidates = parts.filter(p => !looksLikeMeta(p));
-      // Longest candidate wins; ties keep the later one (more likely the
-      // actual description rather than a leftover filler fragment).
-      let best = null;
-      for (const c of candidates) if (!best || c.length >= best.length) best = c;
-      name = best || work;
+      if(candidates.length){
+        name = candidates[0];
+        if(candidates.length > 1) extraNotes = candidates.slice(1).join(', ');
+      } else {
+        name = work;
+      }
     }
 
     // Final cleanup — also drop connectors left dangling once the date or
@@ -741,9 +765,9 @@ async function processTgCommand(text, data) {
 
     const groups=data.groups||[];
     const grp=groups.find(g=>g.id===guessGroup(name))||groups[0]||{id:'g_pers'};
-    data.tasks.push({id:uid(),name,date,time,freq:'none',priority:guessPriority(raw),group:grp.id,notes:'',done:false});
+    data.tasks.push({id:uid(),name,date,time,freq:'none',priority:guessPriority(raw),group:grp.id,notes:extraNotes||'',done:false});
     writeData(data);
-    return '\u2705 Task added:\n\ud83d\udccb <b>'+name+'</b>\n\ud83d\udcc5 '+(date===today?'Today':date)+' at '+time;
+    return '\u2705 Task added:\n\ud83d\udccb <b>'+name+'</b>\n\ud83d\udcc5 '+(date===today?'Today':date)+' at '+time+(extraNotes?'\n\ud83d\udcdd '+extraNotes:'');
   }
   return '❓ I didn\'t understand that.\nSend /help to see what I can do.';
 }
@@ -2005,7 +2029,7 @@ function dueReminders(data, nowMs, windowMs){
   const due = [];
   const sent = data.sentReminders || {};
   const candidates = [
-    ...(data.tasks||[]).filter(t=>!t.done).map(t=>({...t,_type:'task'})),
+    ...(data.tasks||[]).map(t=>({...t,_type:'task'})),
     ...(data.sportEvents||[]).map(e=>({...e,_type:'sport'}))
   ];
   // Look at today and tomorrow so a late-night event with a long lead time
@@ -2016,6 +2040,7 @@ function dueReminders(data, nowMs, windowMs){
     if (!ev.reminder || isNaN(mins) || mins <= 0) continue;
     for (const ds of days) {
       if (!matchesDate(ev, ds)) continue;
+      if (ev._type === 'task' && isDoneOn(ev, ds)) continue; // already ticked off for this date
       const startMs = eventStartMs({ ...ev, date: ds });
       if (isNaN(startMs)) continue;
       const fireMs = startMs - mins*60000;
