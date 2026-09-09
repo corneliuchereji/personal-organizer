@@ -37,10 +37,72 @@ const DEFAULT_DATA = {
   follows: { teams: [], competitions: [] }
 };
 
-// If DATA_DIR is a fresh volume with no data.json yet, seed it once so the
-// app doesn't start completely empty. This only ever runs the FIRST time —
-// after that the volume's own file is the source of truth and is never
-// overwritten by redeploys.
+// ═══════════════════════════════════════════════════
+// STORAGE
+// Two interchangeable backends, chosen automatically:
+//
+//   1. Upstash Redis (when UPSTASH_REDIS_REST_URL + _TOKEN are set) — lets
+//      the app run on hosts with no persistent disk, which is what makes a
+//      genuinely free deployment possible.
+//   2. Local file (fallback) — used for local development, or any host
+//      where a real volume is mounted at DATA_DIR.
+//
+// readData()/writeData() stay SYNCHRONOUS in both cases so the rest of the
+// app is untouched. That works because the whole dataset is small and is
+// held in memory: reads are served from the cache, and writes update the
+// cache immediately then persist in the background. It also keeps Redis
+// command usage tiny (writes only), comfortably inside the free tier.
+// ═══════════════════════════════════════════════════
+const REDIS_URL   = process.env.UPSTASH_REDIS_REST_URL || '';
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+const USE_REDIS   = !!(REDIS_URL && REDIS_TOKEN);
+const REDIS_KEY   = 'organizer:data';
+
+let _cache = null;        // authoritative in-memory copy
+let _writeTimer = null;   // debounce so bursts of saves cost one command
+let _writePending = false;
+
+async function redisCmd(command) {
+  const r = await fetch(REDIS_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(command)
+  });
+  if (!r.ok) throw new Error(`Upstash HTTP ${r.status}: ${(await r.text()).slice(0,200)}`);
+  const d = await r.json();
+  if (d.error) throw new Error('Upstash error: ' + d.error);
+  return d.result;
+}
+
+// Called once at startup, before the server accepts traffic.
+async function initStorage() {
+  if (USE_REDIS) {
+    try {
+      const raw = await redisCmd(['GET', REDIS_KEY]);
+      if (raw) {
+        _cache = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        console.log('   Storage: Upstash Redis (loaded existing data)');
+      } else {
+        _cache = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        await redisCmd(['SET', REDIS_KEY, JSON.stringify(_cache)]);
+        console.log('   Storage: Upstash Redis (initialised empty dataset)');
+      }
+      return;
+    } catch (e) {
+      // Fail loudly rather than silently falling back and appearing to lose
+      // everything — a bad token should be obvious, not mysterious.
+      console.error('   ✗ Upstash Redis unreachable:', e.message);
+      console.error('     Check UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN.');
+      throw e;
+    }
+  }
+  // File backend
+  ensureDataFile();
+  try { _cache = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
+  catch (e) { _cache = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+  console.log(`   Storage: file at ${DATA_FILE}${DATA_DIR===__dirname ? ' ⚠️  NOT on a persistent volume — will reset on every deploy!' : ' (persistent volume)'}`);
+}
+
 function ensureDataFile() {
   if (fs.existsSync(DATA_FILE)) return;
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch(e) {}
@@ -51,15 +113,49 @@ function ensureDataFile() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(seed, null, 2));
   console.log(`Seeded new data file at ${DATA_FILE}`);
 }
-ensureDataFile();
 
 function readData() {
-  try { return JSON.parse(fs.readFileSync(DATA_FILE,'utf8')); }
-  catch(e){ return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+  if (!_cache) return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  // Hand back a copy: callers routinely mutate what they get and then pass
+  // it to writeData, and sharing the live object would let a half-finished
+  // mutation leak into unrelated reads.
+  return JSON.parse(JSON.stringify(_cache));
 }
+
 function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data,null,2));
+  _cache = data;
+  if (!USE_REDIS) {
+    try { fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); }
+    catch(e) { console.log('File write error:', e.message); }
+    return;
+  }
+  // Debounce: several writeData calls in quick succession (common during a
+  // sync) collapse into a single Redis command.
+  _writePending = true;
+  if (_writeTimer) clearTimeout(_writeTimer);
+  _writeTimer = setTimeout(flushToRedis, 400);
 }
+
+async function flushToRedis() {
+  if (!USE_REDIS || !_writePending) return;
+  _writePending = false;
+  try {
+    await redisCmd(['SET', REDIS_KEY, JSON.stringify(_cache)]);
+  } catch (e) {
+    console.log('Redis write failed, will retry on next write:', e.message);
+    _writePending = true; // don't lose the pending state
+  }
+}
+
+// Make sure a pending write isn't lost if the container is stopped.
+async function flushAndExit(signal) {
+  console.log(`Received ${signal} — flushing pending data…`);
+  if (_writeTimer) clearTimeout(_writeTimer);
+  try { await flushToRedis(); } catch(e) {}
+  process.exit(0);
+}
+process.on('SIGTERM', () => flushAndExit('SIGTERM'));
+process.on('SIGINT',  () => flushAndExit('SIGINT'));
 
 // ═══════════════════════════════════════════════════
 // HELPERS
@@ -1951,12 +2047,21 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
 // ═══════════════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════════════
+// Storage must be loaded before anything reads data, so the whole startup
+// path is wrapped in an async bootstrap rather than running at import time.
+(async () => {
+try {
+  await initStorage();
+} catch (e) {
+  console.error('✗ Could not initialise storage — refusing to start with an empty dataset.');
+  process.exit(1);
+}
+
 const initialData = readData();
 
 app.listen(PORT, async ()=>{
   console.log(`✅ Personal Organizer running on port ${PORT}`);
   console.log(`   APP_URL: ${APP_URL||'NOT SET'}`);
-  console.log(`   DATA_FILE: ${DATA_FILE} ${DATA_DIR===__dirname?'⚠️  NOT on a persistent volume — will reset on every deploy!':'(persistent volume)'}`);
 
   const followCount = (initialData.follows?.teams?.length||0) + (initialData.follows?.competitions?.length||0);
   if (followCount > 0) {
@@ -1986,9 +2091,11 @@ app.listen(PORT, async ()=>{
         console.log(`   Webhook error: ${e.message}`);
       }
     } else {
-      console.log('   ⚠️  APP_URL not set — webhook not registered. Add APP_URL to Railway variables.');
+      console.log('   ⚠️  APP_URL not set — webhook not registered. Add APP_URL to your host environment variables.');
     }
   } else {
-    console.log('   ⚠️  No Telegram token in data.json — open the app and configure Telegram settings.');
+    console.log('   ⚠️  No Telegram token stored — open the app and configure Telegram settings.');
   }
 });
+
+})(); // end async bootstrap
