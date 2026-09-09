@@ -632,11 +632,17 @@ async function processTgCommand(text, data) {
   const isAddI = /^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\b/i.test(clean)
                || /^event\s*:/i.test(clean);
   if(isAddI){
-    // Strip trigger words
-    let work = clean
-      .replace(/^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune)\s+(?:a\s+|an\s+)?(?:task|event|reminder|appointment|me\s+to)?\s*[:\-,]?\s*/i,'')
-      .replace(/^event\s*:\s*/i,'')
-      .trim();
+    // Strip trigger words. Done as a repeated loop rather than one fixed
+    // pattern because real phrasing stacks fillers in any order — "add a
+    // new task for ...", "create an appointment to ..." — and a single
+    // regex left fragments like "new task for" behind, which then got
+    // picked up as the task name.
+    let work = clean.replace(/^event\s*:\s*/i,'').trim();
+    const FILLER = /^(?:add|new|create|set|schedule|remind(?:er)?|adauga|pune|a|an|the|task|event|reminder|appointment|me|to|for|un|o)\b[\s:,\-]*/i;
+    let guard = 0;
+    while (FILLER.test(work) && guard++ < 12) {
+      work = work.replace(FILLER,'').trim();
+    }
 
     // 1. Extract NAME — try patterns in order of priority
     let name = null;
@@ -659,8 +665,8 @@ async function processTgCommand(text, data) {
       {r:/\b(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})\b/, f:m=>m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')},
       // YYYY-MM-DD
       {r:/\b(\d{4})-(\d{2})-(\d{2})\b/, f:m=>m[1]+'-'+m[2]+'-'+m[3]},
-      {r:/\btomorrow\b/i, f:()=>addDays(today,1)},
-      {r:/\btoday\b/i,    f:()=>today},
+      {r:/\b(tomorrow|maine|mâine)\b/i, f:()=>addDays(today,1)},
+      {r:/\b(today|azi|astazi|astăzi)\b/i,    f:()=>today},
       {r:/\b(?:next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|luni|marti|miercuri|joi|vineri|sambata|duminica)\b/i,
         f:m=>{const DW={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,
                        duminica:0,luni:1,marti:2,miercuri:3,joi:4,vineri:5,sambata:6};
@@ -702,15 +708,34 @@ async function processTgCommand(text, data) {
       if(dashM){name=dashM[1].trim();}
     }
 
-    // 6. Fallback: last comma-part that looks like a name (not a number/date/time)
+    // 6. Fallback: pick the most name-like comma-separated part. Preferring
+    //    the LONGEST non-date/time fragment beats taking the first, because
+    //    the descriptive text usually trails the date and time
+    //    ("... tomorrow at 07:00, mergi la Dancea dupa proba").
     if(!name){
       const parts=work.split(',').map(s=>s.trim()).filter(Boolean);
-      const np=parts.find(p=>p.length>1&&!/^\d{1,2}[:.\-]\d/.test(p)&&!/^\d{4}/.test(p));
-      name=np||work;
+      const looksLikeMeta = p =>
+        /^\d{1,2}[:.\-]\d/.test(p) ||        // 07:00
+        /^\d{4}/.test(p) ||                   // 2026...
+        /^\d{1,2}\s*(am|pm)$/i.test(p) ||     // 7 PM
+        /^(at|la|on)\b/i.test(p) ||           // leftover connectors
+        p.length <= 1;
+      const candidates = parts.filter(p => !looksLikeMeta(p));
+      // Longest candidate wins; ties keep the later one (more likely the
+      // actual description rather than a leftover filler fragment).
+      let best = null;
+      for (const c of candidates) if (!best || c.length >= best.length) best = c;
+      name = best || work;
     }
 
-    // Final cleanup
-    if(name) name=name.replace(/^[,\s\-–:]+/,'').replace(/[,\s\-–:]+$/,'').trim();
+    // Final cleanup — also drop connectors left dangling once the date or
+    // time was removed from the middle of the sentence ("pay bill on" →
+    // "pay bill").
+    if(name){
+      name = name.replace(/^[,\s\-–:]+/,'').replace(/[,\s\-–:]+$/,'').trim();
+      name = name.replace(/\s+\b(on|at|la|pe|in|the|de)\b$/i,'').trim();
+      name = name.replace(/^\b(on|at|la|pe|in|the|de)\b\s+/i,'').trim();
+    }
 
     if(!name) return '❓ What should I call this?\nExamples:\n<code>add task dentist tomorrow at 10:00</code>\n<code>add task: tomorrow, 6AM, named: dentist</code>\n<code>add event: 12-08-2026, 22:00, Supercupa Europei</code>';
 
