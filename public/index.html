@@ -426,7 +426,7 @@ function collapseSportEvents(sportEvs){
 }
 
 function eventsOnDay(ds){
-  const tasks = S.tasks.map(t=>({...t,_type:'task'})).filter(ev=>matchesDate(ev,ds));
+  const tasks = S.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})).filter(ev=>matchesDate(ev,ds));
   const sportsRaw = (S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds));
   const sports = collapseSportEvents(sportsRaw);
   return [...tasks, ...sports].sort((a,b)=>{
@@ -543,7 +543,10 @@ function normTeamName(n){
 }
 
 function agendaEventsOnDay(ds){
-  const tasks = S.tasks.map(t=>({...t,_type:'task'})).filter(ev=>matchesDate(ev,ds));
+  // _occDate records WHICH occurrence this copy represents. A repeating
+  // task appears on many days, so completion has to be tracked per date
+  // rather than with one shared flag.
+  const tasks = S.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})).filter(ev=>matchesDate(ev,ds));
   const sportsRaw = (S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds));
   const sports = collapseSportEventsFine(sportsRaw);
   return [...tasks, ...sports].sort((a,b)=>{
@@ -669,7 +672,7 @@ function renderCard(ev){
   meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
   if(ev.reminder)meta+=reminderBadge(ev.reminder);
   let acts='';
-  acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
+  acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\',\''+(ev._occDate||ev.date)+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
@@ -815,7 +818,25 @@ function renderSportCard(ev){
 }
 
 function shiftDay(n){S.dayOffset+=n;renderLP()}
-function markDone(id){const t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;saveState();renderAll()}}
+// Completion is per-occurrence for repeating tasks: ticking off this
+// month's instance must not mark every other month done as well. Non
+// repeating tasks keep the simple boolean.
+function isDoneOn(task, ds){
+  if(!task) return false;
+  if(!task.freq || task.freq==='none') return !!task.done;
+  return Array.isArray(task.doneDates) && task.doneDates.includes(ds);
+}
+function markDone(id, ds){
+  const t=S.tasks.find(x=>x.id===id); if(!t) return;
+  if(!t.freq || t.freq==='none'){
+    t.done=!t.done;
+  } else {
+    if(!Array.isArray(t.doneDates)) t.doneDates=[];
+    const i=t.doneDates.indexOf(ds);
+    if(i===-1) t.doneDates.push(ds); else t.doneDates.splice(i,1);
+  }
+  saveState(); renderAll();
+}
 function postpone(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;const d=parseD(t.date);d.setDate(d.getDate()+1);t.date=fmtD(d);saveState();renderAll()}
 
 function delTask(id){
