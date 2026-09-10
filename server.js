@@ -123,6 +123,10 @@ function readData() {
 }
 
 function writeData(data) {
+  // Every write gets a revision stamp. Clients send back the revision they
+  // loaded, which lets the server spot a stale payload and merge instead of
+  // blindly overwriting (see /api/data below).
+  data._rev = Date.now();
   _cache = data;
   if (!USE_REDIS) {
     try { fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); }
@@ -146,6 +150,87 @@ async function flushToRedis() {
     _writePending = true; // don't lose the pending state
   }
 }
+
+// ═══════════════════════════════════════════════════
+// SNAPSHOTS — point-in-time copies kept separately from the live dataset,
+// so a bad edit or a failed restore can always be rolled back. Stored under
+// their own keys (never nested inside the main record, which would make it
+// grow on every backup).
+// ═══════════════════════════════════════════════════
+const SNAP_PREFIX = 'organizer:snapshot:';
+const SNAP_KEEP   = 6;   // keep roughly six months of monthly snapshots
+const SNAP_DIR    = path.join(DATA_DIR, 'snapshots');
+
+async function saveSnapshot(label) {
+  const id = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  const payload = JSON.stringify({ id, label: label||'manual', createdAt: new Date().toISOString(), data: _cache });
+  if (USE_REDIS) {
+    await redisCmd(['SET', SNAP_PREFIX + id, payload]);
+  } else {
+    try { fs.mkdirSync(SNAP_DIR, { recursive: true }); } catch(e) {}
+    fs.writeFileSync(path.join(SNAP_DIR, id + '.json'), payload);
+  }
+  await pruneSnapshots();
+  return id;
+}
+
+async function listSnapshots() {
+  let ids = [];
+  if (USE_REDIS) {
+    const keys = await redisCmd(['KEYS', SNAP_PREFIX + '*']) || [];
+    ids = keys.map(k => k.replace(SNAP_PREFIX, ''));
+  } else {
+    try { ids = fs.readdirSync(SNAP_DIR).filter(f=>f.endsWith('.json')).map(f=>f.replace('.json','')); }
+    catch(e) { ids = []; }
+  }
+  return ids.sort().reverse(); // newest first
+}
+
+async function getSnapshot(id) {
+  if (!/^[\w\-]+$/.test(String(id))) return null; // guard against key/path injection
+  if (USE_REDIS) {
+    const raw = await redisCmd(['GET', SNAP_PREFIX + id]);
+    return raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : null;
+  }
+  try { return JSON.parse(fs.readFileSync(path.join(SNAP_DIR, id + '.json'), 'utf8')); }
+  catch(e) { return null; }
+}
+
+async function pruneSnapshots() {
+  const ids = await listSnapshots();
+  const stale = ids.slice(SNAP_KEEP);
+  for (const id of stale) {
+    try {
+      if (USE_REDIS) await redisCmd(['DEL', SNAP_PREFIX + id]);
+      else fs.unlinkSync(path.join(SNAP_DIR, id + '.json'));
+    } catch(e) {}
+  }
+  return stale.length;
+}
+
+// Sends the backup to Telegram as a downloadable file. This is the part
+// that makes it a real backup: the copy lives outside the app entirely, so
+// it survives even if the database itself is lost.
+async function sendBackupToTelegram(token, chatId, label) {
+  const stamp = new Date().toISOString().slice(0,10);
+  const content = JSON.stringify(_cache, null, 2);
+  // Deliberately uses Node's BUILT-IN fetch rather than the node-fetch v2
+  // instance used elsewhere in this file: v2 predates the standard
+  // FormData/Blob APIs and won't build this multipart upload correctly.
+  const nativeFetch = globalThis.fetch;
+  if (!nativeFetch || typeof FormData === 'undefined' || typeof Blob === 'undefined') {
+    throw new Error('This Node version cannot upload files (needs Node 18+).');
+  }
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  form.append('caption', `🗂 Organizer backup — ${label} (${stamp})`);
+  form.append('document', new Blob([content], { type: 'application/json' }), `organizer-backup-${stamp}.json`);
+  const r = await nativeFetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: 'POST', body: form });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.description || 'sendDocument failed');
+  return true;
+}
+
 
 // Make sure a pending write isn't lost if the container is stopped.
 async function flushAndExit(signal) {
@@ -852,6 +937,27 @@ app.get('/api/data', (req, res) => res.json(readData()));
 app.post('/api/data', (req, res) => {
   const current = readData();
   const updated = {...current, ...req.body};
+
+  // A client sends the revision it last loaded. If the server has moved on
+  // since (another device saved, or Telegram added something), this payload
+  // is stale and must NOT be treated as the truth — otherwise a phone with
+  // yesterday's list silently deletes everything added elsewhere. Merging
+  // by id keeps both sides' work; the cost is that a deletion made against
+  // a stale view won't apply, which is the safe direction to fail.
+  const clientRev = req.body._rev;
+  const isStale = clientRev !== undefined && current._rev !== undefined && clientRev !== current._rev;
+
+  if (req.body.tasks) {
+    if (isStale) {
+      const byId = new Map((current.tasks||[]).map(t=>[t.id,t]));
+      for (const t of req.body.tasks) byId.set(t.id, t); // client edits win for tasks it knows
+      updated.tasks = [...byId.values()];
+      console.log(`Stale save merged: client rev ${clientRev} vs server ${current._rev} — tasks ${(req.body.tasks||[]).length} + server-only kept => ${updated.tasks.length}`);
+    } else {
+      updated.tasks = req.body.tasks;
+    }
+  }
+
   if (req.body.sportEvents) {
     // The client only ever sends its MANUAL sport entries — auto-synced
     // fixtures are exclusively managed by syncFixtures(). Naively replacing
@@ -859,15 +965,34 @@ app.post('/api/data', (req, res) => {
     // auto-synced fixture on every ordinary save (e.g. the weather widget
     // auto-saving your location on page load). Preserve them here instead.
     const autoExisting = (current.sportEvents||[]).filter(e=>e.source==='auto');
-    updated.sportEvents = [...req.body.sportEvents, ...autoExisting];
+    if (isStale) {
+      const manualById = new Map((current.sportEvents||[]).filter(e=>e.source!=='auto').map(e=>[e.id,e]));
+      for (const e of req.body.sportEvents) manualById.set(e.id, e);
+      updated.sportEvents = [...manualById.values(), ...autoExisting];
+    } else {
+      updated.sportEvents = [...req.body.sportEvents, ...autoExisting];
+    }
   }
+
   // sentReminders is server-owned bookkeeping (which reminders already
   // fired) — the client never manages it, so never let a client payload
   // clear it, or reminders would re-fire after every save.
   updated.sentReminders = current.sentReminders || {};
   writeData(updated);
   if(req.body.settings) setupCrons(updated.settings);
-  res.json({ok:true});
+  res.json({ok:true, _rev: updated._rev, merged: isStale});
+});
+
+// Settings-only save. The weather widget persists your chosen location on
+// load/refresh; routing that through the full save was what let a stale
+// browser tab clobber tasks added on another device. This touches nothing
+// but settings.
+app.post('/api/settings', (req, res) => {
+  const current = readData();
+  current.settings = { ...(current.settings||{}), ...(req.body||{}) };
+  writeData(current);
+  setupCrons(current.settings);
+  res.json({ ok:true, _rev: current._rev });
 });
 
 app.get('/api/sports/next/:league', async (req, res) => {
@@ -1241,6 +1366,71 @@ app.post('/api/restore', (req, res) => {
       sportEvents: merged.sportEvents.length,
       follows: (merged.follows.teams||[]).length + (merged.follows.competitions||[]).length
     });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Snapshots: list / create / restore / send-to-Telegram ──
+app.get('/api/snapshots', async (req, res) => {
+  try {
+    const ids = await listSnapshots();
+    const out = [];
+    for (const id of ids) {
+      const s = await getSnapshot(id);
+      if (!s) continue;
+      out.push({
+        id,
+        label: s.label || 'manual',
+        createdAt: s.createdAt || null,
+        tasks: (s.data && s.data.tasks || []).length,
+        sportEvents: (s.data && s.data.sportEvents || []).length
+      });
+    }
+    res.json({ snapshots: out, keeping: SNAP_KEEP });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/snapshots', async (req, res) => {
+  try {
+    const id = await saveSnapshot((req.body && req.body.label) || 'manual');
+    res.json({ ok:true, id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/snapshots/:id/restore', async (req, res) => {
+  try {
+    const snap = await getSnapshot(req.params.id);
+    if (!snap || !snap.data) return res.status(404).json({ error: 'Snapshot not found' });
+    // Save a safety snapshot of the CURRENT state first, so restoring the
+    // wrong one is itself reversible.
+    await saveSnapshot('pre-restore');
+    writeData(snap.data);
+    if (snap.data.settings) setupCrons(snap.data.settings);
+    res.json({
+      ok:true,
+      tasks: (snap.data.tasks||[]).length,
+      sportEvents: (snap.data.sportEvents||[]).length
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/snapshots/:id/download', async (req, res) => {
+  try {
+    const snap = await getSnapshot(req.params.id);
+    if (!snap || !snap.data) return res.status(404).json({ error: 'Snapshot not found' });
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="organizer-${req.params.id}.json"`);
+    res.send(JSON.stringify(snap.data, null, 2));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/backup/send-telegram', async (req, res) => {
+  try {
+    const d = readData();
+    const token = d.settings && d.settings.tgToken;
+    const chatId = d.settings && d.settings.tgChatId;
+    if (!token || !chatId) return res.status(400).json({ error: 'Telegram token/chat ID not configured.' });
+    await sendBackupToTelegram(token, chatId, 'manual backup');
+    res.json({ ok:true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1997,6 +2187,29 @@ function setupCrons(settings) {
     }).then(r=>r.json()).then(d=>console.log('Webhook auto-registered:',d.ok)).catch(()=>{});
   }
 }
+
+// Monthly automatic backup — 1st of each month at 03:30. Saves a snapshot
+// in the database AND sends the file to Telegram, so there's always an
+// off-platform copy that survives even losing the database.
+let _backupCron = cron.schedule('30 3 1 * *', async () => {
+  console.log('Running monthly backup...');
+  try {
+    const id = await saveSnapshot('monthly');
+    console.log('   Snapshot saved:', id);
+    const d = readData();
+    const token = d.settings && d.settings.tgToken;
+    const chatId = d.settings && d.settings.tgChatId;
+    if (token && chatId) {
+      try {
+        await sendBackupToTelegram(token, chatId, 'monthly automatic backup');
+        console.log('   Backup sent to Telegram.');
+      } catch(e) {
+        console.log('   Telegram backup failed:', e.message);
+        await sendTg(token, chatId, '⚠️ Monthly backup was saved in the app, but sending the file here failed: '+e.message);
+      }
+    }
+  } catch(e) { console.log('Monthly backup error:', e.message); }
+});
 
 // Fixture sync — refreshes followed teams/competitions into sportEvents.
 let _fixtureSyncCron = cron.schedule('17 */6 * * *', async () => {
