@@ -312,6 +312,9 @@ function saveState(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
+        // Revision we last loaded — lets the server detect that this tab is
+        // stale and merge rather than overwrite newer data from elsewhere.
+        _rev: S._rev,
         tasks: S.tasks,
         // Auto-synced fixtures are managed exclusively by the server's
         // follow-sync job — never echo them back or we can clobber a
@@ -327,7 +330,8 @@ function saveState(){
           apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123'
         }
       })
-    }).catch(e=>console.log('Save error:',e));
+    }).then(r=>r.json()).then(d=>{ if(d && d._rev) S._rev = d._rev; })
+      .catch(e=>console.log('Save error:',e));
   },500);
 }
 
@@ -352,6 +356,7 @@ async function loadFromServer(){
       highlightlyKey: d.settings?.highlightlyKey||'',
       tsdbKey: d.settings?.tsdbKey||'123',
       follows: d.follows || {teams:[],competitions:[]},
+      _rev: d._rev,
       weekOffset:0, dayOffset:0
     };
   }catch(e){ console.log('Load error:',e); }
@@ -627,7 +632,13 @@ async function loadWeather(opts){
     S.wxLat=d.lat; S.wxLon=d.lon;
     if(d.locName) S.wxLocName=d.locName;
     renderWx();
-    saveState(); // persist chosen location + coords
+    // Settings-only save. Routing this through the full saveState() meant
+    // every weather refresh re-sent this tab's whole task list — which is
+    // how a stale phone tab wiped tasks created on the laptop.
+    fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({wxLat:S.wxLat, wxLon:S.wxLon, wxLocName:S.wxLocName})})
+      .then(r=>r.json()).then(x=>{ if(x && x._rev) S._rev = x._rev; })
+      .catch(e=>console.log('Weather location save failed:',e.message));
   }catch(e){
     console.log('Weather error:',e.message);
     S._wxError=true;
@@ -1250,11 +1261,16 @@ function openSettings(){
     '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-database"></i> Backup & restore</div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">Download everything (tasks, follows, settings, fixtures) as a file, or restore it on another host.</div>'+
-    '<div style="display:flex;gap:6px">'+
-      '<a class="btn sm" style="flex:1;justify-content:center;text-decoration:none" href="/api/backup"><i class="ti ti-download"></i> Download backup</a>'+
-      '<button class="btn sm" style="flex:1;justify-content:center" onclick="document.getElementById(\'restoreFile\').click()"><i class="ti ti-upload"></i> Restore</button>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">A snapshot is saved automatically on the 1st of each month and sent to you on Telegram. The last '+6+' are kept here.</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:6px">'+
+      '<a class="btn sm" style="flex:1;justify-content:center;text-decoration:none" href="/api/backup"><i class="ti ti-download"></i> Download</a>'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="document.getElementById(\'restoreFile\').click()"><i class="ti ti-upload"></i> Restore file</button>'+
     '</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:6px">'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="makeSnapshot()"><i class="ti ti-camera"></i> Save snapshot now</button>'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="sendBackupTelegram()"><i class="ti ti-brand-telegram"></i> Send to Telegram</button>'+
+    '</div>'+
+    '<button class="btn sm" style="width:100%;justify-content:center" onclick="openSnapshots()"><i class="ti ti-history"></i> View saved snapshots</button>'+
     '<input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="doRestore(this)">'+
     '<div id="restoreStatus" style="font-size:11px;margin-top:6px;text-align:center"></div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
@@ -1357,6 +1373,78 @@ function openFollowManager(){
     '<div id="fmResults" style="margin-top:8px;max-height:220px;overflow-y:auto"></div>',
     '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   fmBrowse(); // show a starting list immediately (competitions) so there's always something to tap
+}
+
+async function makeSnapshot(){
+  const el=document.getElementById('restoreStatus');
+  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Saving…';
+  try{
+    const r=await fetch('/api/snapshots',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label:'manual'})});
+    const d=await r.json();
+    if(d.error){ el.style.color='var(--red)'; el.textContent='Failed: '+d.error; return; }
+    el.style.color='var(--green)'; el.textContent='✅ Snapshot saved.';
+  }catch(e){ el.style.color='var(--red)'; el.textContent='Failed: '+e.message; }
+}
+
+async function sendBackupTelegram(){
+  const el=document.getElementById('restoreStatus');
+  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Sending…';
+  try{
+    const r=await fetch('/api/backup/send-telegram',{method:'POST'});
+    const d=await r.json();
+    if(d.error){ el.style.color='var(--red)'; el.textContent='Failed: '+d.error; return; }
+    el.style.color='var(--green)'; el.textContent='✅ Backup sent to your Telegram chat.';
+  }catch(e){ el.style.color='var(--red)'; el.textContent='Failed: '+e.message; }
+}
+
+async function openSnapshots(){
+  showModal('Saved snapshots','<div id="snapBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Loading…</div>',
+    '<button class="btn" onclick="openSettings()">Back</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>');
+  try{
+    const r=await fetch('/api/snapshots');
+    const d=await r.json();
+    const el=document.getElementById('snapBody');
+    if(!el)return;
+    if(d.error){ el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+    if(!d.snapshots||!d.snapshots.length){ el.innerHTML='<div style="padding:8px 0">No snapshots yet. One is created automatically on the 1st of each month, or use “Save snapshot now”.</div>'; return; }
+    el.innerHTML='<div style="margin-bottom:8px;color:var(--txt2)">Keeping the most recent '+d.keeping+'. Restoring saves a snapshot of the current state first, so it can be undone.</div>'+
+      d.snapshots.map(s=>{
+        const when = s.createdAt ? new Date(s.createdAt).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : s.id;
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border)">'+
+          '<div style="font-size:12px;color:var(--txt)"><b>'+escHtml(when)+'</b> <span style="color:var(--txt3);font-size:10px">'+escHtml(s.label)+'</span></div>'+
+          '<div style="font-size:10px;color:var(--txt3);margin-bottom:5px">'+s.tasks+' tasks · '+s.sportEvents+' sport events</div>'+
+          '<div style="display:flex;gap:6px">'+
+            '<a class="btn sm" style="text-decoration:none" href="/api/snapshots/'+encodeURIComponent(s.id)+'/download"><i class="ti ti-download"></i> Download</a>'+
+            '<button class="btn sm acc" onclick="restoreSnapshot(\''+s.id+'\')"><i class="ti ti-history"></i> Restore this</button>'+
+          '</div></div>';
+      }).join('');
+  }catch(e){
+    const el=document.getElementById('snapBody');
+    if(el) el.innerHTML='<div style="color:var(--red)">Failed: '+escHtml(e.message)+'</div>';
+  }
+}
+
+async function restoreSnapshot(id){
+  showModal('Restore snapshot',
+    '<div style="font-size:13px;margin-bottom:8px">Replace everything with this snapshot?</div>'+
+    '<div style="font-size:11px;color:var(--txt2)">Your current data is saved as a snapshot first, so you can undo this.</div>',
+    '<button class="btn red" onclick="confirmRestoreSnapshot(\''+id+'\')"><i class="ti ti-history"></i> Restore</button><span class="msp"></span><button class="btn" onclick="openSnapshots()">Cancel</button>');
+}
+
+async function confirmRestoreSnapshot(id){
+  showModal('Restore snapshot','<div id="snapBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Restoring…</div>','');
+  try{
+    const r=await fetch('/api/snapshots/'+encodeURIComponent(id)+'/restore',{method:'POST'});
+    const d=await r.json();
+    const el=document.getElementById('snapBody');
+    if(d.error){ if(el) el.innerHTML='<div style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+    await loadFromServer(); renderAll(); renderWx();
+    if(el) el.innerHTML='<div style="color:var(--green)">✅ Restored '+d.tasks+' tasks and '+d.sportEvents+' sport events.</div>';
+    document.getElementById('mActs').innerHTML='<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>';
+  }catch(e){
+    const el=document.getElementById('snapBody');
+    if(el) el.innerHTML='<div style="color:var(--red)">Failed: '+escHtml(e.message)+'</div>';
+  }
 }
 
 async function doRestore(input){
@@ -2119,6 +2207,22 @@ document.addEventListener('visibilitychange', ()=>{
     _lastWxRefresh = Date.now();
     loadWeather();
   }
+});
+
+// Pull fresh data when the tab becomes visible again. Without this a tab
+// left open for hours keeps showing (and saving from) a stale view, which
+// is how changes made on another device appeared to vanish.
+document.addEventListener('visibilitychange', async ()=>{
+  if(document.hidden || modalIsOpen()) return;
+  try{
+    const r = await fetch('/api/data');
+    const d = await r.json();
+    if(d && d._rev && d._rev !== S._rev){
+      await loadFromServer();
+      renderAll();
+      console.log('Refreshed: data had changed elsewhere.');
+    }
+  }catch(e){}
 });
 
 // Request notification permission on load and schedule all reminders
