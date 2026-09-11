@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Personal Organizer</title>
+<!-- PWA: the manifest + service worker are what make Android Chrome and
+     desktop browsers offer a real "Install" option. iOS installs without
+     them, which is why it already worked there. -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#11141f">
+<meta name="description" content="Tasks, events, weather and followed sport fixtures in one place.">
+<!-- iOS-specific: standalone display and home-screen icon -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Organizer">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 :root{
@@ -1260,6 +1272,16 @@ function openSettings(){
     '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
     '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-device-mobile"></i> Install as an app</div>'+
+    '<div id="installBtnWrap" style="display:none;margin-bottom:6px">'+
+      '<button class="btn sm" style="width:100%;justify-content:center" onclick="installApp()"><i class="ti ti-download"></i> Install on this device</button>'+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--txt3);line-height:1.6">'+
+      '<b>Android / Chrome / Edge:</b> use the button above, or browser menu \u2192 “Install app”.<br>'+
+      '<b>iPhone / iPad (Safari):</b> Share \u2192 “Add to Home Screen”.<br>'+
+      '<b>Desktop:</b> look for the install icon in the address bar.'+
+    '</div>'+
+    '<div id="installHint" style="font-size:10px;color:var(--txt2);margin-top:5px"></div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-database"></i> Backup & restore</div>'+
     '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">A snapshot is saved automatically on the 1st of each month and sent to you on Telegram. The last '+6+' are kept here.</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
@@ -2175,6 +2197,44 @@ function sendChat(){
   inp.value='';inp.style.height='auto';
   addChatMsg(text,'u');
   setTimeout(()=>addChatMsg(processChat(text),'b'),100);
+}
+
+// ─── PWA INSTALL ──────────────────────────────────────────
+// Registering a service worker is what makes Android Chrome and desktop
+// browsers offer "Install". Failure here must never break the app, so it's
+// entirely wrapped and non-blocking.
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js')
+      .then(()=>console.log('Service worker registered.'))
+      .catch(e=>console.log('Service worker registration failed:',e.message));
+  });
+}
+
+// Chrome fires this instead of showing its own prompt; stash it so the
+// button in Settings can trigger installation on demand.
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  _installPrompt = e;
+  const b = document.getElementById('installBtnWrap');
+  if(b) b.style.display='block';
+});
+window.addEventListener('appinstalled', ()=>{
+  _installPrompt = null;
+  const b = document.getElementById('installBtnWrap');
+  if(b) b.style.display='none';
+});
+async function installApp(){
+  const el=document.getElementById('installHint');
+  if(!_installPrompt){
+    if(el) el.textContent='Your browser didn\u2019t offer an install prompt. Use the browser menu \u2192 “Install app” / “Add to Home screen”.';
+    return;
+  }
+  _installPrompt.prompt();
+  const { outcome } = await _installPrompt.userChoice;
+  _installPrompt = null;
+  if(el) el.textContent = outcome==='accepted' ? '\u2705 Installed.' : 'Installation dismissed.';
 }
 
 // ─── RENDER ALL ───────────────────────────────────────────
