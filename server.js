@@ -53,6 +53,7 @@ const DEFAULT_DATA = {
 // cache immediately then persist in the background. It also keeps Redis
 // command usage tiny (writes only), comfortably inside the free tier.
 // ═══════════════════════════════════════════════════
+const _startedAt  = new Date().toISOString();
 const REDIS_URL   = process.env.UPSTASH_REDIS_REST_URL || '';
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const USE_REDIS   = !!(REDIS_URL && REDIS_TOKEN);
@@ -932,6 +933,24 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // ═══════════════════════════════════════════════════
 // API ROUTES
 // ═══════════════════════════════════════════════════
+// Reports which build is actually running. Deploy problems are otherwise
+// invisible — the app looks fine while serving stale code — so this gives
+// a definitive answer instead of inferring it from behaviour.
+const BUILD_VERSION = '2026-09-12-parser-notes-recurring-merge';
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: BUILD_VERSION,
+    features: {
+      taskNotesFromCommas: true,
+      perOccurrenceRecurringDone: true,
+      staleWriteMerge: true,
+      upstashStorage: USE_REDIS,
+      snapshots: true
+    },
+    startedAt: _startedAt
+  });
+});
+
 app.get('/api/data', (req, res) => res.json(readData()));
 
 app.post('/api/data', (req, res) => {
