@@ -27,7 +27,10 @@
   --r:8px;--rl:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);box-sizing:border-box}
+/* viewport-fit=cover (needed so the PWA fills the screen) draws content
+   under the status bar and home indicator, so every edge element has to
+   add the matching safe-area inset back. */
 .app{display:grid;height:100vh;
   grid-template-rows:64px 1fr 200px;
   grid-template-columns:280px 1fr;
@@ -39,7 +42,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
   #chatbot{height:240px}
 }
 /* TOP */
-#wx{grid-area:wx;background:var(--bg1);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px;cursor:pointer;position:relative;z-index:60;display:flex;flex-direction:column;justify-content:space-between}
+#wx{grid-area:wx;background:var(--bg1);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;cursor:pointer;position:relative;z-index:60;display:flex;flex-direction:column;justify-content:space-between}
 #topbar{grid-area:top;background:var(--bg1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px}
 #topbar h1{font-size:15px;font-weight:700;flex:1;text-align:center;background:linear-gradient(90deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 #cr{display:none}
@@ -135,7 +138,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .plabel.high{background:#fb923c20;color:var(--orange)}
 .plabel.very{background:#f8717120;color:var(--red)}
 /* CHATBOT */
-#chatbot{grid-area:bot;background:var(--bg1);border-top:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#chatbot{grid-area:bot;background:var(--bg1);border-top:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
 .chat-msgs{flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:6px}
 .cmsg{max-width:78%;padding:8px 12px;border-radius:var(--r);font-size:12px;line-height:1.5}
 .cmsg.u{background:var(--accent);color:#fff;align-self:flex-end;border-radius:12px 12px 4px 12px}
@@ -146,7 +149,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .chat-send{width:36px;height:36px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .chat-send:hover{background:#3a7de8}
 /* MODAL */
-.mbg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px}
+.mbg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}
 .mbg.open{display:flex}
 .mbox{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--rl);padding:20px;width:400px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 32px 80px #000c}
 .mbox h2{font-size:15px;font-weight:700;margin-bottom:14px}
