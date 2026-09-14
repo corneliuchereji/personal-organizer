@@ -2,6 +2,7 @@ const express = require('express');
 const fs      = require('fs');
 const path    = require('path');
 const cron    = require('node-cron');
+const webpush = require('web-push');
 const fetch   = require('node-fetch');
 
 const app       = express();
@@ -630,12 +631,17 @@ async function processTgCommand(text, data) {
   }
 
   // ── TODAY / TOMORROW / WEEK ──
-  if(/^(today|azi|ce am azi)$/.test(txt)){
+  // Accept natural phrasing, not just the bare keyword — people type
+  // "what do I have today?" far more often than "today".
+  if(/^(today|azi|astazi|ast\u0103zi|ce am azi)$/.test(txt)
+     || /\b(what|ce)\b.*\b(today|azi|astazi)\b/.test(txt)
+     || /\b(schedule|agenda|program)\b.*\b(today|azi)\b/.test(txt)){
     const evs = eventsOnDay(data, today);
     if(!evs.length) return '📅 Nothing scheduled for today!';
     return '📅 <b>Today:</b>\n\n'+evs.map(e=>(e._type==='task'?'📋':'🏆')+' <b>'+e.name+'</b> — '+fmtTime(e.time)).join('\n');
   }
-  if(/^(tomorrow|maine)$/.test(txt)){
+  if(/^(tomorrow|maine|m\u00e2ine)$/.test(txt)
+     || /\b(what|ce)\b.*\b(tomorrow|maine|m\u00e2ine)\b/.test(txt)){
     const tmr = addDays(today,1);
     const evs = eventsOnDay(data, tmr);
     if(!evs.length) return '📅 Nothing scheduled for tomorrow!';
@@ -937,6 +943,107 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
 const BUILD_VERSION = '2026-09-12-parser-notes-recurring-merge';
+// ═══════════════════════════════════════════════════
+// WEB PUSH — notifications that arrive when the app is closed, without
+// depending on Telegram. VAPID keys are generated once and kept in
+// settings, so there's no extra environment setup: losing them would
+// invalidate every existing subscription, which is why they're persisted
+// rather than regenerated per boot.
+// ═══════════════════════════════════════════════════
+let _vapidReady = false;
+function ensureVapid() {
+  const d = readData();
+  if (!d.settings) d.settings = {};
+  if (!d.settings.vapidPublicKey || !d.settings.vapidPrivateKey) {
+    const keys = webpush.generateVAPIDKeys();
+    d.settings.vapidPublicKey = keys.publicKey;
+    d.settings.vapidPrivateKey = keys.privateKey;
+    writeData(d);
+    console.log('   Generated new VAPID keys for web push.');
+  }
+  webpush.setVapidDetails(
+    'mailto:organizer@example.com',
+    d.settings.vapidPublicKey,
+    d.settings.vapidPrivateKey
+  );
+  _vapidReady = true;
+  return d.settings.vapidPublicKey;
+}
+
+app.get('/api/push/key', (req, res) => {
+  try { res.json({ key: ensureVapid() }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/push/subscribe', (req, res) => {
+  try {
+    const sub = req.body && req.body.subscription;
+    if (!sub || !sub.endpoint) return res.status(400).json({ error: 'Invalid subscription' });
+    const d = readData();
+    if (!Array.isArray(d.pushSubs)) d.pushSubs = [];
+    // Endpoint uniquely identifies a browser/device, so replace rather than
+    // duplicate when the same device re-subscribes.
+    d.pushSubs = d.pushSubs.filter(x => x.endpoint !== sub.endpoint);
+    d.pushSubs.push({ ...sub, label: (req.body.label||'device'), addedAt: new Date().toISOString() });
+    writeData(d);
+    res.json({ ok:true, devices: d.pushSubs.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/push/unsubscribe', (req, res) => {
+  try {
+    const endpoint = req.body && req.body.endpoint;
+    const d = readData();
+    d.pushSubs = (d.pushSubs||[]).filter(x => x.endpoint !== endpoint);
+    writeData(d);
+    res.json({ ok:true, devices: d.pushSubs.length });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/push/status', (req, res) => {
+  const d = readData();
+  res.json({
+    configured: !!(d.settings && d.settings.vapidPublicKey),
+    devices: (d.pushSubs||[]).map(s=>({ label:s.label, addedAt:s.addedAt, endpoint:s.endpoint.slice(0,40)+'…' }))
+  });
+});
+
+app.post('/api/push/test', async (req, res) => {
+  try {
+    const n = await sendWebPush('🔔 Test notification', 'If you can see this, web push is working.');
+    res.json({ ok:true, sent:n });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Sends to every subscribed device. Subscriptions that the push service
+// reports as gone (404/410) are pruned automatically — otherwise a
+// reinstalled browser would leave dead entries that fail forever.
+async function sendWebPush(title, body, data) {
+  const d = readData();
+  const subs = d.pushSubs || [];
+  if (!subs.length) return 0;
+  if (!_vapidReady) ensureVapid();
+  const payload = JSON.stringify({ title, body, data: data||{} });
+  let sent = 0;
+  const dead = [];
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(sub, payload);
+      sent++;
+    } catch(e) {
+      if (e.statusCode === 404 || e.statusCode === 410) dead.push(sub.endpoint);
+      else console.log('Push failed:', e.statusCode || e.message);
+    }
+  }
+  if (dead.length) {
+    const cur = readData();
+    cur.pushSubs = (cur.pushSubs||[]).filter(x => !dead.includes(x.endpoint));
+    writeData(cur);
+    console.log(`   Pruned ${dead.length} expired push subscription(s).`);
+  }
+  return sent;
+}
+
 app.get('/api/version', (req, res) => {
   res.json({
     version: BUILD_VERSION,
@@ -949,6 +1056,19 @@ app.get('/api/version', (req, res) => {
     },
     startedAt: _startedAt
   });
+});
+
+// In-app chat uses the SAME parser as Telegram, so both entry points
+// behave identically — previously the browser had its own weaker parser
+// and the two could disagree about the same sentence.
+app.post('/api/chat', async (req, res) => {
+  try {
+    const text = (req.body && req.body.text || '').trim();
+    if (!text) return res.status(400).json({ error: 'No text' });
+    const data = readData();
+    const reply = await processTgCommand(text, data);
+    res.json({ reply, _rev: readData()._rev });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/data', (req, res) => res.json(readData()));
@@ -2298,7 +2418,10 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
     const d = readData();
     const token = d.settings && d.settings.tgToken;
     const chatId = d.settings && d.settings.tgChatId;
-    if (!token || !chatId) return;
+    const hasPush = (d.pushSubs || []).length > 0;
+    // Previously this returned early without Telegram configured, which
+    // would have silently disabled web-push reminders too.
+    if ((!token || !chatId) && !hasPush) return;
     const nowMs = Date.now();
     // 10-minute grace window so a brief restart/outage doesn't drop a reminder.
     const due = dueReminders(d, nowMs, 10*60000);
@@ -2313,7 +2436,18 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
       msg += '🕐 '+fmtTime(ev.time)+(item.ds!==getToday()?' · '+item.ds:'')+'\n';
       if (ev.competitionName) msg += '🏆 '+ev.competitionName+'\n';
       if (ev.notes) msg += '📝 '+ev.notes+'\n';
-      await sendTg(token, chatId, msg);
+      // Both channels: Telegram (reliable on phones) and web push (works
+      // on desktop/Android without opening Telegram). Either failing must
+      // not stop the other.
+      if (token && chatId) { try { await sendTg(token, chatId, msg); } catch(e){ console.log('TG reminder failed:', e.message); } }
+      try {
+        const when = fmtTime(ev.time) + (item.ds!==getToday() ? ' · '+item.ds : '');
+        await sendWebPush(
+          '⏰ In '+reminderLabel(item.mins)+': '+ev.name,
+          when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : ''),
+          { date: item.ds }
+        );
+      } catch(e){ console.log('Web push reminder failed:', e.message); }
       data.sentReminders[item.key] = nowMs;
       console.log('Sent reminder for:', ev.name, item.ds);
     }
