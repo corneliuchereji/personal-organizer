@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v1';
+const CACHE = 'organizer-shell-v2';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -65,12 +65,25 @@ self.addEventListener('push', event => {
 // new tabs each time.
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const c of list) { if ('focus' in c) return c.focus(); }
-      if (clients.openWindow) return clients.openWindow('/');
-    })
-  );
+  const target = new URL('/', self.location.origin).href;
+  event.waitUntil((async () => {
+    const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    // Prefer an existing window belonging to this app. On iOS the installed
+    // PWA often isn't returned as a focusable client, in which case the tap
+    // appeared to do nothing — the notification simply vanished. Falling
+    // through to openWindow fixes that.
+    for (const c of list) {
+      if (c.url && c.url.startsWith(self.location.origin)) {
+        if ('focus' in c) {
+          try {
+            if ('navigate' in c && c.url !== target) await c.navigate(target);
+          } catch (e) {}
+          return c.focus();
+        }
+      }
+    }
+    if (clients.openWindow) return clients.openWindow(target);
+  })());
 });
 
 self.addEventListener('fetch', event => {
