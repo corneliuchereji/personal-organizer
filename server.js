@@ -318,16 +318,20 @@ function collapseSportEventsSrv(data, sportEvs){
   const rest = sportEvs.filter(e=>!isTeamMatch(e));
   const manual = rest.filter(e=>e.source!=='auto').map(e=>({...e,_display:'single'}));
   const autoRest = rest.filter(e=>e.source==='auto');
+  // Group by competition AND kick-off time, matching the app exactly: the
+  // day view shows a fresh "Serie A" header for each distinct time slot
+  // rather than one bucket for the whole day. The briefing previously used
+  // day-level grouping, so it didn't mirror what you see on screen.
   const groups = {};
   autoRest.forEach(e=>{
-    const key = e.competitionId || ('single_'+e.id);
+    const key = (e.competitionId || ('single_'+e.id)) + '|' + fmtTime(e.time);
     (groups[key] = groups[key]||[]).push(e);
   });
   const restSlots = Object.values(groups).map(g=>{
-    const sorted=[...g].sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time));
+    const sorted=[...g].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
     return {
       _type:'sport', _display:'collapsed',
-      id:'collapsed_'+(sorted[0].competitionId||sorted[0].id)+'_'+sorted[0].date,
+      id:'collapsed_'+(sorted[0].competitionId||sorted[0].id)+'_'+sorted[0].date+'_'+fmtTime(sorted[0].time),
       time: sorted[0].time, name: sorted[0].competitionName || 'Competition',
       competitionId: sorted[0].competitionId, date: sorted[0].date,
       count: sorted.length, fixtures: sorted
@@ -393,20 +397,38 @@ function groupColor(data, groupId){
 function formatEventLine(data, ev){
   if(ev._type==='task'){
     const emoji = colorEmoji(groupColor(data, ev.group));
+    const g = (data.groups||[]).find(x=>x.id===ev.group);
     let line = emoji+' <b>'+ev.name+'</b> — '+fmtTime(ev.time);
-    if(ev.priority && ev.priority!=='normal') line += ' · ⚠️ '+ev.priority;
+    // Second line mirrors the sub-label under a task card in the app:
+    // group, repeat and reminder badges.
+    const bits = [];
+    if (g) bits.push(g.name);
+    if (ev.freq && ev.freq !== 'none') bits.push('🔁 '+ev.freq);
+    if (ev.priority && ev.priority !== 'normal') bits.push('⚠️ '+ev.priority);
+    if (ev.reminder) bits.push('🔔 '+reminderLabel(parseInt(ev.reminder))+' before');
+    if (bits.length) line += '\n   <i>'+bits.join(' · ')+'</i>';
+    if (ev.notes) line += '\n   📝 '+ev.notes;
     return { line, button:null };
   }
-  // Sport
+  // Competition slot — list its fixtures inline, indented, exactly as the
+  // app shows them beneath the competition header.
   if(ev._display==='collapsed'){
-    const label = ev.count>1 ? `🏆 ${ev.name} (${ev.count} matches)` : `🏆 ${ev.name}`;
-    const line = label+' — '+fmtTime(ev.time);
-    const button = { text:'📋 View '+(ev.count>1?ev.count+' fixtures':'match'), callback_data:'fx|'+ev.date+'|'+ev.competitionId };
+    let line = '🏆 <b>'+ev.name+'</b> — '+fmtTime(ev.time);
+    ev.fixtures.forEach(f=>{
+      const score = (f.score && f.score.home!=null) ? '  ('+f.score.home+'-'+f.score.away+')' : '';
+      const nm = (f.home && f.away) ? (f.home.name+' vs '+f.away.name) : f.name;
+      line += '\n   • '+nm+score;
+    });
+    const button = ev.count>1
+      ? { text:'📋 '+ev.name+' — '+ev.count+' fixtures', callback_data:'fx|'+ev.date+'|'+ev.competitionId }
+      : null;
     return { line, button };
   }
-  // Single: team-follow match or manual entry
-  let line = '🏆 <b>'+ev.name+'</b> — '+fmtTime(ev.time);
-  if(ev.score && ev.score.home!=null) line += ' (' + ev.score.home+'-'+ev.score.away+')';
+  // A followed team's own match — shown on its own, like the highlighted
+  // card in the app.
+  let line = '⭐ <b>'+ev.name+'</b> — '+fmtTime(ev.time);
+  if(ev.competitionName) line += '\n   <i>'+ev.competitionName+'</i>';
+  if(ev.score && ev.score.home!=null) line += '  ('+ev.score.home+'-'+ev.score.away+')';
   return { line, button:null };
 }
 
@@ -636,16 +658,18 @@ async function processTgCommand(text, data) {
   if(/^(today|azi|astazi|ast\u0103zi|ce am azi)$/.test(txt)
      || /\b(what|ce)\b.*\b(today|azi|astazi)\b/.test(txt)
      || /\b(schedule|agenda|program)\b.*\b(today|azi)\b/.test(txt)){
-    const evs = eventsOnDay(data, today);
+    // Uses the same grouped layout as the scheduled briefings, so every
+    // view of the day reads the same way as the app itself.
+    const evs = groupedEventsOnDay(data, today);
     if(!evs.length) return '📅 Nothing scheduled for today!';
-    return '📅 <b>Today:</b>\n\n'+evs.map(e=>(e._type==='task'?'📋':'🏆')+' <b>'+e.name+'</b> — '+fmtTime(e.time)).join('\n');
+    return '📅 <b>Today:</b>\n\n'+evs.map(e=>formatEventLine(data,e).line).join('\n\n');
   }
   if(/^(tomorrow|maine|m\u00e2ine)$/.test(txt)
      || /\b(what|ce)\b.*\b(tomorrow|maine|m\u00e2ine)\b/.test(txt)){
     const tmr = addDays(today,1);
-    const evs = eventsOnDay(data, tmr);
+    const evs = groupedEventsOnDay(data, tmr);
     if(!evs.length) return '📅 Nothing scheduled for tomorrow!';
-    return '📅 <b>Tomorrow:</b>\n\n'+evs.map(e=>(e._type==='task'?'📋':'🏆')+' <b>'+e.name+'</b> — '+fmtTime(e.time)).join('\n');
+    return '📅 <b>Tomorrow:</b>\n\n'+evs.map(e=>formatEventLine(data,e).line).join('\n\n');
   }
   if(/^(week|sapt|saptamana|this week)/.test(txt)) return buildWeeklyMsg(data).msg; // buttons not shown via chat command, only scheduled briefings
   if(/^(tasks|taskuri|active tasks)/.test(txt)){
