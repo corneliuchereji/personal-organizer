@@ -30,6 +30,49 @@ self.addEventListener('activate', event => {
   );
 });
 
+// ── Web push ──────────────────────────────────────────────
+// Shows a notification even when the app is closed. Wrapped defensively:
+// a malformed payload must still produce *something*, otherwise the
+// browser falls back to a generic "site updated in the background"
+// message, which is worse than a plain title.
+self.addEventListener('push', event => {
+  let title = 'Personal Organizer';
+  let body = '';
+  let data = {};
+  try {
+    if (event.data) {
+      const p = event.data.json();
+      title = p.title || title;
+      body = p.body || '';
+      data = p.data || {};
+    }
+  } catch (e) {
+    try { body = event.data ? event.data.text() : ''; } catch (e2) {}
+  }
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: data.tag || 'organizer',
+      renotify: true,
+      data
+    })
+  );
+});
+
+// Tapping a notification focuses an existing window rather than piling up
+// new tabs each time.
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) { if ('focus' in c) return c.focus(); }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
+  );
+});
+
 self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
