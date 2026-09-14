@@ -1272,6 +1272,14 @@ function openSettings(){
     '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
     '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-bell"></i> Notifications on this device</div>'+
+    '<div id="pushStatus" style="font-size:11px;color:var(--txt2);margin-bottom:6px">Checking\u2026</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:4px">'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="enablePush()"><i class="ti ti-bell-plus"></i> Enable</button>'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="testPush()"><i class="ti ti-send"></i> Test</button>'+
+      '<button class="btn sm red" style="flex:1;justify-content:center" onclick="disablePush()"><i class="ti ti-bell-off"></i> Off</button>'+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--txt3);line-height:1.6">Works when the app is closed. On iPhone it only works if the app was added to the Home Screen. Telegram stays on as a backup \u2014 it is more dependable on phones.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-device-mobile"></i> Install as an app</div>'+
     '<div id="installBtnWrap" style="display:none;margin-bottom:6px">'+
       '<button class="btn sm" style="width:100%;justify-content:center" onclick="installApp()"><i class="ti ti-download"></i> Install on this device</button>'+
@@ -1314,6 +1322,7 @@ function openSettings(){
     '</div>'+
     '<div id="tgStatus" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px"></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  refreshPushStatus(); // fill in whether push is active on this device
 }
 function newGroup(){
   _tc=PAL[Math.floor(Math.random()*PAL.length)];
@@ -2191,12 +2200,106 @@ function processChat(raw){
   }
 }
 
-function sendChat(){
+async function sendChat(){
   const inp=document.getElementById('chatIn');
   const text=(inp.value||'').trim();if(!text)return;
   inp.value='';inp.style.height='auto';
   addChatMsg(text,'u');
-  setTimeout(()=>addChatMsg(processChat(text),'b'),100);
+  // Uses the SAME server-side parser as the Telegram bot, so a sentence
+  // typed here behaves identically to one sent to the bot. The old local
+  // parser understood far less, and the two could disagree.
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const d=await r.json();
+    if(d.error){ addChatMsg('\u26a0\ufe0f '+escHtml(d.error),'b'); return; }
+    addChatMsg(d.reply,'b');
+    await loadFromServer(); renderAll();   // the command may have changed data
+  }catch(e){
+    // Offline or unreachable: fall back to the local parser so the chat
+    // still does something rather than failing silently.
+    addChatMsg(processChat(text),'b');
+  }
+}
+
+// ─── WEB PUSH ─────────────────────────────────────────────
+// Notifications that arrive with the app closed. Requires a service worker
+// and, on iPhone, the app must have been added to the Home Screen.
+function urlBase64ToUint8Array(base64){
+  const pad='='.repeat((4-base64.length%4)%4);
+  const b64=(base64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(b64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function refreshPushStatus(){
+  const el=document.getElementById('pushStatus');
+  if(!el) return;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    el.textContent='⚠️ This browser doesn\u2019t support push notifications.'; return;
+  }
+  if(Notification.permission==='denied'){
+    el.innerHTML='<span style="color:var(--red)">Blocked in browser settings \u2014 you\u2019ll need to re-allow notifications for this site.</span>'; return;
+  }
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    el.innerHTML = sub
+      ? '<span style="color:var(--green)">\u2705 Enabled on this device.</span>'
+      : 'Not enabled on this device yet.';
+  }catch(e){ el.textContent='Status unknown: '+e.message; }
+}
+
+async function enablePush(){
+  const el=document.getElementById('pushStatus');
+  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Enabling\u2026';
+  try{
+    if(!('serviceWorker' in navigator) || !('PushManager' in window))
+      throw new Error('This browser doesn\u2019t support push.');
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){ el.innerHTML='<span style="color:var(--red)">Permission denied.</span>'; return; }
+    const reg=await navigator.serviceWorker.ready;
+    const { key }=await (await fetch('/api/push/key')).json();
+    if(!key) throw new Error('Server did not return a push key.');
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey: urlBase64ToUint8Array(key)
+      });
+    }
+    const label=(navigator.userAgent.match(/(iPhone|iPad|Android|Windows|Macintosh|Linux)/)||['device'])[0];
+    const r=await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subscription:sub.toJSON(), label})});
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    el.innerHTML='<span style="color:var(--green)">\u2705 Enabled. '+d.devices+' device(s) registered.</span>';
+  }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
+}
+
+async function disablePush(){
+  const el=document.getElementById('pushStatus');
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      await fetch('/api/push/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({endpoint:sub.endpoint})});
+      await sub.unsubscribe();
+    }
+    el.textContent='Disabled on this device.';
+  }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
+}
+
+async function testPush(){
+  const el=document.getElementById('pushStatus');
+  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Sending\u2026';
+  try{
+    const d=await (await fetch('/api/push/test',{method:'POST'})).json();
+    if(d.error) throw new Error(d.error);
+    el.innerHTML = d.sent
+      ? '<span style="color:var(--green)">Sent to '+d.sent+' device(s).</span>'
+      : '<span style="color:var(--red)">No devices subscribed yet \u2014 tap Enable first.</span>';
+  }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
 }
 
 // ─── PWA INSTALL ──────────────────────────────────────────
