@@ -1068,6 +1068,60 @@ async function sendWebPush(title, body, data) {
   return sent;
 }
 
+// Shows exactly what the reminder cron sees: server clock, every item with
+// a reminder set, when each is due to fire, and why it is or isn't firing.
+// Reminder problems are otherwise invisible — nothing arrives and there's
+// no way to tell whether the cron, the data, or delivery is at fault.
+app.get('/api/reminders/debug', (req, res) => {
+  try {
+    const d = readData();
+    const nowMs = Date.now();
+    const days = [getToday(), addDays(getToday(),1)];
+    const sent = d.sentReminders || {};
+    const rows = [];
+    const candidates = [
+      ...(d.tasks||[]).map(t=>({...t,_type:'task'})),
+      ...(d.sportEvents||[]).map(e=>({...e,_type:'sport'}))
+    ];
+    for (const ev of candidates) {
+      const mins = parseInt(ev.reminder);
+      if (!ev.reminder || isNaN(mins) || mins <= 0) continue;
+      for (const ds of days) {
+        if (!matchesDate(ev, ds)) continue;
+        const startMs = eventStartMs({ ...ev, date: ds });
+        const fireMs = startMs - mins*60000;
+        const key = ev.id + '|' + ds;
+        let status;
+        if (isNaN(startMs)) status = 'BAD DATE/TIME';
+        else if (ev._type==='task' && isDoneOn(ev, ds)) status = 'skipped (marked done)';
+        else if (sent[key]) status = 'already sent';
+        else if (startMs <= nowMs) status = 'event already started';
+        else if (fireMs > nowMs) status = 'waiting — fires in '+Math.round((fireMs-nowMs)/60000)+' min';
+        else if (nowMs - fireMs >= 10*60000) status = 'MISSED (fire time passed >10 min ago)';
+        else status = 'DUE NOW';
+        rows.push({
+          name: ev.name, type: ev._type, date: ds, time: fmtTime(ev.time),
+          reminderMins: mins,
+          startsAt: isNaN(startMs)? null : new Date(startMs).toISOString(),
+          firesAt:  isNaN(fireMs) ? null : new Date(fireMs).toISOString(),
+          status
+        });
+      }
+    }
+    res.json({
+      serverTimeUTC: new Date(nowMs).toISOString(),
+      serverTimeLocal: new Date(nowMs).toLocaleString('en-GB',{timeZone:'Europe/Bucharest'}),
+      serverTZ: process.env.TZ || '(not set — should be Europe/Bucharest)',
+      todayAccordingToServer: getToday(),
+      telegramConfigured: !!(d.settings && d.settings.tgToken && d.settings.tgChatId),
+      pushDevices: (d.pushSubs||[]).length,
+      itemsWithReminders: rows.length,
+      sentCount: Object.keys(sent).length,
+      items: rows
+    });
+  } catch(e) { res.status(500).json({ error: e.message, stack:(e.stack||'').split('\n').slice(0,4).join(' | ') }); }
+});
+
 app.get('/api/version', (req, res) => {
   res.json({
     version: BUILD_VERSION,
