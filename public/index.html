@@ -2235,6 +2235,40 @@ function urlBase64ToUint8Array(base64){
   return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
 }
 
+// iOS in particular drops push subscriptions without warning — the app
+// kept showing "enabled" while the server had zero devices, so reminders
+// silently went nowhere. On every launch we re-assert the subscription and
+// re-register it with the server, which is idempotent.
+async function ensurePushSubscription(){
+  try{
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if(Notification.permission !== 'granted') return;   // never prompt unasked
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      const { key } = await (await fetch('/api/push/key')).json();
+      if(!key) return;
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey: urlBase64ToUint8Array(key)
+      });
+      console.log('Push subscription was missing — recreated.');
+    }
+    const label=(navigator.userAgent.match(/(iPhone|iPad|Android|Windows|Macintosh|Linux)/)||['device'])[0];
+    await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subscription:sub.toJSON(), label})});
+  }catch(e){ console.log('Push re-subscribe failed:', e.message); }
+}
+
+// Clears the app-icon badge once you've actually opened the app.
+function clearAppBadge(){
+  try{
+    if(navigator.clearAppBadge) navigator.clearAppBadge();
+    if(navigator.serviceWorker && navigator.serviceWorker.controller)
+      navigator.serviceWorker.controller.postMessage({type:'CLEAR_BADGE'});
+  }catch(e){}
+}
+
 async function refreshPushStatus(){
   const el=document.getElementById('pushStatus');
   if(!el) return;
@@ -2409,6 +2443,13 @@ document.addEventListener('visibilitychange', async ()=>{
       console.log('Refreshed: data had changed elsewhere.');
     }
   }catch(e){}
+});
+
+// Keep the push subscription alive and clear the badge whenever the app
+// is actually opened or brought to the front.
+window.addEventListener('load', ()=>{ ensurePushSubscription(); clearAppBadge(); });
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden){ ensurePushSubscription(); clearAppBadge(); }
 });
 
 // Request notification permission on load and schedule all reminders
