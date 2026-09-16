@@ -2302,7 +2302,12 @@ async function testDelivery(){
     if(d.error){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(d.error)+'</span>'; return; }
     const line=(label,r)=> (r.ok?'\u2705 ':'\u274c ')+label+(r.ok?'':' \u2014 '+escHtml(r.error||'failed'));
     el.style.textAlign='left';
-    el.innerHTML='<div>'+line('Telegram',d.telegram)+'</div>'+
+    // Naming the bot matters: "delivered" with nothing visible usually
+    // means the token belongs to a different bot than the chat you have open.
+    const botLine = d.telegram.bot
+      ? '<div style="color:var(--txt2);margin-left:18px">sent as <b>'+escHtml(d.telegram.bot)+'</b> to chat '+escHtml(d.telegram.sentToChatId||'')+'</div>'
+      : '';
+    el.innerHTML='<div>'+line('Telegram',d.telegram)+'</div>'+botLine+
                  '<div>'+line('Push'+(d.push.devices!=null?' ('+d.push.devices+' device)':''),d.push)+'</div>'+
                  '<div style="margin-top:4px;color:var(--txt2)">'+escHtml(d.summary)+'</div>';
   }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
