@@ -1146,10 +1146,20 @@ app.post('/api/reminders/test-delivery', async (req, res) => {
   if (!token || !chatId) {
     out.telegram = { ok:false, error:'Telegram token or chat ID not set' };
   } else {
+    // Identify WHICH bot this token belongs to. "Delivered" but nothing
+    // visible almost always means the token is for a different bot than the
+    // chat being watched — so name it rather than leaving it a mystery.
+    try {
+      const me = await (await fetch(`https://api.telegram.org/bot${token}/getMe`)).json();
+      out.telegram.bot = me.ok ? ('@' + me.result.username) : 'unknown (getMe failed)';
+      if (!me.ok) out.telegram.botError = me.description;
+    } catch(e) { out.telegram.bot = 'unknown ('+e.message+')'; }
     try {
       const ok = await sendTg(token, chatId, '⏰ <b>Delivery test</b>\n\nIf you can read this, Telegram reminders work.');
-      out.telegram = { ok, error: ok ? null : (_lastTgError || 'Telegram returned not-ok') };
-    } catch(e) { out.telegram = { ok:false, error:e.message }; }
+      out.telegram.ok = ok;
+      out.telegram.error = ok ? null : (_lastTgError || 'Telegram returned not-ok');
+      out.telegram.sentToChatId = String(chatId);
+    } catch(e) { out.telegram.ok = false; out.telegram.error = e.message; }
   }
 
   try {
