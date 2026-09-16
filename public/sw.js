@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v2';
+const CACHE = 'organizer-shell-v3';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -49,16 +49,40 @@ self.addEventListener('push', event => {
   } catch (e) {
     try { body = event.data ? event.data.text() : ''; } catch (e2) {}
   }
-  event.waitUntil(
-    self.registration.showNotification(title, {
+  event.waitUntil((async () => {
+    await self.registration.showNotification(title, {
       body,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       tag: data.tag || 'organizer',
       renotify: true,
       data
-    })
-  );
+    });
+    // App-icon badge (the dot/number like WhatsApp). Counts unread pushes
+    // and is cleared when the app is next opened. Not supported
+    // everywhere, so failure is ignored rather than breaking the
+    // notification itself.
+    try {
+      const cache = await caches.open('organizer-badge');
+      const prev = await cache.match('count');
+      const n = prev ? (parseInt(await prev.text()) || 0) + 1 : 1;
+      await cache.put('count', new Response(String(n)));
+      if (self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(n);
+    } catch (e) {}
+  })());
+});
+
+// The page asks for the badge to be cleared once it's been seen.
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'CLEAR_BADGE') {
+    event.waitUntil((async () => {
+      try {
+        const cache = await caches.open('organizer-badge');
+        await cache.put('count', new Response('0'));
+        if (self.navigator && self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
+      } catch (e) {}
+    })());
+  }
 });
 
 // Tapping a notification focuses an existing window rather than piling up
