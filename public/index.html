@@ -1282,6 +1282,7 @@ function openSettings(){
       '<button class="btn sm" style="flex:1;justify-content:center" onclick="testPush()"><i class="ti ti-send"></i> Test</button>'+
       '<button class="btn sm red" style="flex:1;justify-content:center" onclick="disablePush()"><i class="ti ti-bell-off"></i> Off</button>'+
     '</div>'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:4px" onclick="testDelivery()"><i class="ti ti-stethoscope"></i> Test reminder delivery (both channels)</button>'+
     '<div style="font-size:10px;color:var(--txt3);line-height:1.6">Works when the app is closed. On iPhone it only works if the app was added to the Home Screen. Telegram stays on as a backup \u2014 it is more dependable on phones.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-device-mobile"></i> Install as an app</div>'+
     '<div id="installBtnWrap" style="display:none;margin-bottom:6px">'+
@@ -2290,6 +2291,20 @@ async function disablePush(){
       await sub.unsubscribe();
     }
     el.textContent='Disabled on this device.';
+  }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
+}
+
+async function testDelivery(){
+  const el=document.getElementById('pushStatus');
+  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Testing both channels\u2026';
+  try{
+    const d=await (await fetch('/api/reminders/test-delivery',{method:'POST'})).json();
+    if(d.error){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(d.error)+'</span>'; return; }
+    const line=(label,r)=> (r.ok?'\u2705 ':'\u274c ')+label+(r.ok?'':' \u2014 '+escHtml(r.error||'failed'));
+    el.style.textAlign='left';
+    el.innerHTML='<div>'+line('Telegram',d.telegram)+'</div>'+
+                 '<div>'+line('Push'+(d.push.devices!=null?' ('+d.push.devices+' device)':''),d.push)+'</div>'+
+                 '<div style="margin-top:4px;color:var(--txt2)">'+escHtml(d.summary)+'</div>';
   }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
 }
 
