@@ -449,6 +449,7 @@ function formatFixtureListMsg(slot){
 // ═══════════════════════════════════════════════════
 // TELEGRAM SEND
 // ═══════════════════════════════════════════════════
+let _lastTgError = null;
 async function sendTg(token, chatId, text, replyMarkup) {
   try {
     const body = {chat_id:chatId, text, parse_mode:'HTML'};
@@ -459,7 +460,15 @@ async function sendTg(token, chatId, text, replyMarkup) {
       body: JSON.stringify(body)
     });
     const d = await r.json();
-    if(!d.ok) console.log('TG error:',d.description);
+    if(!d.ok){
+      // Keep the reason retrievable — callers only get a boolean, so the
+      // actual cause (bad token, blocked bot, wrong chat id) was otherwise
+      // only visible in server logs.
+      _lastTgError = d.description || 'unknown error';
+      console.log('TG error:', _lastTgError);
+    } else {
+      _lastTgError = null;
+    }
     return d.ok;
   } catch(e) {
     console.log('TG fetch error:',e.message);
@@ -1117,9 +1126,41 @@ app.get('/api/reminders/debug', (req, res) => {
       pushDevices: (d.pushSubs||[]).length,
       itemsWithReminders: rows.length,
       sentCount: Object.keys(sent).length,
+      // Why the last failed delivery failed — the thing that was
+      // previously only visible in server logs.
+      recentDeliveryErrors: d.reminderErrors || {},
       items: rows
     });
   } catch(e) { res.status(500).json({ error: e.message, stack:(e.stack||'').split('\n').slice(0,4).join(' | ') }); }
+});
+
+// Sends a reminder-style message through BOTH channels right now and
+// reports precisely what happened to each. Unlike the individual test
+// buttons, this mirrors what the reminder cron actually does.
+app.post('/api/reminders/test-delivery', async (req, res) => {
+  const d = readData();
+  const token = d.settings && d.settings.tgToken;
+  const chatId = d.settings && d.settings.tgChatId;
+  const out = { telegram: {}, push: {} };
+
+  if (!token || !chatId) {
+    out.telegram = { ok:false, error:'Telegram token or chat ID not set' };
+  } else {
+    try {
+      const ok = await sendTg(token, chatId, '⏰ <b>Delivery test</b>\n\nIf you can read this, Telegram reminders work.');
+      out.telegram = { ok, error: ok ? null : (_lastTgError || 'Telegram returned not-ok') };
+    } catch(e) { out.telegram = { ok:false, error:e.message }; }
+  }
+
+  try {
+    const n = await sendWebPush('⏰ Delivery test', 'If you can see this, push reminders work.');
+    out.push = { ok: n>0, devices: n, error: n===0 ? 'No subscribed devices' : null };
+  } catch(e) { out.push = { ok:false, error:e.message }; }
+
+  out.summary = (out.telegram.ok || out.push.ok)
+    ? 'At least one channel delivered.'
+    : 'BOTH channels failed — see the errors above.';
+  res.json(out);
 });
 
 app.get('/api/version', (req, res) => {
@@ -2515,19 +2556,40 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
       if (ev.competitionName) msg += '🏆 '+ev.competitionName+'\n';
       if (ev.notes) msg += '📝 '+ev.notes+'\n';
       // Both channels: Telegram (reliable on phones) and web push (works
-      // on desktop/Android without opening Telegram). Either failing must
-      // not stop the other.
-      if (token && chatId) { try { await sendTg(token, chatId, msg); } catch(e){ console.log('TG reminder failed:', e.message); } }
+      // without opening Telegram). Either failing must not stop the other.
+      let tgOk = false, tgErr = null, pushCount = 0, pushErr = null;
+      if (token && chatId) {
+        try { tgOk = await sendTg(token, chatId, msg); if(!tgOk) tgErr='sendMessage returned not-ok'; }
+        catch(e){ tgErr = e.message; }
+      } else { tgErr = 'Telegram not configured'; }
       try {
         const when = fmtTime(ev.time) + (item.ds!==getToday() ? ' · '+item.ds : '');
-        await sendWebPush(
+        pushCount = await sendWebPush(
           '⏰ In '+reminderLabel(item.mins)+': '+ev.name,
           when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : ''),
           { date: item.ds }
         );
-      } catch(e){ console.log('Web push reminder failed:', e.message); }
-      data.sentReminders[item.key] = nowMs;
-      console.log('Sent reminder for:', ev.name, item.ds);
+      } catch(e){ pushErr = e.message; }
+
+      const delivered = tgOk || pushCount > 0;
+      // Only record it as sent if something actually got through. Marking
+      // it sent unconditionally (the previous behaviour) meant a failed
+      // delivery was never retried AND the failure was invisible — the
+      // reminder simply never arrived and the app believed it had.
+      if (delivered) {
+        data.sentReminders[item.key] = nowMs;
+        console.log('Sent reminder for:', ev.name, item.ds, '| telegram:', tgOk, '| pushDevices:', pushCount);
+      } else {
+        console.log('⚠️ Reminder NOT delivered for:', ev.name, item.ds,
+                    '| telegram error:', tgErr, '| push error:', pushErr, '| will retry next tick');
+      }
+      // Keep the last failure visible in the diagnostic endpoint.
+      if (!delivered) {
+        if (!data.reminderErrors) data.reminderErrors = {};
+        data.reminderErrors[item.key] = { at: new Date().toISOString(), telegram: tgErr, push: pushErr };
+      } else if (data.reminderErrors) {
+        delete data.reminderErrors[item.key];
+      }
     }
     // Prune records older than 3 days so this doesn't grow forever.
     const cutoff = nowMs - 3*86400000;
