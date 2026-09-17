@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v3';
+const CACHE = 'organizer-shell-v4';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -74,6 +74,13 @@ self.addEventListener('push', event => {
 
 // The page asks for the badge to be cleared once it's been seen.
 self.addEventListener('message', event => {
+  // Triggered by the "Check for updates" button. Without this a freshly
+  // installed worker stays in "waiting" until every tab is closed, which
+  // on a phone can mean days.
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
   if (event.data && event.data.type === 'CLEAR_BADGE') {
     event.waitUntil((async () => {
       try {
