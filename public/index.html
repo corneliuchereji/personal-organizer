@@ -1284,6 +1284,10 @@ function openSettings(){
     '</div>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:4px" onclick="testDelivery()"><i class="ti ti-stethoscope"></i> Test reminder delivery (both channels)</button>'+
     '<div style="font-size:10px;color:var(--txt3);line-height:1.6">Works when the app is closed. On iPhone it only works if the app was added to the Home Screen. Telegram stays on as a backup \u2014 it is more dependable on phones.</div>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-refresh"></i> App version & updates</div>'+
+    '<div id="versionInfo" style="font-size:11px;color:var(--txt2);margin-bottom:6px">Checking\u2026</div>'+
+    '<button class="btn sm" style="width:100%;justify-content:center" onclick="forceUpdate()"><i class="ti ti-reload"></i> Check for updates &amp; refresh</button>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Clears the cached app files and reloads. Use this after deploying a new version \u2014 phones in particular hold on to the old one.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-device-mobile"></i> Install as an app</div>'+
     '<div id="installBtnWrap" style="display:none;margin-bottom:6px">'+
       '<button class="btn sm" style="width:100%;justify-content:center" onclick="installApp()"><i class="ti ti-download"></i> Install on this device</button>'+
@@ -1327,6 +1331,7 @@ function openSettings(){
     '<div id="tgStatus" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px"></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   refreshPushStatus(); // fill in whether push is active on this device
+  refreshVersionInfo();
 }
 function newGroup(){
   _tc=PAL[Math.floor(Math.random()*PAL.length)];
@@ -2225,6 +2230,53 @@ async function sendChat(){
   }
 }
 
+// ─── VERSION / FORCE UPDATE ───────────────────────────────
+// Browsers (phones especially) cache the app shell and keep running an old
+// build after a deploy. This shows what's actually running and provides a
+// reliable way to drop the cache and pick up the newest version.
+async function refreshVersionInfo(){
+  const el=document.getElementById('versionInfo');
+  if(!el) return;
+  try{
+    const r=await fetch('/api/version',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    const started = d.startedAt ? new Date(d.startedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+    el.innerHTML='Server build: <b>'+escHtml(d.version||'unknown')+'</b><br>'+
+                 '<span style="color:var(--txt3)">running since '+escHtml(started)+
+                 ' · storage: '+(d.features&&d.features.upstashStorage?'Upstash':'file')+'</span>';
+  }catch(e){
+    el.innerHTML='<span style="color:var(--red)">Could not read version ('+escHtml(e.message)+') \u2014 the server may be running an older build.</span>';
+  }
+}
+
+async function forceUpdate(){
+  const el=document.getElementById('versionInfo');
+  if(el){ el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Clearing cached files\u2026'; }
+  try{
+    // 1. Ask the service worker to fetch a fresh copy of itself.
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){
+        try{ await reg.update(); }catch(e){}
+        // A worker waiting to activate would otherwise only take over after
+        // every tab is closed — tell it to take control now.
+        if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+      }
+    }
+    // 2. Drop the cached shell so the next load comes from the network.
+    if(window.caches){
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+    if(el) el.innerHTML='<i class="ti ti-loader-2"></i> Reloading\u2026';
+    // 3. Cache-busting query string defeats any remaining HTTP cache.
+    setTimeout(()=>{ location.replace(location.pathname+'?v='+Date.now()); }, 400);
+  }catch(e){
+    if(el) el.innerHTML='<span style="color:var(--red)">Update failed: '+escHtml(e.message)+'</span>';
+  }
+}
+
 // ─── WEB PUSH ─────────────────────────────────────────────
 // Notifications that arrive with the app closed. Requires a service worker
 // and, on iPhone, the app must have been added to the Home Screen.
@@ -2353,9 +2405,17 @@ async function testPush(){
   try{
     const d=await (await fetch('/api/push/test',{method:'POST'})).json();
     if(d.error) throw new Error(d.error);
-    el.innerHTML = d.sent
-      ? '<span style="color:var(--green)">Sent to '+d.sent+' device(s).</span>'
-      : '<span style="color:var(--red)">No devices subscribed yet \u2014 tap Enable first.</span>';
+    if(!d.devices || !d.devices.length){
+      el.innerHTML='<span style="color:var(--red)">No devices registered \u2014 tap Enable first.</span>';
+      return;
+    }
+    // Report per device: a rejection used to be hidden, which made a key
+    // mismatch look identical to having no devices at all.
+    el.style.textAlign='left';
+    el.innerHTML = d.devices.map(x=>
+      (x.ok ? '\u2705 ' : '\u274c ') + escHtml(x.label) + ' (' + escHtml(x.host) + ')' +
+      (x.ok ? '' : ' \u2014 ' + escHtml(x.meaning || x.error || ('HTTP '+x.status)))
+    ).join('<br>') + '<div style="margin-top:4px;color:var(--txt2)">Delivered to '+d.sent+' of '+d.devices.length+'.</div>';
   }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
 }
 
