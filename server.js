@@ -975,7 +975,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-12-parser-notes-recurring-merge';
+const BUILD_VERSION = '2026-09-17-vapid-fix-badge-update-button';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1041,10 +1041,36 @@ app.get('/api/push/status', (req, res) => {
   });
 });
 
+// Sends to each device individually and reports exactly what the push
+// service said. sendWebPush() quietly prunes rejected subscriptions, which
+// made a VAPID-key mismatch look like "no devices" — the cause was invisible.
 app.post('/api/push/test', async (req, res) => {
   try {
-    const n = await sendWebPush('🔔 Test notification', 'If you can see this, web push is working.');
-    res.json({ ok:true, sent:n });
+    const d = readData();
+    const subs = d.pushSubs || [];
+    if (!subs.length) return res.json({ ok:true, sent:0, devices:[], note:'No devices registered.' });
+    if (!_vapidReady) ensureVapid();
+    const payload = JSON.stringify({ title:'🔔 Test notification', body:'If you can see this, web push is working.' });
+    const results = [];
+    for (const sub of subs) {
+      const host = (()=>{ try { return new URL(sub.endpoint).host; } catch(e){ return 'unknown'; } })();
+      try {
+        await webpush.sendNotification(sub, payload);
+        results.push({ label: sub.label||'device', host, ok:true });
+      } catch(e) {
+        results.push({
+          label: sub.label||'device', host, ok:false,
+          status: e.statusCode || null,
+          error: (e.body && String(e.body).slice(0,160)) || e.message,
+          meaning: e.statusCode===410 || e.statusCode===404
+            ? 'Subscription expired or was removed by the device — re-enable on that device.'
+            : (e.statusCode===403
+               ? 'VAPID key mismatch — the subscription was created with a different key. Re-enable on that device.'
+               : null)
+        });
+      }
+    }
+    res.json({ ok:true, sent: results.filter(r=>r.ok).length, devices: results });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1205,6 +1231,21 @@ app.get('/api/data', (req, res) => res.json(readData()));
 app.post('/api/data', (req, res) => {
   const current = readData();
   const updated = {...current, ...req.body};
+
+  // Settings must be MERGED, not replaced. The spread above is shallow, so
+  // a client payload would otherwise drop every server-owned setting the
+  // browser doesn't know about — most damagingly the VAPID keys, whose
+  // regeneration silently invalidates every existing push subscription.
+  if (req.body.settings) {
+    updated.settings = { ...(current.settings||{}), ...req.body.settings };
+    // Belt and braces: never let these be cleared by a client write.
+    if (current.settings) {
+      if (current.settings.vapidPublicKey)  updated.settings.vapidPublicKey  = current.settings.vapidPublicKey;
+      if (current.settings.vapidPrivateKey) updated.settings.vapidPrivateKey = current.settings.vapidPrivateKey;
+    }
+  }
+  // Push subscriptions are server-owned too.
+  if (!req.body.pushSubs) updated.pushSubs = current.pushSubs || [];
 
   // A client sends the revision it last loaded. If the server has moved on
   // since (another device saved, or Telegram added something), this payload
