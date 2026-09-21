@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v4';
+const CACHE = 'organizer-shell-v5';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -121,8 +121,28 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Anything that isn't a plain GET of our own origin: straight to network.
-  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (req.method !== 'GET') return;
+
+  // The icon font and stylesheet come from a CDN. Cache them (cache-first,
+  // they're versioned and never change) so the app still looks right
+  // offline instead of losing every icon.
+  if (url.hostname === 'cdn.jsdelivr.net') {
+    event.respondWith(
+      caches.open(CACHE).then(async c => {
+        const hit = await c.match(req);
+        if (hit) return hit;
+        try {
+          const res = await fetch(req);
+          if (res && (res.ok || res.type === 'opaque')) c.put(req, res.clone()).catch(()=>{});
+          return res;
+        } catch (e) { return hit || Response.error(); }
+      })
+    );
+    return;
+  }
+
+  // Anything else from another origin: straight to network.
+  if (url.origin !== self.location.origin) return;
 
   // API traffic is never cached, never intercepted — freshness matters far
   // more than offline access for tasks, fixtures and settings.
