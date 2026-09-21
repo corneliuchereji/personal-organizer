@@ -83,6 +83,7 @@ async function initStorage() {
       const raw = await redisCmd(['GET', REDIS_KEY]);
       if (raw) {
         _cache = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (_cache._rev === undefined) _cache._rev = Date.now();
         console.log('   Storage: Upstash Redis (loaded existing data)');
       } else {
         _cache = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -102,6 +103,7 @@ async function initStorage() {
   ensureDataFile();
   try { _cache = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
   catch (e) { _cache = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+  if (_cache && _cache._rev === undefined) _cache._rev = Date.now();
   console.log(`   Storage: file at ${DATA_FILE}${DATA_DIR===__dirname ? ' ⚠️  NOT on a persistent volume — will reset on every deploy!' : ' (persistent volume)'}`);
 }
 
@@ -975,7 +977,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-18-stale-vapid-subscription-rebuild';
+const BUILD_VERSION = '2026-09-20-offline-swipe-reminder-fixes';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1077,17 +1079,23 @@ app.post('/api/push/test', async (req, res) => {
 // Sends to every subscribed device. Subscriptions that the push service
 // reports as gone (404/410) are pruned automatically — otherwise a
 // reinstalled browser would leave dead entries that fail forever.
-async function sendWebPush(title, body, data) {
+async function sendWebPush(title, body, data, opts) {
   const d = readData();
   const subs = d.pushSubs || [];
   if (!subs.length) return 0;
   if (!_vapidReady) ensureVapid();
   const payload = JSON.stringify({ title, body, data: data||{} });
+  // Time-to-live: how long the push service may hold the message for an
+  // offline device. The library default is FOUR WEEKS — so a laptop that
+  // was shut for hours received every queued reminder in one burst on
+  // wake. A reminder is worthless once its event has started, so callers
+  // pass a TTL matching that; anything else defaults to one hour.
+  const ttl = Math.max(60, Math.floor((opts && opts.ttl) || 3600));
   let sent = 0;
   const dead = [];
   for (const sub of subs) {
     try {
-      await webpush.sendNotification(sub, payload);
+      await webpush.sendNotification(sub, payload, { TTL: ttl, urgency: (opts && opts.urgency) || 'normal' });
       sent++;
     } catch(e) {
       if (e.statusCode === 404 || e.statusCode === 410) dead.push(sub.endpoint);
@@ -1253,8 +1261,12 @@ app.post('/api/data', (req, res) => {
   // yesterday's list silently deletes everything added elsewhere. Merging
   // by id keeps both sides' work; the cost is that a deletion made against
   // a stale view won't apply, which is the safe direction to fail.
+  // Stale unless the client can PROVE it saw the latest revision. A missing
+  // revision used to count as "fresh", which let a queued offline edit
+  // (or any client that loaded before the first write) overwrite newer
+  // data from another device. Unproven edits are now merged, never trusted.
   const clientRev = req.body._rev;
-  const isStale = clientRev !== undefined && current._rev !== undefined && clientRev !== current._rev;
+  const isStale = current._rev !== undefined && clientRev !== current._rev;
 
   if (req.body.tasks) {
     if (isStale) {
@@ -2615,10 +2627,15 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
       } else { tgErr = 'Telegram not configured'; }
       try {
         const when = fmtTime(ev.time) + (item.ds!==getToday() ? ' · '+item.ds : '');
+        const secsToStart = Math.floor((item.startMs - Date.now())/1000);
         pushCount = await sendWebPush(
           '⏰ In '+reminderLabel(item.mins)+': '+ev.name,
           when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : ''),
-          { date: item.ds }
+          // Same tag as the in-page fallback so the device shows one
+          // notification, not two, if both happen to fire.
+          { date: item.ds, tag: 'rem-'+ev.id+'-'+item.ds },
+          // Expire when the event starts — never deliver a stale reminder.
+          { ttl: secsToStart, urgency: 'high' }
         );
       } catch(e){ pushErr = e.message; }
 
