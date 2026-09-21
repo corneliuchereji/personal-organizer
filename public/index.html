@@ -194,9 +194,18 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes slideL{from{opacity:.35;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes slideR{from{opacity:.35;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.swipe-l{animation:slideL .22s ease-out}
+.net-pill{align-items:center;gap:6px;font-size:11px;padding:4px 10px;border-radius:999px;font-weight:600;white-space:nowrap}
+.net-pill.offline{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b55}
+.net-pill.syncing{background:#4f8ef722;color:#4f8ef7;border:1px solid #4f8ef755}
+.swipe-r{animation:slideR .22s ease-out}
+#cgrid,#lpBody{touch-action:pan-y}
 </style>
 </head>
 <body>
+<span id="netPill" class="net-pill" style="display:none;position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:500"></span>
 <div class="app">
 
 <!-- WEATHER -->
@@ -323,10 +332,7 @@ function saveState(){
   // Debounce saves — wait 500ms after last change
   if(_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(()=>{
-    fetch('/api/data',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
+    const payload = {
         // Revision we last loaded — lets the server detect that this tab is
         // stale and merge rather than overwrite newer data from elsewhere.
         _rev: S._rev,
@@ -344,16 +350,97 @@ function saveState(){
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
           apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123'
         }
+    };
+    // Mirror the change into the on-device copy straight away, so reopening
+    // the app while offline shows it.
+    const cache = lsGet(LS_CACHE) || {};
+    cache.tasks = S.tasks; cache.sportEvents = S.sportEvents; cache.groups = S.groups;
+    cache.settings = { ...(cache.settings||{}), ...payload.settings };
+    cache.follows = S.follows;
+    lsSet(LS_CACHE, cache);
+    // Queue first, send second: if the request never makes it, the edit is
+    // already safe and will be replayed on reconnect.
+    lsSet(LS_PENDING, payload);
+    fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(d=>{
+        if(d && d._rev){ S._rev = d._rev; }
+        // Only clear the queue if nothing newer was queued meanwhile.
+        const cur = lsGet(LS_PENDING);
+        if(cur && JSON.stringify(cur)===JSON.stringify(payload)) lsDel(LS_PENDING);
+        setOnlineState(true);
       })
-    }).then(r=>r.json()).then(d=>{ if(d && d._rev) S._rev = d._rev; })
-      .catch(e=>console.log('Save error:',e));
+      .catch(()=> setOnlineState(false));
   },500);
 }
 
-async function loadFromServer(){
+// ─── OFFLINE SUPPORT ─────────────────────────────────────
+// The last good copy of the data lives on the device, so the app opens and
+// works with no connection. Edits made offline are queued and replayed when
+// the connection returns; the server merges them by revision, so a queued
+// edit can't overwrite newer changes made on another device meanwhile.
+const LS_CACHE='org:cache', LS_PENDING='org:pending';
+let _online = navigator.onLine !== false;
+function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+function setOnlineState(on){
+  _online = on;
+  const pill = document.getElementById('netPill');
+  if(!pill) return;
+  const pending = !!lsGet(LS_PENDING);
+  if(on && !pending){ pill.style.display='none'; return; }
+  pill.style.display='inline-flex';
+  pill.className = 'net-pill ' + (on ? 'syncing' : 'offline');
+  pill.innerHTML = on
+    ? '<i class="ti ti-refresh"></i> Syncing changes\u2026'
+    : '<i class="ti ti-wifi-off"></i> Offline \u2014 changes saved on this device';
+}
+
+async function flushPending(){
+  const pending = lsGet(LS_PENDING);
+  if(!pending) return true;
   try{
-    const r = await fetch('/api/data');
+    const r = await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const d = await r.json();
+    if(d && d._rev) S._rev = d._rev;
+    lsDel(LS_PENDING);
+    return true;
+  }catch(e){ return false; }
+}
+
+// When the connection returns: push queued edits, then pull fresh data.
+window.addEventListener('online', async ()=>{
+  setOnlineState(true);
+  const ok = await flushPending();
+  if(ok){ await loadFromServer(); renderAll(); try{ loadWeather(); }catch(e){} }
+  setOnlineState(ok);
+});
+window.addEventListener('offline', ()=> setOnlineState(false));
+
+async function loadFromServer(){
+  // Keep whatever month/day the user is looking at — a background refresh
+  // shouldn't yank the view back to today.
+  const keepWeek = (typeof S!=='undefined' && S) ? S.weekOffset||0 : 0;
+  const keepDay  = (typeof S!=='undefined' && S) ? S.dayOffset||0  : 0;
+  try{
+    let d;
+    try{
+      // Anything queued offline goes up first, so we don't immediately
+      // reload over the top of unsent edits.
+      await flushPending();
+      const r = await fetch('/api/data',{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      d = await r.json();
+      lsSet(LS_CACHE, d);
+      setOnlineState(true);
+    }catch(netErr){
+      d = lsGet(LS_CACHE);
+      if(!d) throw netErr;          // no connection and nothing cached yet
+      setOnlineState(false);
+    }
     S = {
       ...DFLT,
       tasks: d.tasks||[],
@@ -372,7 +459,7 @@ async function loadFromServer(){
       tsdbKey: d.settings?.tsdbKey||'123',
       follows: d.follows || {teams:[],competitions:[]},
       _rev: d._rev,
-      weekOffset:0, dayOffset:0
+      weekOffset:keepWeek, dayOffset:keepDay
     };
   }catch(e){ console.log('Load error:',e); }
 }
@@ -644,6 +731,7 @@ async function loadWeather(opts){
     if(!r.ok){ throw new Error('Weather lookup failed ('+r.status+')'); }
     const d=await r.json();
     S.wx=d;
+    lsSet('org:wx', d);
     S.wxLat=d.lat; S.wxLon=d.lon;
     if(d.locName) S.wxLocName=d.locName;
     renderWx();
@@ -656,6 +744,9 @@ async function loadWeather(opts){
       .catch(e=>console.log('Weather location save failed:',e.message));
   }catch(e){
     console.log('Weather error:',e.message);
+    // Offline: show the last reading rather than an error.
+    const cached = lsGet('org:wx');
+    if(cached){ S.wx = cached; S._wxError=false; renderWx(); return; }
     S._wxError=true;
     renderWx();
   }
@@ -1056,29 +1147,42 @@ function requestNotifPermission(cb){
 // Store active timer IDs so we can cancel on reload
 const _timers={};
 
+// Local (in-page) reminders are only a fallback now — the server sends
+// reminders via push and Telegram even when the app is closed. Two bugs
+// lived here:
+//  • setTimeout overflows above 2^31 ms (~24.8 days), so an event weeks
+//    away fired IMMEDIATELY on save. We now only arm timers for the next
+//    24 hours and re-check hourly.
+//  • A sleeping laptop freezes timers, then fires every overdue one on
+//    wake. Each timer now checks on firing whether it's gone stale.
+const LOCAL_WINDOW_MS = 24*3600*1000;
+const STALE_AFTER_MS  = 5*60*1000;
 function scheduleReminder(ev){
   if(!ev.reminder||!ev.date||!ev.time)return;
   const minBefore=parseInt(ev.reminder);
   if(isNaN(minBefore)||minBefore<=0)return;
-  // Build event datetime
   const [hh,mm]=(ev.time||'00:00').split(':');
   const evMs=new Date(ev.date+'T'+hh.padStart(2,'0')+':'+(mm||'00').padStart(2,'0')+':00').getTime();
   const fireMs=evMs-(minBefore*60000);
-  const nowMs=Date.now();
-  const delay=fireMs-nowMs;
-  if(delay<=0)return; // already past
-  // Cancel previous timer for this event if any
-  if(_timers[ev.id])clearTimeout(_timers[ev.id]);
+  const delay=fireMs-Date.now();
+  if(_timers[ev.id]){ clearTimeout(_timers[ev.id]); delete _timers[ev.id]; }
+  if(delay<=0) return;                 // already past
+  if(delay>LOCAL_WINDOW_MS) return;    // too far ahead — the hourly re-check will pick it up
   _timers[ev.id]=setTimeout(()=>{
+    delete _timers[ev.id];
+    // Timers resume late after sleep; don't announce something long overdue.
+    if(Date.now()-fireMs > STALE_AFTER_MS) return;
+    if(Date.now() > evMs) return;
     requestNotifPermission(ok=>{
-      if(ok){
-        const label=minBefore>=60?(minBefore/60)+'h':''+minBefore+' min';
-        new Notification('⏰ '+ev.name,{
-          body:'Starting in '+label+' — '+ev.date+' at '+ev.time,
-          icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="28" font-size="28">📅</text></svg>',
-          tag:ev.id
-        });
-      }
+      if(!ok) return;
+      const label=minBefore>=60?(minBefore/60)+'h':''+minBefore+' min';
+      new Notification('\u23f0 '+ev.name,{
+        body:'Starting in '+label+' \u2014 '+ev.date+' at '+ev.time,
+        icon:'/icon-192.png',
+        // Same tag the server uses for push, so if both arrive the device
+        // shows ONE notification rather than two.
+        tag:'rem-'+ev.id+'-'+ev.date
+      });
     });
   },delay);
 }
@@ -1087,6 +1191,8 @@ function scheduleAllReminders(){
   const all=[...S.tasks,...(S.sportEvents||[])];
   all.forEach(ev=>{if(ev.reminder)scheduleReminder(ev)});
 }
+// Events enter the 24-hour window over time, so re-arm periodically.
+setInterval(()=>{ try{ scheduleAllReminders(); }catch(e){} }, 60*60*1000);
 
 // Show reminder badge on event cards
 function reminderBadge(reminder){
@@ -2229,6 +2335,38 @@ async function sendChat(){
     addChatMsg(processChat(text),'b');
   }
 }
+
+// ─── SWIPE NAVIGATION ─────────────────────────────────────
+// Swipe left/right on the month grid to change month, and on the day
+// agenda to change day. Only a clearly horizontal gesture counts, so
+// normal vertical scrolling is never hijacked.
+function attachSwipe(el, onLeft, onRight){
+  if(!el) return;
+  let x0=null, y0=null, t0=0;
+  el.addEventListener('touchstart', e=>{
+    if(e.touches.length!==1){ x0=null; return; }
+    x0=e.touches[0].clientX; y0=e.touches[0].clientY; t0=Date.now();
+  }, {passive:true});
+  el.addEventListener('touchend', e=>{
+    if(x0===null) return;
+    const t=e.changedTouches[0];
+    const dx=t.clientX-x0, dy=t.clientY-y0, dt=Date.now()-t0;
+    x0=null;
+    // Horizontal, long enough, quick enough, and clearly not a scroll.
+    if(Math.abs(dx) < 50) return;
+    if(Math.abs(dx) < Math.abs(dy)*1.5) return;
+    if(dt > 700) return;
+    const target = el;
+    target.classList.remove('swipe-l','swipe-r');
+    void target.offsetWidth; // restart the animation
+    if(dx < 0){ target.classList.add('swipe-l'); onLeft(); }
+    else      { target.classList.add('swipe-r'); onRight(); }
+  }, {passive:true});
+}
+window.addEventListener('load', ()=>{
+  attachSwipe(document.getElementById('cgrid'),  ()=>shiftMonth(1), ()=>shiftMonth(-1));
+  attachSwipe(document.getElementById('lpBody'), ()=>shiftDay(1),   ()=>shiftDay(-1));
+});
 
 // ─── VERSION / FORCE UPDATE ───────────────────────────────
 // Browsers (phones especially) cache the app shell and keep running an old
