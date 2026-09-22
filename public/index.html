@@ -202,6 +202,175 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .net-pill.syncing{background:#4f8ef722;color:#4f8ef7;border:1px solid #4f8ef755}
 .swipe-r{animation:slideR .22s ease-out}
 #cgrid,#lpBody{touch-action:pan-y}
+
+/* ═══════════════════════════════════════════════════════════
+   DEEP GLASS
+   A single layer over the base styles. Palette: night navy base,
+   frosted glass surfaces, mist text, periwinkle accent. Hierarchy
+   comes from shape — large radius for panels, medium for cards,
+   pills for chips — rather than one radius on everything.
+   The one expressive element is the weather "sky", whose glow
+   follows current conditions; everything else stays quiet.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0F1732;
+  --bg1:rgba(255,255,255,.045);
+  --bg2:rgba(255,255,255,.075);
+  --bg3:rgba(255,255,255,.12);
+  --border:rgba(255,255,255,.07);
+  --border2:rgba(255,255,255,.13);
+  --txt:#E8ECF8;--txt2:#9AA6C8;--txt3:#6B78A0;
+  --accent:#8CA8FF;--accent-ink:#0F1732;
+  --glass-solid:rgba(24,33,72,.86);
+  --r:12px;--rl:22px;--rp:999px;
+  color-scheme:dark;
+}
+html,body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+  font-size:14px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  background:#0F1732;
+}
+/* The backdrop lives on a fixed layer behind the page. background-attachment:
+   fixed is ignored by iOS Safari (it rendered a flat black band past the first
+   screen), whereas a fixed pseudo-element behaves the same everywhere. */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(1200px 700px at 110% -10%, rgba(124,108,255,.18), transparent 60%),
+    radial-gradient(900px 600px at -20% 110%, rgba(56,132,255,.14), transparent 60%),
+    linear-gradient(180deg,#131C3D 0%,#0F1732 45%,#0C1229 100%);
+}
+/* Frosted surfaces */
+#topbar,#lp,#cal,#chatbot{
+  background:var(--bg1);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);
+  border:1px solid var(--border);
+}
+/* Mobile: panels float as separate sheets */
+@media(max-width:900px){
+  #topbar,#lp,#cal,#chatbot{margin:10px 12px 0;border-radius:var(--rl)}
+  #chatbot{margin-bottom:12px}
+  #topbar{padding:10px 12px;border-radius:var(--rl)}
+}
+/* Desktop: a grid of sheets with breathing room */
+@media(min-width:901px){
+  .app{gap:12px;padding:12px;grid-template-rows:118px 1fr 210px}
+  #wx,#topbar,#lp,#cal,#chatbot{border-radius:var(--rl)}
+  #wx{border:1px solid var(--border)}
+}
+/* ── The sky: weather panel whose glow follows conditions ── */
+#wx{
+  border-right:none;border-bottom:none;
+  background:
+    radial-gradient(120% 110% at 8% -10%, var(--sky-glow,rgba(140,168,255,.22)), transparent 62%),
+    linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));
+  -webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);
+}
+@media(max-width:900px){ #wx{border-radius:0 0 30px 30px;padding-bottom:16px} }
+#wx[data-sky="sun"]  {--sky-glow:rgba(255,183,94,.42)}
+#wx[data-sky="cloud"]{--sky-glow:rgba(150,170,210,.30)}
+#wx[data-sky="rain"] {--sky-glow:rgba(72,150,255,.40)}
+#wx[data-sky="storm"]{--sky-glow:rgba(150,110,255,.42)}
+#wx[data-sky="snow"] {--sky-glow:rgba(190,230,255,.38)}
+#wx[data-sky="fog"]  {--sky-glow:rgba(170,180,200,.28)}
+#wx[data-sky="night"]{--sky-glow:rgba(92,96,220,.40)}
+.wx-temp{font-size:34px;font-weight:600;letter-spacing:-1.2px}
+.wx-icon,#wxi{font-size:42px}
+.wx-mm,.wx-cond{font-size:12px}
+.wx-loc-row{color:var(--txt2)}
+.wx-hint{color:var(--txt3)}
+.wx-drop{background:var(--glass-solid);-webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px);
+  border:1px solid var(--border2);border-radius:var(--rl);margin-top:8px;box-shadow:0 30px 70px rgba(4,8,26,.6)}
+.wx-day{background:var(--bg2);border:none;border-radius:16px}
+.wx-loc-bar input{border-radius:var(--rp);background:var(--bg2);border-color:var(--border)}
+.wx-windy{border-radius:var(--rp);background:var(--bg2);border-color:var(--border)}
+/* ── Header ── */
+#topbar h1{background:none;-webkit-text-fill-color:currentColor;color:var(--txt);font-weight:650;font-size:16px;letter-spacing:-.2px}
+#topbar h1 i{color:var(--accent)}
+/* ── Buttons: soft pills ── */
+.btn{border-radius:var(--rp);background:var(--bg2);border:1px solid var(--border);color:var(--txt);font-weight:500;padding:7px 15px}
+.btn:hover{background:var(--bg3)}
+.btn.acc{background:var(--accent);border-color:transparent;color:var(--accent-ink);font-weight:600}
+.btn.acc:hover{background:#A3B9FF}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--bg2)}
+.btn.red{background:rgba(248,113,113,.10);border-color:transparent}
+.btn.sm{padding:6px 12px;font-size:12px}
+.btn.ico{border-radius:var(--rp);padding:7px 9px}
+.btn:focus-visible,.ea:focus-visible,.chat-send:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* ── Day agenda ── */
+.lp-head,.cal-head{border-bottom:1px solid var(--border);background:transparent}
+.lp-head h2{font-size:18px;font-weight:650;letter-spacing:-.3px}
+.day-nav .dl{font-size:12px;color:var(--txt2)}
+.lp-body{padding:12px}
+.ecard{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:10px;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset}
+.ec-bar{width:4px;border-radius:var(--rp)}
+.ec-title{font-size:15px;font-weight:600;letter-spacing:-.1px}
+.ec-meta{font-size:12px;gap:8px;margin-top:4px}
+.ec-notes{font-size:12px}
+.ec-actions{gap:6px;margin-top:11px}
+.ea{border-radius:var(--rp);padding:5px 11px;font-size:12px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--txt2)}
+.ea:hover{background:var(--bg3);color:var(--txt)}
+.plabel{border-radius:var(--rp);padding:2px 8px;font-size:10px;font-weight:600}
+.plabel.normal{background:rgba(140,168,255,.14);color:var(--accent)}
+/* Times line up down the page */
+.ec-meta,.wx-temp,.wx-mm,.mday-num,.day-nav .dl{font-variant-numeric:tabular-nums}
+/* ── Month grid ── */
+.cal-head h2{font-size:18px;font-weight:650;letter-spacing:-.3px}
+.cal-body{padding:10px 12px}
+.month-grid,.month-dow-row,.month-week{gap:5px}
+.month-dow{text-transform:none;letter-spacing:0;font-size:11px;font-weight:600;color:var(--txt3)}
+.month-day{background:rgba(255,255,255,.035);border:1px solid transparent;border-radius:12px;padding:6px 6px;min-height:78px}
+.month-day:hover{background:var(--bg2);border-color:var(--border)}
+.month-day.today{background:rgba(140,168,255,.10);border-color:rgba(140,168,255,.55)}
+.month-day.today .mday-num{color:var(--accent);font-weight:700}
+.month-day.selected{background:rgba(140,168,255,.08);border-color:rgba(140,168,255,.35)}
+.month-day.other-month{opacity:.22}
+.mday-num{font-size:12px;font-weight:600;margin-bottom:5px}
+.chip{border-radius:7px;padding:2px 6px;font-size:10px}
+/* ── Chat ── */
+.chat-msgs{padding:12px 16px;gap:8px}
+.cmsg{font-size:13px;border-radius:18px}
+.cmsg.u{background:var(--accent);color:var(--accent-ink);border-radius:18px 18px 6px 18px}
+.cmsg.b{background:var(--bg2);border:1px solid var(--border);border-radius:18px 18px 18px 6px}
+.chat-row{border-top:1px solid var(--border);padding:10px 12px}
+.chat-inp{border-radius:var(--rp);background:var(--bg2);border:1px solid var(--border);font-size:14px;padding:10px 16px}
+.chat-inp:focus{border-color:rgba(140,168,255,.6)}
+.chat-send{width:42px;height:42px;background:var(--accent);color:var(--accent-ink)}
+.chat-send:hover{background:#A3B9FF}
+/* ── Modals: solid-enough glass to read comfortably ── */
+.mbg{background:rgba(6,10,28,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.mbox{background:var(--glass-solid);-webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);
+  border:1px solid var(--border2);border-radius:26px;padding:22px;box-shadow:0 40px 90px rgba(4,8,26,.65)}
+.mbox h2{font-size:18px;font-weight:650;letter-spacing:-.3px}
+.field label{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--txt2)}
+.field input,.field select,.field textarea{border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);font-size:14px;padding:10px 12px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(140,168,255,.6);background:rgba(255,255,255,.08)}
+.field select option{background:#1B2350}
+/* Section headings in settings: sentence case, quiet */
+.slabel{text-transform:none;letter-spacing:0;font-size:13px;font-weight:650;color:var(--txt);border-bottom:none;padding:14px 0 6px}
+.slabel i{color:var(--accent)}
+.sd-item{background:var(--bg2);border:none;border-radius:14px}
+.sd-label,.stand-table th{text-transform:none;letter-spacing:0;font-size:11px}
+/* Narrow screens: month cells are too small for text, so chips become
+   solid colour bars (the chip's text colour is its group colour, hence
+   currentColor). Tap the day for the details. */
+@media(max-width:600px){
+  .month-day{min-height:62px;padding:5px}
+  .mday-chips{gap:3px}
+  .chip{font-size:0;line-height:0;height:5px;padding:0;border:none;border-radius:var(--rp);background:currentColor!important;opacity:.85}
+  .chip img{display:none}
+  .mday-more{font-size:9px}
+}
+/* Scrollbars fade into the glass */
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14)}
+.net-pill{-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+@media (prefers-reduced-motion:reduce){
+  .swipe-l,.swipe-r{animation:none}
+  *{transition:none!important}
+}
 </style>
 </head>
 <body>
@@ -684,8 +853,24 @@ document.getElementById('modal').addEventListener('click',function(e){ if(e.targ
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 // ─── WEATHER ─────────────────────────────────────────────
+// Which "sky" the weather panel shows. Night overrides conditions, since
+// a sunny forecast at 23:00 shouldn't glow like midday.
+function skyFor(wx){
+  const h = new Date().getHours();
+  if(h < 6 || h >= 20) return 'night';
+  if(!wx) return 'cloud';
+  const c = String(wx.cond||'');
+  if(/storm|thunder/.test(c)) return 'storm';
+  if(/rain|drizzle|shower/.test(c)) return 'rain';
+  if(/snow|sleet/.test(c)) return 'snow';
+  if(/fog|mist|haze/.test(c)) return 'fog';
+  if(/sun|clear|partly/.test(c)) return 'sun';
+  return 'cloud';
+}
 function renderWx(){
   const wx=S.wx;
+  const wxEl=document.getElementById('wx');
+  if(wxEl) wxEl.dataset.sky = skyFor(wx);
   const ic=document.getElementById('wxi');
   document.getElementById('wxLoc').textContent=S.wxLocName||'—';
   const windyLink=document.getElementById('wxWindyLink');
