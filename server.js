@@ -407,7 +407,8 @@ function formatEventLine(data, ev){
     if (g) bits.push(g.name);
     if (ev.freq && ev.freq !== 'none') bits.push('🔁 '+ev.freq);
     if (ev.priority && ev.priority !== 'normal') bits.push('⚠️ '+ev.priority);
-    if (ev.reminder) bits.push('🔔 '+reminderLabel(parseInt(ev.reminder))+' before');
+    const rl = remindersOf(ev);
+    if (rl.length) bits.push('🔔 '+rl.sort((a,b)=>b-a).map(reminderLabel).join(', ')+' before');
     if (bits.length) line += '\n   <i>'+bits.join(' · ')+'</i>';
     if (ev.notes) line += '\n   📝 '+ev.notes;
     return { line, button:null };
@@ -977,7 +978,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-22-deep-glass-redesign';
+const BUILD_VERSION = '2026-09-22-layout-v2-filter-multi-reminders';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1127,13 +1128,12 @@ app.get('/api/reminders/debug', (req, res) => {
       ...(d.sportEvents||[]).map(e=>({...e,_type:'sport'}))
     ];
     for (const ev of candidates) {
-      const mins = parseInt(ev.reminder);
-      if (!ev.reminder || isNaN(mins) || mins <= 0) continue;
+      for (const mins of remindersOf(ev)) {
       for (const ds of days) {
         if (!matchesDate(ev, ds)) continue;
         const startMs = eventStartMs({ ...ev, date: ds });
         const fireMs = startMs - mins*60000;
-        const key = ev.id + '|' + ds;
+        const key = ev.id + '|' + ds + '|' + mins;
         let status;
         if (isNaN(startMs)) status = 'BAD DATE/TIME';
         else if (ev._type==='task' && isDoneOn(ev, ds)) status = 'skipped (marked done)';
@@ -1149,6 +1149,7 @@ app.get('/api/reminders/debug', (req, res) => {
           firesAt:  isNaN(fireMs) ? null : new Date(fireMs).toISOString(),
           status
         });
+      }
       }
     }
     res.json({
@@ -2285,6 +2286,7 @@ async function syncFixtures() {
   for (const [id, ev] of dedup) {
     const prev = prevById.get(id);
     if (prev && prev.reminder) ev.reminder = prev.reminder;
+    if (prev && Array.isArray(prev.reminders)) ev.reminders = prev.reminders;
   }
 
   // CRITICAL: don't wipe out previously-good fixtures just because this
@@ -2559,6 +2561,14 @@ function eventStartMs(ev){
 
 // Which upcoming occurrences need a reminder right now. Handles recurring
 // tasks by resolving the reminder against today's/tomorrow's occurrence.
+// An event may carry several reminders (e.g. 1 day, 2 hours, 15 min before).
+// Older data stored one "reminder" string, so both shapes are accepted.
+function remindersOf(ev){
+  let list = Array.isArray(ev && ev.reminders) && ev.reminders.length ? ev.reminders
+           : (ev && ev.reminder ? [ev.reminder] : []);
+  return [...new Set(list.map(x=>parseInt(x)).filter(n=>n>0))];
+}
+
 function dueReminders(data, nowMs, windowMs){
   const due = [];
   const sent = data.sentReminders || {};
@@ -2570,19 +2580,25 @@ function dueReminders(data, nowMs, windowMs){
   // (e.g. "1 day before") still resolves correctly.
   const days = [getToday(), addDays(getToday(),1)];
   for (const ev of candidates) {
-    const mins = parseInt(ev.reminder);
-    if (!ev.reminder || isNaN(mins) || mins <= 0) continue;
+    const list = remindersOf(ev);
+    if (!list.length) continue;
     for (const ds of days) {
       if (!matchesDate(ev, ds)) continue;
       if (ev._type === 'task' && isDoneOn(ev, ds)) continue; // already ticked off for this date
       const startMs = eventStartMs({ ...ev, date: ds });
       if (isNaN(startMs)) continue;
-      const fireMs = startMs - mins*60000;
-      // Fire if we're inside the window and haven't already sent this one.
-      const key = ev.id + '|' + ds;
-      if (sent[key]) continue;
-      if (fireMs <= nowMs && nowMs - fireMs < windowMs && startMs > nowMs) {
-        due.push({ ev, ds, startMs, mins, key });
+      for (const mins of list) {
+        const fireMs = startMs - mins*60000;
+        // Each reminder is tracked separately, so "2 hours before" going
+        // out doesn't suppress "15 min before" later on.
+        const key = ev.id + '|' + ds + '|' + mins;
+        if (sent[key]) continue;
+        // Reminders sent before multi-reminder support used the key
+        // "id|date"; honour those so nothing fires twice after the update.
+        if (sent[ev.id + '|' + ds] && String(mins) === String(parseInt(ev.reminder))) continue;
+        if (fireMs <= nowMs && nowMs - fireMs < windowMs && startMs > nowMs) {
+          due.push({ ev, ds, startMs, mins, key });
+        }
       }
     }
   }
