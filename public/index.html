@@ -364,6 +364,13 @@ body::before{
   .chip img{display:none}
   .mday-more{font-size:9px}
 }
+/* Reminder picker: toggle chips */
+.rem-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rem-chip{position:relative;cursor:pointer}
+.rem-chip input{position:absolute;opacity:0;pointer-events:none}
+.rem-chip span{display:inline-block;padding:6px 12px;border-radius:var(--rp);font-size:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--txt2);transition:background .15s,border-color .15s,color .15s}
+.rem-chip input:checked + span{background:rgba(140,168,255,.18);border-color:rgba(140,168,255,.6);color:var(--txt)}
+.rem-chip input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 /* Scrollbars fade into the glass */
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14)}
 .net-pill{-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
@@ -371,6 +378,70 @@ body::before{
   .swipe-l,.swipe-r{animation:none}
   *{transition:none!important}
 }
+/* ═══ Layout v2: no banner, no chat row — the calendar gets the space ═══ */
+.app{position:relative}
+@media(min-width:901px){
+  /* Weeks stretch to fill the full calendar height instead of leaving a
+     large empty area below the last row. Cells keep a sensible minimum and
+     the body scrolls if a busy day needs more room. */
+  .cal-body{display:flex;flex-direction:column}
+  .month-grid{flex:1;min-height:100%}
+  .month-week{flex:1 1 0;min-height:96px}
+  .month-week .month-day{min-height:0;height:100%}
+  .app{grid-template-columns:300px 1fr;grid-template-rows:118px 1fr;
+       grid-template-areas:"wx cal" "lp cal"}
+  /* The toolbar sits in the calendar's header row, top right. */
+  #tools{position:absolute;top:21px;right:26px}
+  .cal-head{padding-right:300px}
+}
+@media(max-width:900px){
+  /* On phones it floats over the weather panel's top-right corner. */
+  #tools{position:absolute;top:calc(env(safe-area-inset-top) + 12px);right:12px}
+  #lp{min-height:200px}
+}
+#tools{display:flex;gap:6px;z-index:80;align-items:center}
+#tools .btn.ico{width:34px;height:34px;padding:0;justify-content:center;
+  background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+#tools .btn.acc{height:34px;gap:5px}
+#filterBtn{position:relative}
+#filterBtn .fdot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);display:none;box-shadow:0 0 0 2px #0F1732}
+#filterBtn.on .fdot{display:block}
+@media(max-width:380px){ #tools .tl{display:none} }
+
+/* ── Assistant dialog ── */
+#chatbot{position:fixed;inset:0;height:auto;z-index:420;display:none;align-items:center;justify-content:center;
+  margin:0!important;border:none;border-radius:0;background:rgba(6,10,28,.55);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}
+#chatbot.open{display:flex}
+.chat-panel{width:100%;max-width:520px;height:min(620px,100%);display:flex;flex-direction:column;overflow:hidden;
+  background:var(--glass-solid);-webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);
+  border:1px solid var(--border2);border-radius:26px;box-shadow:0 40px 90px rgba(4,8,26,.65)}
+.chat-head{padding:18px 20px 6px}
+.chat-head h2{font-size:18px;font-weight:650;letter-spacing:-.3px}
+.chat-panel .chat-msgs{flex:1;min-height:0}
+.chat-foot{display:flex;gap:8px;align-items:center;padding:10px 14px 14px}
+
+/* ── What-to-show options ── */
+.vopt{display:flex;gap:12px;align-items:flex-start;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer}
+.vopt:last-child{border-bottom:none}
+.vopt input{position:absolute;opacity:0;pointer-events:none}
+.vopt small{color:var(--txt3);font-size:12px}
+.vopt b{font-weight:600}
+.vbox{flex:none;width:22px;height:22px;border-radius:7px;border:1.5px solid var(--border2);margin-top:1px;
+  display:grid;place-items:center;transition:background .15s,border-color .15s}
+.vopt input:checked + .vbox{background:var(--accent);border-color:var(--accent)}
+.vopt input:checked + .vbox::after{content:"";width:6px;height:11px;border:solid var(--accent-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.vopt input:focus-visible + .vbox{outline:2px solid var(--accent);outline-offset:2px}
+.vopt.dis{opacity:.4;cursor:default}
+
+/* ── Toast ── */
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+  max-width:min(440px,calc(100% - 32px));z-index:600;padding:12px 16px;border-radius:18px;font-size:13px;
+  background:var(--glass-solid);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  border:1px solid var(--border2);box-shadow:0 20px 50px rgba(4,8,26,.5);opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -405,11 +476,12 @@ body::before{
   </div>
 </div>
 
-<!-- TOPBAR -->
-<div id="topbar">
-  <h1><i class="ti ti-layout-dashboard" style="font-size:16px"></i> Personal Organizer</h1>
-  <button class="btn acc sm" onclick="openAddTask()"><i class="ti ti-plus"></i> Add event</button>
-  <button class="btn sm" onclick="openSettings()"><i class="ti ti-settings"></i></button>
+<!-- TOOLBAR (top right) — replaces the old banner to give the calendar the space -->
+<div id="tools">
+  <button class="btn acc sm" onclick="openAddTask()"><i class="ti ti-plus"></i><span class="tl">Add event</span></button>
+  <button class="btn sm ico" onclick="openChat()" title="Assistant" aria-label="Open assistant"><i class="ti ti-message-circle"></i></button>
+  <button class="btn sm ico" id="filterBtn" onclick="openFilter()" title="Choose what to show" aria-label="Choose what to show"><i class="ti ti-adjustments-horizontal"></i><span class="fdot"></span></button>
+  <button class="btn sm ico" onclick="openSettings()" title="Settings" aria-label="Settings"><i class="ti ti-settings"></i></button>
 </div>
 
 <!-- crypto removed -->
@@ -441,7 +513,9 @@ body::before{
 <!-- right panel removed -->
 
 <!-- CHATBOT -->
-<div id="chatbot">
+<div id="chatbot" role="dialog" aria-modal="true" aria-labelledby="chatTitle" onclick="if(event.target===this)closeChat(false)">
+ <div class="chat-panel">
+  <div class="chat-head"><h2 id="chatTitle">Assistant</h2></div>
   <div class="chat-msgs" id="chatMsgs">
     <div class="cmsg b">👋 Hi! I'm your assistant. Try: <em>"add task dentist tomorrow at 10am"</em>, <em>"delete dentist"</em>, <em>"what do I have today?"</em> or type <em>"help"</em>.</div>
   </div>
@@ -449,8 +523,14 @@ body::before{
     <textarea class="chat-inp" id="chatIn" placeholder="Add tasks, ask about your schedule…" rows="1"
       onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
       oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
-    <button class="chat-send" onclick="sendChat()"><i class="ti ti-send"></i></button>
+    <button class="chat-send" onclick="sendChat()" aria-label="Send"><i class="ti ti-send"></i></button>
   </div>
+  <div class="chat-foot">
+    <span class="msp"></span>
+    <button class="btn" onclick="closeChat(false)">Cancel</button>
+    <button class="btn acc" onclick="closeChat(true)">OK</button>
+  </div>
+ </div>
 </div>
 
 <!-- MODAL -->
@@ -702,8 +782,8 @@ function collapseSportEvents(sportEvs){
 }
 
 function eventsOnDay(ds){
-  const tasks = S.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})).filter(ev=>matchesDate(ev,ds));
-  const sportsRaw = (S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds));
+  const tasks = viewTasks(S.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})).filter(ev=>matchesDate(ev,ds)));
+  const sportsRaw = viewSports((S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds)));
   const sports = collapseSportEvents(sportsRaw);
   return [...tasks, ...sports].sort((a,b)=>{
     const dt=timeToMinutes(a.time)-timeToMinutes(b.time);
@@ -822,8 +902,8 @@ function agendaEventsOnDay(ds){
   // _occDate records WHICH occurrence this copy represents. A repeating
   // task appears on many days, so completion has to be tracked per date
   // rather than with one shared flag.
-  const tasks = S.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})).filter(ev=>matchesDate(ev,ds));
-  const sportsRaw = (S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds));
+  const tasks = viewTasks(S.tasks.map(t=>({...t,_type:'task',_occDate:ds,done:isDoneOn(t,ds)})).filter(ev=>matchesDate(ev,ds)));
+  const sportsRaw = viewSports((S.sportEvents||[]).map(e=>({...e,_type:'sport',_color:e.color||SPORT_COLORS[e.sport]||'#94a3b8'})).filter(ev=>matchesDate(ev,ds)));
   const sports = collapseSportEventsFine(sportsRaw);
   return [...tasks, ...sports].sort((a,b)=>{
     const dt=timeToMinutes(a.time)-timeToMinutes(b.time);
@@ -972,7 +1052,7 @@ function renderCard(ev){
   meta+='<span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
   if(ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
   meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
-  if(ev.reminder)meta+=reminderBadge(ev.reminder);
+  meta+=remindersBadge(ev);
   let acts='';
   acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\',\''+(ev._occDate||ev.date)+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
@@ -1182,14 +1262,17 @@ function renderCal(){
       const isToday=ds===TODAY,isSel=ds===_selDay;
       const evs=c.other?[]:eventsOnDay(ds);
       cacheEvents(evs);
-      let chips=evs.slice(0,3).map(ev=>{
+      // Desktop cells are tall now that the calendar fills the screen, so
+      // show more before collapsing; phones keep the compact limit.
+      const maxChips = window.innerWidth > 900 ? 5 : 3;
+      let chips=evs.slice(0,maxChips).map(ev=>{
         const col=ev._type==='task'?getGroup(ev.group).color:(ev._color||sportColor(ev.sport,ev));
         const isSport=ev._type==='sport';
         const badgeUrl=isSport?(ev._display==='collapsed'?ev.competitionLogo:(ev.home&&ev.home.logo)||ev.competitionLogo):null;
         const icon=badgeUrl?'<img src="'+escHtml(badgeUrl)+'" style="width:12px;height:12px;object-fit:contain;border-radius:2px;flex-shrink:0;vertical-align:-2px;margin-right:3px">':'';
         return '<div class="chip" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+escHtml(ev.name)+'">'+icon+escHtml(ev.name)+'</div>';
       }).join('');
-      if(evs.length>3)chips+='<div class="mday-more">+'+(evs.length-3)+' more…</div>';
+      if(evs.length>maxChips)chips+='<div class="mday-more">+'+(evs.length-maxChips)+' more…</div>';
       html+='<div class="month-day'+(c.other?' other-month':'')+(isToday?' today':'')+(isSel&&!isToday?' selected':'')+(evs.length?' has-events':'')+'" onclick="selectDay(\''+ds+'\')">';
       html+='<div class="mday-num">'+c.d+'</div><div class="mday-chips">'+chips+'</div></div>';
     }
@@ -1240,7 +1323,8 @@ function toggleEvType(){
 function evForm(ev){
   const isSport=ev&&ev._type==='sport';
   const type=isSport?'sport':'task';
-  const reminder=ev&&ev.reminder!=null?ev.reminder:'15';
+  // New events default to a single 15-minute reminder.
+  const reminders = ev ? remindersOf(ev) : ['15'];
   return '<div class="field"><label>Event type</label><select id="fevtype" onchange="toggleEvType()">'+
     '<option value="task"'+(type==='task'?' selected':'')+'>📋 Task / Reminder</option>'+
     '<option value="sport"'+(type==='sport'?' selected':'')+'>🏆 Sport Event</option></select></div>'+
@@ -1250,12 +1334,11 @@ function evForm(ev){
       '<div class="field" style="flex:1"><label>Start time (24h)</label>'+
         '<input type="time" id="ft" value="'+hOpts(ev?ev.time:'09:00')+'" style="cursor:pointer;width:100%" '+
         'step="300"></div>'+  // 5-min steps
-      '<div class="field" style="flex:1"><label>Remind me before</label>'+
-        '<select id="fremind">'+
-          '<option value="">No reminder</option>'+
-          ['5','10','15','30','60','120','1440'].map(m=>'<option value="'+m+'"'+(reminder===m?' selected':'')+'>'+(m==='60'?'1 hour':m==='120'?'2 hours':m==='1440'?'1 day':m+' min')+'</option>').join('')+
-        '</select></div>'+
     '</div>'+
+    '<div class="field"><label>Remind me before <span style="font-weight:400;color:var(--txt3)">\u2014 pick as many as you like</span></label>'+
+      '<div class="rem-chips" id="fremind">'+
+        REMINDER_OPTS.map(m=>'<label class="rem-chip"><input type="checkbox" value="'+m+'"'+(reminders.includes(m)?' checked':'')+'><span>'+(m==='60'?'1 hour':m==='120'?'2 hours':m==='1440'?'1 day':m+' min')+'</span></label>').join('')+
+      '</div></div>'+
     '<div class="field"><label>Notes</label><textarea id="fno" placeholder="Details, location, reminders…">'+(ev?escHtml(ev.notes||''):'')+'</textarea></div>'+
     '<div id="task-extra" style="display:'+(type==='task'?'block':'none')+'">'+
       '<div class="field"><label>Group</label><select id="fg">'+gOpts(ev&&!isSport?ev.group:S.groups[0].id)+'</select></div>'+
@@ -1300,25 +1383,32 @@ function doSaveEvent(){
   const date=document.getElementById('fd').value;
   const time=document.getElementById('ft').value;
   const notes=document.getElementById('fno').value;
-  const reminder=document.getElementById('fremind').value; // '' or minutes string
+  const reminders=[...document.querySelectorAll('#fremind input:checked')].map(i=>i.value);
+  const reminder=reminders.length?reminders[reminders.length-1]:''; // legacy single field, kept for older code paths
+  // Keep the original object so fields the form doesn't show survive an
+  // edit — notably doneDates (per-occurrence completion of repeating
+  // tasks), which used to be wiped every time a task was edited.
+  let prev=null;
   if(id){
+    prev = (origType==='task' ? S.tasks : (S.sportEvents||[])).find(x=>x.id===id) || null;
     if(origType==='task')S.tasks=S.tasks.filter(x=>x.id!==id);
     else S.sportEvents=(S.sportEvents||[]).filter(x=>x.id!==id);
   }
+  const keep = (prev && origType===type) ? prev : {};
   const newId=id||uid();
   if(type==='sport'){
     const sport=document.getElementById('fsport').value;
     if(!S.sportEvents)S.sportEvents=[];
-    S.sportEvents.push({id:newId,name,date,time,notes,sport,color:_tc,reminder});
+    S.sportEvents.push({...keep,id:newId,name,date,time,notes,sport,color:_tc,reminders,reminder});
   } else {
-    S.tasks.push({id:newId,name,date,time,notes,
+    S.tasks.push({...keep,id:newId,name,date,time,notes,
       group:document.getElementById('fg').value,
       freq:document.getElementById('fr').value,
       priority:document.getElementById('fp').value,
-      reminder,done:false});
+      reminders,reminder,done:keep.done||false});
   }
   saveState();
-  scheduleReminder({id:newId,name,date,time,reminder});
+  scheduleReminder({id:newId,name,date,time,reminders});
   closeModal();renderAll();
 }
 
@@ -1343,43 +1433,61 @@ const _timers={};
 const LOCAL_WINDOW_MS = 24*3600*1000;
 const STALE_AFTER_MS  = 5*60*1000;
 function scheduleReminder(ev){
-  if(!ev.reminder||!ev.date||!ev.time)return;
-  const minBefore=parseInt(ev.reminder);
-  if(isNaN(minBefore)||minBefore<=0)return;
+  if(!ev.date||!ev.time)return;
+  // Clear every timer previously armed for this event.
+  Object.keys(_timers).forEach(k=>{ if(k===ev.id || k.startsWith(ev.id+'|')){ clearTimeout(_timers[k]); delete _timers[k]; } });
   const [hh,mm]=(ev.time||'00:00').split(':');
   const evMs=new Date(ev.date+'T'+hh.padStart(2,'0')+':'+(mm||'00').padStart(2,'0')+':00').getTime();
-  const fireMs=evMs-(minBefore*60000);
-  const delay=fireMs-Date.now();
-  if(_timers[ev.id]){ clearTimeout(_timers[ev.id]); delete _timers[ev.id]; }
-  if(delay<=0) return;                 // already past
-  if(delay>LOCAL_WINDOW_MS) return;    // too far ahead — the hourly re-check will pick it up
-  _timers[ev.id]=setTimeout(()=>{
-    delete _timers[ev.id];
-    // Timers resume late after sleep; don't announce something long overdue.
-    if(Date.now()-fireMs > STALE_AFTER_MS) return;
-    if(Date.now() > evMs) return;
-    requestNotifPermission(ok=>{
-      if(!ok) return;
-      const label=minBefore>=60?(minBefore/60)+'h':''+minBefore+' min';
-      new Notification('\u23f0 '+ev.name,{
-        body:'Starting in '+label+' \u2014 '+ev.date+' at '+ev.time,
-        icon:'/icon-192.png',
-        // Same tag the server uses for push, so if both arrive the device
-        // shows ONE notification rather than two.
-        tag:'rem-'+ev.id+'-'+ev.date
+  remindersOf(ev).forEach(r=>{
+    const minBefore=parseInt(r);
+    const fireMs=evMs-(minBefore*60000);
+    const delay=fireMs-Date.now();
+    if(delay<=0) return;                 // already past
+    if(delay>LOCAL_WINDOW_MS) return;    // too far ahead — the hourly re-check will pick it up
+    const key=ev.id+'|'+minBefore;
+    _timers[key]=setTimeout(()=>{
+      delete _timers[key];
+      // Timers resume late after sleep; don't announce something long overdue.
+      if(Date.now()-fireMs > STALE_AFTER_MS) return;
+      if(Date.now() > evMs) return;
+      requestNotifPermission(ok=>{
+        if(!ok) return;
+        const label=minBefore>=1440?(minBefore/1440)+' day':minBefore>=60?(minBefore/60)+'h':minBefore+' min';
+        new Notification('\u23f0 '+ev.name,{
+          body:'Starting in '+label+' \u2014 '+ev.date+' at '+ev.time,
+          icon:'/icon-192.png',
+          // Same tag the server uses for push, so a device that gets both
+          // shows ONE notification per reminder rather than two.
+          tag:'rem-'+ev.id+'-'+ev.date+'-'+minBefore
+        });
       });
-    });
-  },delay);
+    },delay);
+  });
 }
 
 function scheduleAllReminders(){
   const all=[...S.tasks,...(S.sportEvents||[])];
-  all.forEach(ev=>{if(ev.reminder)scheduleReminder(ev)});
+  all.forEach(ev=>{ if(remindersOf(ev).length) scheduleReminder(ev); });
 }
 // Events enter the 24-hour window over time, so re-arm periodically.
 setInterval(()=>{ try{ scheduleAllReminders(); }catch(e){} }, 60*60*1000);
 
 // Show reminder badge on event cards
+// An event can carry several reminders (e.g. 1 day, 2 hours and 15 min
+// before). Older events stored a single "reminder" string, so both shapes
+// are read here and everything else goes through this one function.
+const REMINDER_OPTS=['5','10','15','30','60','120','1440'];
+function remindersOf(ev){
+  let list = Array.isArray(ev && ev.reminders) && ev.reminders.length ? ev.reminders
+           : (ev && ev.reminder ? [ev.reminder] : []);
+  list = [...new Set(list.map(String))].filter(m=>parseInt(m)>0);
+  return list.sort((a,b)=>parseInt(b)-parseInt(a)); // earliest warning first
+}
+function reminderLabelShort(m){
+  m=parseInt(m);
+  return m>=1440?(m/1440)+'d':m>=60?(m/60)+'h':m+'m';
+}
+
 function reminderBadge(reminder){
   if(!reminder)return'';
   const min=parseInt(reminder);
@@ -2155,6 +2263,13 @@ function buildDailyMsg(dateStr){
   return msg;
 }
 
+function remindersBadge(ev){
+  const list=remindersOf(ev);
+  if(!list.length) return '';
+  return '<span style="font-size:9px;background:#a78bfa20;color:#a78bfa;border:1px solid #a78bfa40;border-radius:10px;padding:1px 6px;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-bell" style="font-size:9px"></i>'+
+    list.map(reminderLabelShort).join(' \u00b7 ')+' before</span>';
+}
+
 function reminderBadgeTxt(r){
   const m=parseInt(r);
   if(m>=1440)return'1 day';
@@ -2520,6 +2635,94 @@ async function sendChat(){
     addChatMsg(processChat(text),'b');
   }
 }
+
+// ─── VIEW FILTER ─────────────────────────────────────────
+// Chooses what the calendar and day list show on THIS device: personal
+// events, sport, or both — and for sport, optionally only fixtures of the
+// teams you follow. It only changes what's displayed; reminders and the
+// Telegram briefings are unaffected.
+const VIEW_DEFAULT={personal:true, sport:true, teamsOnly:false};
+function getView(){ return Object.assign({}, VIEW_DEFAULT, lsGet('org:view')||{}); }
+function isFollowedTeamFixture(e){
+  if(e.followType==='team') return true;
+  const ids=new Set((S.follows&&S.follows.teams||[]).map(t=>String(t.providerId)));
+  return !!(e.home && e.away && (ids.has(String(e.home.id)) || ids.has(String(e.away.id))));
+}
+function viewTasks(list){ return getView().personal ? list : []; }
+function viewSports(list){
+  const v=getView();
+  if(!v.sport) return [];
+  // Manually added sport events are your own entries, so they always stay.
+  return v.teamsOnly ? list.filter(e=>e.source!=='auto' || isFollowedTeamFixture(e)) : list;
+}
+function refreshFilterDot(){
+  const v=getView();
+  const custom = !v.personal || !v.sport || v.teamsOnly;
+  const b=document.getElementById('filterBtn');
+  if(b) b.classList.toggle('on', custom);
+}
+function openFilter(){
+  const v=getView();
+  const opt=(id,label,hint,checked,disabled)=>
+    '<label class="vopt'+(disabled?' dis':'')+'"><input type="checkbox" id="'+id+'"'+(checked?' checked':'')+(disabled?' disabled':'')+' onchange="applyFilter()">'+
+    '<span class="vbox"></span><span><b>'+label+'</b><br><small>'+hint+'</small></span></label>';
+  showModal('What to show',
+    '<div id="vopts">'+
+    opt('vPersonal','Personal events','Tasks and reminders from all your groups',v.personal,false)+
+    opt('vSport','Sport events','Fixtures from the teams and competitions you follow',v.sport,false)+
+    opt('vTeams','Favourite teams only','Hide other fixtures from followed competitions',v.teamsOnly,!v.sport)+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--txt3);margin-top:8px">Only changes this device\u2019s view \u2014 reminders and Telegram briefings still cover everything.</div>',
+    '<button class="btn" onclick="resetFilter()">Show everything</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+}
+function applyFilter(){
+  const v={
+    personal: document.getElementById('vPersonal').checked,
+    sport:    document.getElementById('vSport').checked,
+    teamsOnly:document.getElementById('vTeams').checked
+  };
+  lsSet('org:view', v);
+  const t=document.getElementById('vTeams');
+  t.disabled=!v.sport; t.closest('.vopt').classList.toggle('dis', !v.sport);
+  refreshFilterDot(); renderAll();
+}
+function resetFilter(){ lsSet('org:view', VIEW_DEFAULT); refreshFilterDot(); renderAll(); openFilter(); }
+
+// ─── ASSISTANT DIALOG ────────────────────────────────────
+// The chat now lives in a dialog opened from the toolbar. Enter (or the
+// send arrow) sends and keeps it open for a conversation. OK sends whatever
+// is still typed and closes; Cancel closes and discards the draft.
+function openChat(){
+  const c=document.getElementById('chatbot');
+  c.classList.add('open');
+  setTimeout(()=>{ const i=document.getElementById('chatIn'); if(i) i.focus(); }, 60);
+  const m=document.getElementById('chatMsgs'); if(m) m.scrollTop=m.scrollHeight;
+}
+async function closeChat(ok){
+  const inp=document.getElementById('chatIn');
+  const pending=(inp.value||'').trim();
+  if(ok && pending){
+    await sendChat();
+    // Show the answer as a toast so it isn't lost when the dialog closes.
+    const bubbles=document.querySelectorAll('#chatMsgs .cmsg.b');
+    const last=bubbles[bubbles.length-1];
+    if(last) showToast(last.innerHTML);
+  } else if(!ok){
+    inp.value=''; inp.style.height='auto';
+  }
+  document.getElementById('chatbot').classList.remove('open');
+}
+function showToast(html){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; t.setAttribute('role','status'); document.body.appendChild(t); }
+  t.innerHTML=html; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'), 4500);
+}
+window.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && document.getElementById('chatbot').classList.contains('open')) closeChat(false);
+});
+window.addEventListener('load', refreshFilterDot);
+let _rsz; window.addEventListener('resize', ()=>{ clearTimeout(_rsz); _rsz=setTimeout(()=>{ try{ renderCal(); }catch(e){} }, 150); });
 
 // ─── SWIPE NAVIGATION ─────────────────────────────────────
 // Swipe left/right on the month grid to change month, and on the day
