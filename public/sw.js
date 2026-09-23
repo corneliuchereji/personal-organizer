@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v7';
+const CACHE = 'organizer-shell-v8';
 const SHELL = [
   '/',
   '/manifest.json',
