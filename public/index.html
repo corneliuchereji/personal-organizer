@@ -442,6 +442,24 @@ body::before{
   border:1px solid var(--border2);box-shadow:0 20px 50px rgba(4,8,26,.5);opacity:0;pointer-events:none;
   transition:opacity .2s,transform .2s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+/* ── Time wheel ── */
+.tpick{position:relative;display:flex;align-items:stretch;gap:6px;padding:0 10px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+/* The band showing which row is selected. */
+.tpick::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:44px;transform:translateY(-50%);
+  border-radius:12px;background:rgba(140,168,255,.16);border:1px solid rgba(140,168,255,.4);pointer-events:none}
+.tcol{flex:1;height:132px;overflow-y:auto;scroll-snap-type:y mandatory;padding:44px 0;
+  scrollbar-width:none;-ms-overflow-style:none;outline:none}
+.tcol::-webkit-scrollbar{display:none}
+.titem{height:44px;display:grid;place-items:center;scroll-snap-align:center;cursor:pointer;
+  font-size:20px;font-variant-numeric:tabular-nums;color:var(--txt3);
+  transition:color .15s,transform .15s,opacity .15s}
+.titem.sel{color:var(--txt);font-weight:650;transform:scale(1.08)}
+.tcol:focus-visible{box-shadow:inset 0 0 0 2px var(--accent);border-radius:12px}
+.tsep{align-self:center;font-size:20px;font-weight:650;color:var(--txt2);position:relative;z-index:1}
+.tquick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tquick .btn{font-size:12px;padding:5px 11px}
+@media (prefers-reduced-motion:reduce){ .titem{transition:none} }
 </style>
 </head>
 <body>
@@ -1315,6 +1333,8 @@ function colorPicker(cur){
 }
 
 function toggleEvType(){
+  initTimePicker(); // form has just been rendered
+
   const t=document.getElementById('fevtype').value;
   document.getElementById('task-extra').style.display=t==='task'?'block':'none';
   document.getElementById('sport-extra').style.display=t==='sport'?'block':'none';
@@ -1332,8 +1352,18 @@ function evForm(ev){
     '<div class="field"><label>Date</label><input type="date" id="fd" value="'+(ev?ev.date:TODAY)+'"></div>'+
     '<div style="display:flex;gap:10px">'+
       '<div class="field" style="flex:1"><label>Start time (24h)</label>'+
-        '<input type="time" id="ft" value="'+hOpts(ev?ev.time:'09:00')+'" style="cursor:pointer;width:100%" '+
-        'step="300"></div>'+  // 5-min steps
+        // The real value still lives in #ft so everything that reads the
+        // form is unchanged; the wheel below just writes into it.
+        '<input type="hidden" id="ft" value="'+hOpts(ev?ev.time:'09:00')+'">'+
+        '<div class="tpick" id="tpick" role="group" aria-label="Start time">'+
+          '<div class="tcol" id="tpH" tabindex="0" role="listbox" aria-label="Hour"></div>'+
+          '<div class="tsep">:</div>'+
+          '<div class="tcol" id="tpM" tabindex="0" role="listbox" aria-label="Minute"></div>'+
+        '</div>'+
+        '<div class="tquick">'+
+          '<button type="button" class="btn sm" onclick="tpSetNow()">Now</button>'+
+          ['08:00','12:00','18:00','20:00'].map(t=>'<button type="button" class="btn sm" onclick="tpSet(\''+t+'\')">'+t+'</button>').join('')+
+        '</div></div>'+
     '</div>'+
     '<div class="field"><label>Remind me before <span style="font-weight:400;color:var(--txt3)">\u2014 pick as many as you like</span></label>'+
       '<div class="rem-chips" id="fremind">'+
@@ -2634,6 +2664,116 @@ async function sendChat(){
     // still does something rather than failing silently.
     addChatMsg(processChat(text),'b');
   }
+}
+
+// ─── TIME WHEEL ──────────────────────────────────────────
+// Replaces the browser's native time input with two snapping columns, so
+// setting a time is a flick rather than a fiddle — and it looks the same on
+// every device instead of whatever each browser decides to render.
+const TP_ITEM_H = 44;
+const TP_MIN_STEP = 5;
+function tpFill(col, values, current){
+  col.innerHTML = values.map(v=>'<div class="titem" role="option" data-v="'+v+'">'+v+'</div>').join('');
+  const idx = Math.max(0, values.indexOf(current));
+  col.scrollTop = idx * TP_ITEM_H;
+  tpMark(col);
+}
+function tpMark(col){
+  const idx = Math.round(col.scrollTop / TP_ITEM_H);
+  [...col.children].forEach((el,i)=>{
+    const sel = i===idx;
+    el.classList.toggle('sel', sel);
+    el.setAttribute('aria-selected', sel ? 'true' : 'false');
+  });
+  return idx;
+}
+function tpValue(col){
+  const el = col.children[Math.round(col.scrollTop / TP_ITEM_H)];
+  return el ? el.dataset.v : null;
+}
+// Writes one column's chosen value straight into the field, without
+// waiting for the scroll animation to settle.
+function tpCommit(col, value){
+  const inp=document.getElementById('ft'); if(!inp) return;
+  const [hh,mm]=(inp.value||'09:00').split(':');
+  inp.value = (col.id==='tpH' ? value : hh) + ':' + (col.id==='tpM' ? value : mm);
+}
+
+function tpSync(){
+  const h=document.getElementById('tpH'), m=document.getElementById('tpM');
+  const inp=document.getElementById('ft');
+  if(!h||!m||!inp) return;
+  inp.value = (tpValue(h)||'09') + ':' + (tpValue(m)||'00');
+}
+function tpScrollTo(col, value){
+  const i = [...col.children].findIndex(el=>el.dataset.v===value);
+  if(i<0) return;
+  // Mark the scroll as ours. The settle handler below interrupts an
+  // in-flight smooth scroll if it isn't told to stand back, which committed
+  // whichever row happened to be passing instead of the one chosen.
+  col._prog = (col._prog||0) + 1;
+  clearTimeout(col._progT);
+  col._progT = setTimeout(()=>{ col._prog = 0; tpSync(); }, 500);
+  col.scrollTo({ top: i*TP_ITEM_H, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+function tpSet(hhmm){
+  const [hh,mm]=hhmm.split(':');
+  const h=document.getElementById('tpH'), m=document.getElementById('tpM');
+  if(!h||!m) return;
+  tpEnsureMinute(mm);
+  // Set the value immediately rather than reading it back after a smooth
+  // scroll — mid-animation the wheel reports whichever row it's passing,
+  // which produced times nobody chose.
+  const inp=document.getElementById('ft');
+  if(inp) inp.value = hh+':'+mm;
+  tpScrollTo(h,hh); tpScrollTo(m,mm);
+}
+function tpSetNow(){
+  const d=new Date();
+  // Snap to the nearest step so it lands on a value the wheel actually has.
+  const mins = Math.round(d.getMinutes()/TP_MIN_STEP)*TP_MIN_STEP;
+  const d2 = new Date(d.getTime()); d2.setMinutes(mins, 0, 0);
+  tpSet(String(d2.getHours()).padStart(2,'0')+':'+String(d2.getMinutes()).padStart(2,'0'));
+}
+// Existing events may sit on a minute the 5-step wheel doesn't list
+// (a synced fixture at 20:45 is fine, but 19:47 would be lost) — so add it.
+function tpEnsureMinute(mm){
+  const m=document.getElementById('tpM');
+  if(!m || [...m.children].some(el=>el.dataset.v===mm)) return;
+  const vals=[...m.children].map(el=>el.dataset.v).concat(mm).sort();
+  tpFill(m, vals, mm);
+}
+function initTimePicker(){
+  const h=document.getElementById('tpH'), m=document.getElementById('tpM'), inp=document.getElementById('ft');
+  if(!h||!m||!inp||h.dataset.init) return;
+  h.dataset.init='1';
+  const [ch,cm]=(inp.value||'09:00').split(':');
+  const hours=[...Array(24)].map((_,i)=>String(i).padStart(2,'0'));
+  let mins=[...Array(60/TP_MIN_STEP)].map((_,i)=>String(i*TP_MIN_STEP).padStart(2,'0'));
+  if(!mins.includes(cm)) mins=[...mins, cm].sort();
+  tpFill(h, hours, ch);
+  tpFill(m, mins, cm);
+  [h,m].forEach(col=>{
+    let t;
+    col.addEventListener('scroll', ()=>{
+      tpMark(col);
+      if(col._prog) return;   // our own animation — leave it alone
+      clearTimeout(t); t=setTimeout(()=>{ col.scrollTop = Math.round(col.scrollTop/TP_ITEM_H)*TP_ITEM_H; tpSync(); }, 90);
+    }, {passive:true});
+    col.addEventListener('click', e=>{
+      const it=e.target.closest('.titem'); if(!it) return;
+      tpScrollTo(col, it.dataset.v);
+      tpCommit(col, it.dataset.v);
+    });
+    col.addEventListener('keydown', e=>{
+      if(e.key!=='ArrowUp' && e.key!=='ArrowDown') return;
+      e.preventDefault();
+      const i=Math.round(col.scrollTop/TP_ITEM_H) + (e.key==='ArrowDown'?1:-1);
+      const el=col.children[Math.max(0,Math.min(col.children.length-1,i))];
+      if(el){ tpScrollTo(col, el.dataset.v); tpCommit(col, el.dataset.v); }
+    });
+  });
+  tpSync();
 }
 
 // ─── VIEW FILTER ─────────────────────────────────────────
