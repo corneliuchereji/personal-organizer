@@ -978,7 +978,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-23-time-wheel';
+const BUILD_VERSION = '2026-09-25-leave-by-travel';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1255,6 +1255,9 @@ app.post('/api/data', (req, res) => {
   }
   // Push subscriptions are server-owned too.
   if (!req.body.pushSubs) updated.pushSubs = current.pushSubs || [];
+  // Travel results are server-owned, like pushSubs — a client save must
+  // not clear them (the browser never sends this field).
+  if (!req.body.travelCache) updated.travelCache = current.travelCache || {};
 
   // A client sends the revision it last loaded. If the server has moved on
   // since (another device saved, or Telegram added something), this payload
@@ -2392,6 +2395,111 @@ async function geocodeLocation(name) {
 }
 
 // GET /api/weather?lat=..&lon=..          -> forecast for coordinates
+// ═══════════════════════════════════════════════════
+// TRAVEL / "LEAVE BY"
+// Works out how long it takes to drive to an event's location, so the app
+// can warn you when to LEAVE rather than when the event starts.
+// Routing uses OSRM's free public router (no key, no signup). If it's
+// unreachable we fall back to a straight-line estimate, clearly flagged as
+// an estimate rather than quietly pretending it's a real route.
+// ═══════════════════════════════════════════════════
+const TRAVEL_TTL_MS = 30*24*3600*1000;   // routes between two towns don't change often
+const TRAVEL_FALLBACK_KMH = 62;          // realistic average incl. towns, for the estimate
+
+function haversineKm(a, b){
+  const R=6371, rad=x=>x*Math.PI/180;
+  const dLat=rad(b.lat-a.lat), dLon=rad(b.lon-a.lon);
+  const x=Math.sin(dLat/2)**2 + Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+
+async function drivingRoute(from, to){
+  try{
+    const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false`;
+    const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0' } });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    const route = d.routes && d.routes[0];
+    if(!route) throw new Error(d.message || 'no route');
+    return { mins: Math.round(route.duration/60), km: Math.round(route.distance/1000), estimated:false };
+  }catch(e){
+    // Straight-line distance with a road-factor. Rough, but better than no
+    // warning at all — and labelled so it's never mistaken for a real route.
+    const km = haversineKm(from, to) * 1.28;
+    return { mins: Math.round(km/TRAVEL_FALLBACK_KMH*60), km: Math.round(km), estimated:true, error:e.message };
+  }
+}
+
+function homeOf(data){
+  const st = data.settings || {};
+  if (st.homeLat && st.homeLon) return { lat:+st.homeLat, lon:+st.homeLon, name: st.homeName || 'Home' };
+  // Falls back to the weather location, which is already where you are.
+  if (st.wxLat && st.wxLon) return { lat:+st.wxLat, lon:+st.wxLon, name: st.wxLocName || 'Home' };
+  return null;
+}
+
+function travelKey(home, place){ return home.lat.toFixed(3)+','+home.lon.toFixed(3)+'|'+String(place).trim().toLowerCase(); }
+
+function travelCached(data, place){
+  const home = homeOf(data); if(!home || !place) return null;
+  const hit = (data.travelCache||{})[travelKey(home, place)];
+  if(!hit) return null;
+  if(Date.now() - (hit.at||0) > TRAVEL_TTL_MS) return null;
+  return hit;
+}
+
+// Resolves (and caches) the drive from home to a place name.
+async function travelFor(data, place, force){
+  const home = homeOf(data);
+  if(!home) return { error:'No home location set — open the weather panel and choose your town.' };
+  if(!place || !String(place).trim()) return { error:'No location on this event.' };
+  const key = travelKey(home, place);
+  if(!force){
+    const hit = travelCached(data, place);
+    if(hit) return hit;
+  }
+  const geo = await geocodeLocation(place);
+  if(!geo) return { error:'Could not find “'+place+'” on the map.' };
+  const route = await drivingRoute(home, { lat:geo.lat, lon:geo.lon });
+  const entry = { ...route, place, toName: geo.label || place, lat:geo.lat, lon:geo.lon,
+                  fromName: home.name, at: Date.now() };
+  const cur = readData();
+  if(!cur.travelCache) cur.travelCache = {};
+  cur.travelCache[key] = entry;
+  writeData(cur);
+  return entry;
+}
+
+// Called before the reminder check so the (synchronous) due-calculation can
+// read travel times straight from the cache.
+async function ensureTravelForUpcoming(data){
+  const st = data.settings || {};
+  if(st.leaveBy === false) return;
+  const days = [getToday(), addDays(getToday(),1)];
+  const items = [
+    ...(data.tasks||[]),
+    ...(data.sportEvents||[])
+  ].filter(ev => ev.location && String(ev.location).trim() && days.some(ds => matchesDate(ev, ds)));
+  const seen = new Set();
+  for(const ev of items){
+    const place = String(ev.location).trim();
+    if(seen.has(place.toLowerCase())) continue;
+    seen.add(place.toLowerCase());
+    if(travelCached(data, place)) continue;
+    try{ await travelFor(data, place); }catch(e){ console.log('Travel lookup failed for', place, e.message); }
+    await sleep(400);   // be polite to the free router
+  }
+}
+
+// GET /api/travel?to=Timisoara[&force=1]
+app.get('/api/travel', async (req, res) => {
+  try{
+    const data = readData();
+    const out = await travelFor(data, req.query.to, req.query.force === '1');
+    res.json(out);
+  }catch(e){ res.status(500).json({ error:e.message }); }
+});
+
 // GET /api/weather?q=Timisoara            -> geocodes the name first
 app.get('/api/weather', async (req, res) => {
   try {
@@ -2587,6 +2695,20 @@ function dueReminders(data, nowMs, windowMs){
       if (ev._type === 'task' && isDoneOn(ev, ds)) continue; // already ticked off for this date
       const startMs = eventStartMs({ ...ev, date: ds });
       if (isNaN(startMs)) continue;
+      // A "leave by" warning is a reminder derived from travel time rather
+      // than a fixed number of minutes, so it's added alongside the others.
+      const stx = data.settings || {};
+      if (stx.leaveBy !== false && ev.location) {
+        const tr = travelCached(data, ev.location);
+        if (tr && tr.mins != null) {
+          const buffer = parseInt(stx.leaveBuffer != null ? stx.leaveBuffer : 10) || 0;
+          const leaveMs = startMs - (tr.mins + buffer)*60000;
+          const lkey = ev.id + '|' + ds + '|leave';
+          if (!sent[lkey] && leaveMs <= nowMs && nowMs - leaveMs < windowMs && startMs > nowMs) {
+            due.push({ ev, ds, startMs, mins: Math.round((startMs-nowMs)/60000), key: lkey, leave: true, travel: tr, buffer });
+          }
+        }
+      }
       for (const mins of list) {
         const fireMs = startMs - mins*60000;
         // Each reminder is tracked separately, so "2 hours before" going
@@ -2621,17 +2743,31 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
     // would have silently disabled web-push reminders too.
     if ((!token || !chatId) && !hasPush) return;
     const nowMs = Date.now();
+    // Cache travel times for today's and tomorrow's located events first, so
+    // the (synchronous) due-check below can read them.
+    try { await ensureTravelForUpcoming(d); } catch(e) { console.log('Travel prep failed:', e.message); }
     // 10-minute grace window so a brief restart/outage doesn't drop a reminder.
-    const due = dueReminders(d, nowMs, 10*60000);
+    const due = dueReminders(readData(), nowMs, 10*60000);
     if (!due.length) return;
     const data = readData();
     if (!data.sentReminders) data.sentReminders = {};
     for (const item of due) {
       const ev = item.ev;
       const emoji = ev._type === 'task' ? colorEmoji(groupColor(data, ev.group)) : '🏆';
-      let msg = '⏰ <b>Starting in '+reminderLabel(item.mins)+'</b>\n\n';
+      let msg;
+      if (item.leave) {
+        const t = item.travel;
+        msg  = '🚗 <b>Time to leave</b>\n\n';
+        msg += emoji+' <b>'+ev.name+'</b>\n';
+        msg += '🕐 Starts '+fmtTime(ev.time)+(item.ds!==getToday()?' · '+item.ds:'')+'\n';
+        msg += '📍 '+(t.toName||ev.location)+'\n';
+        msg += '🚗 '+reminderLabel(t.mins)+' drive'+(t.km?' · '+t.km+' km':'')+(t.estimated?' (estimated)':'')+'\n';
+        if (item.buffer) msg += '⏳ includes '+item.buffer+' min to spare\n';
+      } else {
+      msg = '⏰ <b>Starting in '+reminderLabel(item.mins)+'</b>\n\n';
       msg += emoji+' <b>'+ev.name+'</b>\n';
       msg += '🕐 '+fmtTime(ev.time)+(item.ds!==getToday()?' · '+item.ds:'')+'\n';
+      }
       if (ev.competitionName) msg += '🏆 '+ev.competitionName+'\n';
       if (ev.notes) msg += '📝 '+ev.notes+'\n';
       // Both channels: Telegram (reliable on phones) and web push (works
@@ -2645,11 +2781,15 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
         const when = fmtTime(ev.time) + (item.ds!==getToday() ? ' · '+item.ds : '');
         const secsToStart = Math.floor((item.startMs - Date.now())/1000);
         pushCount = await sendWebPush(
-          '⏰ In '+reminderLabel(item.mins)+': '+ev.name,
-          when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : ''),
+          item.leave
+            ? '🚗 Leave now — '+ev.name
+            : '⏰ In '+reminderLabel(item.mins)+': '+ev.name,
+          item.leave
+            ? reminderLabel(item.travel.mins)+' drive to '+(item.travel.toName||ev.location)+' · starts '+fmtTime(ev.time)
+            : when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : ''),
           // Same tag as the in-page fallback so the device shows one
           // notification, not two, if both happen to fire.
-          { date: item.ds, tag: 'rem-'+ev.id+'-'+item.ds },
+          { date: item.ds, tag: 'rem-'+ev.id+'-'+item.ds+(item.leave?'-leave':'') },
           // Expire when the event starts — never deliver a stale reminder.
           { ttl: secsToStart, urgency: 'high' }
         );
