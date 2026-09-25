@@ -460,6 +460,22 @@ body::before{
 .tquick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .tquick .btn{font-size:12px;padding:5px 11px}
 @media (prefers-reduced-motion:reduce){ .titem{transition:none} }
+/* ── Widget launcher ── */
+#wdrop{position:fixed;display:none;flex-direction:column;z-index:430;width:270px;padding:6px;
+  background:var(--glass-solid);-webkit-backdrop-filter:blur(26px) saturate(150%);backdrop-filter:blur(26px) saturate(150%);
+  border:1px solid var(--border2);border-radius:18px;box-shadow:0 30px 70px rgba(4,8,26,.6)}
+#wdrop.open{display:flex}
+.witem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 11px;border:none;border-radius:12px;
+  background:transparent;color:var(--txt);font:inherit;font-size:13px;cursor:pointer}
+.witem:hover{background:var(--bg3)}
+.witem:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.witem > i:first-child{color:var(--accent);font-size:17px;flex:none}
+.witem span{flex:1;min-width:0;display:block}
+.witem small{display:block;font-size:10px;color:var(--txt3);margin-top:1px}
+.witem .wgo{font-size:13px;color:var(--txt3);flex:none}
+.witem.wmanage{border-top:1px solid var(--border);border-radius:0 0 12px 12px;margin-top:4px;color:var(--txt2);font-size:12px}
+.witem.wmanage > i:first-child{color:var(--txt3);font-size:15px}
+.wempty{font-size:12px;color:var(--txt3);padding:12px}
 </style>
 </head>
 <body>
@@ -497,6 +513,7 @@ body::before{
 <!-- TOOLBAR (top right) — replaces the old banner to give the calendar the space -->
 <div id="tools">
   <button class="btn acc sm" onclick="openAddTask()"><i class="ti ti-plus"></i><span class="tl">Add event</span></button>
+  <button class="btn sm" id="widgetsBtn" onclick="toggleWidgets(event)" aria-haspopup="true" aria-expanded="false"><i class="ti ti-apps"></i><span class="tl">Widgets</span></button>
   <button class="btn sm ico" onclick="openChat()" title="Assistant" aria-label="Open assistant"><i class="ti ti-message-circle"></i></button>
   <button class="btn sm ico" id="filterBtn" onclick="openFilter()" title="Choose what to show" aria-label="Choose what to show"><i class="ti ti-adjustments-horizontal"></i><span class="fdot"></span></button>
   <button class="btn sm ico" onclick="openSettings()" title="Settings" aria-label="Settings"><i class="ti ti-settings"></i></button>
@@ -529,6 +546,9 @@ body::before{
 </div>
 
 <!-- right panel removed -->
+
+<!-- WIDGET LAUNCHER -->
+<div id="wdrop" role="menu" aria-labelledby="widgetsBtn"></div>
 
 <!-- CHATBOT -->
 <div id="chatbot" role="dialog" aria-modal="true" aria-labelledby="chatTitle" onclick="if(event.target===this)closeChat(false)">
@@ -616,7 +636,8 @@ function saveState(){
           tgMorningMin: S.tgMorningMin||'00',
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
           apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123',
-          leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10
+          leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10,
+          widgets: Array.isArray(S.widgets)?S.widgets:null
         }
     };
     // Mirror the change into the on-device copy straight away, so reopening
@@ -727,6 +748,7 @@ async function loadFromServer(){
       tsdbKey: d.settings?.tsdbKey||'123',
       follows: d.follows || {teams:[],competitions:[]},
       travelCache: d.travelCache || {},
+      widgets: Array.isArray(d.settings?.widgets) ? d.settings.widgets : null,
       leaveBy: d.settings?.leaveBy !== false,
       leaveBuffer: d.settings?.leaveBuffer != null ? d.settings.leaveBuffer : 10,
       _rev: d._rev,
@@ -2685,6 +2707,97 @@ async function sendChat(){
     addChatMsg(processChat(text),'b');
   }
 }
+
+// ─── WIDGET LAUNCHER ─────────────────────────────────────
+// A short list of sites you want one tap away. They open in a new window
+// rather than an iframe: most sites refuse to be framed, and a real tab
+// keeps their own login and layout intact.
+const WIDGETS_DEFAULT=[
+  {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
+  {id:'w_windy',name:'Windy',      desc:'Weather radar and forecast maps', url:'https://www.windy.com/',    icon:'ti-wind'},
+  {id:'w_maps', name:'Google Maps',desc:'Maps and live traffic',           url:'https://maps.google.com/',  icon:'ti-map-2'}
+];
+function getWidgets(){
+  const w = S.widgets;
+  return Array.isArray(w) ? w : WIDGETS_DEFAULT;
+}
+function toggleWidgets(e){
+  if(e) e.stopPropagation();
+  const d=document.getElementById('wdrop');
+  const open=d.classList.contains('open');
+  if(open) return closeWidgets();
+  const list=getWidgets();
+  d.innerHTML = (list.length
+      ? list.map(w=>'<button class="witem" role="menuitem" onclick="openWidget(\''+w.id+'\')">'+
+          '<i class="ti '+(w.icon||'ti-external-link')+'"></i>'+
+          '<span><b>'+escHtml(w.name)+'</b>'+(w.desc?'<small>'+escHtml(w.desc)+'</small>':'')+'</span>'+
+          '<i class="ti ti-arrow-up-right wgo"></i></button>').join('')
+      : '<div class="wempty">No widgets yet.</div>')
+    + '<button class="witem wmanage" role="menuitem" onclick="manageWidgets()"><i class="ti ti-settings"></i><span>Manage widgets</span></button>';
+  // Anchor it under the toolbar button.
+  const b=document.getElementById('widgetsBtn').getBoundingClientRect();
+  d.style.top=(b.bottom+8)+'px';
+  d.style.right=Math.max(8,(window.innerWidth-b.right))+'px';
+  d.classList.add('open');
+  document.getElementById('widgetsBtn').setAttribute('aria-expanded','true');
+}
+function closeWidgets(){
+  const d=document.getElementById('wdrop');
+  if(d) d.classList.remove('open');
+  const b=document.getElementById('widgetsBtn');
+  if(b) b.setAttribute('aria-expanded','false');
+}
+document.addEventListener('click', e=>{
+  const d=document.getElementById('wdrop');
+  if(d && d.classList.contains('open') && !d.contains(e.target)) closeWidgets();
+});
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
+
+function openWidget(id){
+  const w=getWidgets().find(x=>x.id===id);
+  closeWidgets();
+  if(!w) return;
+  // noopener keeps the new tab from being able to touch this page.
+  window.open(w.url, '_blank', 'noopener,noreferrer');
+}
+
+function manageWidgets(){
+  closeWidgets();
+  const list=getWidgets();
+  showModal('Widgets',
+    '<div style="font-size:11px;color:var(--txt3);margin-bottom:10px">Sites you want one tap away. They open in a new window.</div>'+
+    '<div id="wlist">'+ (list.length ? list.map((w,i)=>
+      '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'+
+        '<i class="ti '+(w.icon||'ti-external-link')+'" style="color:var(--accent)"></i>'+
+        '<span style="flex:1;min-width:0"><b style="font-size:13px">'+escHtml(w.name)+'</b>'+
+          '<div style="font-size:10px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(w.url)+'</div></span>'+
+        '<button class="btn sm red" onclick="delWidget('+i+')" aria-label="Remove"><i class="ti ti-trash"></i></button>'+
+      '</div>').join('') : '<div style="font-size:12px;color:var(--txt3);padding:6px 0">Nothing here yet.</div>')+'</div>'+
+    '<div class="field" style="margin-top:12px"><label>Add a widget</label>'+
+      '<input id="wName" placeholder="Name — e.g. Rome2Rio" autocomplete="off">'+
+      '<input id="wUrl" placeholder="https://…" style="margin-top:6px" autocomplete="off">'+
+      '<div id="wErr" style="font-size:11px;color:var(--red);margin-top:5px"></div>'+
+    '</div>',
+    '<button class="btn" onclick="resetWidgets()">Restore defaults</button><span class="msp"></span>'+
+    '<button class="btn" onclick="addWidget()"><i class="ti ti-plus"></i> Add</button>'+
+    '<button class="btn acc" onclick="closeModal()">Done</button>');
+}
+function saveWidgets(list){ S.widgets=list; saveState(); }
+function addWidget(){
+  const name=(document.getElementById('wName').value||'').trim();
+  let url=(document.getElementById('wUrl').value||'').trim();
+  const err=document.getElementById('wErr');
+  if(!name||!url){ err.textContent='Give it a name and a web address.'; return; }
+  if(!/^https?:\/\//i.test(url)) url='https://'+url;   // be forgiving about the prefix
+  try{ new URL(url); }catch(e){ err.textContent='That doesn\u2019t look like a valid web address.'; return; }
+  saveWidgets([...getWidgets(), {id:'w_'+uid(), name, url, icon:'ti-external-link'}]);
+  manageWidgets();
+}
+function delWidget(i){
+  const list=[...getWidgets()]; list.splice(i,1);
+  saveWidgets(list); manageWidgets();
+}
+function resetWidgets(){ saveWidgets(WIDGETS_DEFAULT.slice()); manageWidgets(); }
 
 // ─── TRAVEL / LEAVE BY ───────────────────────────────────
 // When an event has a location the server works out the drive from home and
