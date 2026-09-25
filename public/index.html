@@ -479,6 +479,21 @@ body::before{
 .witem.wmanage{border-top:1px solid var(--border);border-radius:0 0 12px 12px;margin-top:4px;color:var(--txt2);font-size:12px}
 .witem.wmanage > i:first-child{color:var(--txt3);font-size:15px}
 .wempty{font-size:12px;color:var(--txt3);padding:12px}
+/* ── Past vs upcoming ──
+   Past entries recede and completed ones are struck through, so a glance at
+   the month separates "done with" from "still coming". */
+.chip.past{opacity:.45;filter:saturate(.45)}
+.chip.done{text-decoration:line-through;opacity:.4;filter:saturate(.3)}
+.month-day.past-day{background:rgba(255,255,255,.018)}
+.month-day.past-day .mday-num{opacity:.45}
+.month-day.past-day .mday-more{opacity:.5}
+/* The colour bars on phones carry the same distinction. */
+@media(max-width:600px){
+  .chip.past{opacity:.35}
+  .chip.done{opacity:.25}
+}
+.ecard.past{opacity:.62}
+.ecard.past .ec-title{font-weight:500}
 </style>
 </head>
 <body>
@@ -1106,7 +1121,7 @@ function renderCard(ev){
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard'+(ev.done?' done':'')+'">'+
+  return '<div class="ecard'+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
@@ -1318,10 +1333,17 @@ function renderCal(){
         const isSport=ev._type==='sport';
         const badgeUrl=isSport?(ev._display==='collapsed'?ev.competitionLogo:(ev.home&&ev.home.logo)||ev.competitionLogo):null;
         const icon=badgeUrl?'<img src="'+escHtml(badgeUrl)+'" style="width:12px;height:12px;object-fit:contain;border-radius:2px;flex-shrink:0;vertical-align:-2px;margin-right:3px">':'';
-        return '<div class="chip" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+escHtml(ev.name)+'">'+icon+escHtml(ev.name)+'</div>';
+        // A finished day should look finished: past entries fade back and
+        // completed tasks are struck through, so what's still ahead of you
+        // stands out at a glance.
+        const isPast = ds < TODAY;
+        const isDone = ev._type==='task' && ev.done;
+        const cls = 'chip'+(isPast?' past':'')+(isDone?' done':'');
+        const tip = escHtml(ev.name)+(isDone?' — done':(isPast?' — past':''));
+        return '<div class="'+cls+'" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+tip+'">'+icon+escHtml(ev.name)+'</div>';
       }).join('');
       if(evs.length>maxChips)chips+='<div class="mday-more">+'+(evs.length-maxChips)+' more…</div>';
-      html+='<div class="month-day'+(c.other?' other-month':'')+(isToday?' today':'')+(isSel&&!isToday?' selected':'')+(evs.length?' has-events':'')+'" onclick="selectDay(\''+ds+'\')">';
+      html+='<div class="month-day'+(c.other?' other-month':'')+(ds<TODAY?' past-day':'')+(isToday?' today':'')+(isSel&&!isToday?' selected':'')+(evs.length?' has-events':'')+'" onclick="selectDay(\''+ds+'\')">';
       html+='<div class="mday-num">'+c.d+'</div><div class="mday-chips">'+chips+'</div></div>';
     }
     html+='</div>';
@@ -1551,6 +1573,18 @@ function remindersOf(ev){
   list = [...new Set(list.map(String))].filter(m=>parseInt(m)>0);
   return list.sort((a,b)=>parseInt(b)-parseInt(a)); // earliest warning first
 }
+// True once an event's start time has gone by — used to fade finished
+// items in the day list, including ones earlier today.
+function isPastEvent(ev){
+  const ds = ev._occDate || ev.date;
+  if(!ds) return false;
+  if(ds < TODAY) return true;
+  if(ds > TODAY) return false;
+  const [h,m]=(ev.time||'23:59').split(':').map(Number);
+  const d=new Date(); d.setHours(h||0, m||0, 0, 0);
+  return Date.now() > d.getTime();
+}
+
 function reminderLabelShort(m){
   m=parseInt(m);
   return m>=1440?(m/1440)+'d':m>=60?(m/60)+'h':m+'m';
