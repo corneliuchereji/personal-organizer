@@ -392,7 +392,10 @@ body::before{
        grid-template-areas:"wx cal" "lp cal"}
   /* The toolbar sits in the calendar's header row, top right. */
   #tools{position:absolute;top:21px;right:26px}
-  .cal-head{padding-right:300px}
+  /* Space for the floating toolbar is measured from the toolbar itself
+     (see syncToolsWidth) rather than hard-coded, so adding a button can't
+     make it overlap the calendar's own controls. */
+  .cal-head{padding-right:calc(var(--tools-w, 300px) + 30px)}
 }
 @media(max-width:900px){
   /* On phones it floats over the weather panel's top-right corner. */
@@ -3046,6 +3049,17 @@ window.addEventListener('keydown', e=>{
   if(e.key==='Escape' && document.getElementById('chatbot').classList.contains('open')) closeChat(false);
 });
 window.addEventListener('load', refreshFilterDot);
+
+// Keep the calendar header's reserved space in step with the real toolbar
+// width — it changes with the button set, the font, and the language.
+function syncToolsWidth(){
+  const t=document.getElementById('tools');
+  if(!t) return;
+  document.documentElement.style.setProperty('--tools-w', Math.ceil(t.getBoundingClientRect().width)+'px');
+}
+window.addEventListener('load', syncToolsWidth);
+window.addEventListener('resize', syncToolsWidth);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncToolsWidth); // icon font changes the width
 let _rsz; window.addEventListener('resize', ()=>{ clearTimeout(_rsz); _rsz=setTimeout(()=>{ try{ renderCal(); }catch(e){} }, 150); });
 
 // ─── SWIPE NAVIGATION ─────────────────────────────────────
