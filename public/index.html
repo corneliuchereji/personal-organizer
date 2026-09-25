@@ -615,7 +615,8 @@ function saveState(){
           tgMorningHour: S.tgMorningHour||'08',
           tgMorningMin: S.tgMorningMin||'00',
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
-          apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123'
+          apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123',
+          leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10
         }
     };
     // Mirror the change into the on-device copy straight away, so reopening
@@ -725,6 +726,9 @@ async function loadFromServer(){
       highlightlyKey: d.settings?.highlightlyKey||'',
       tsdbKey: d.settings?.tsdbKey||'123',
       follows: d.follows || {teams:[],competitions:[]},
+      travelCache: d.travelCache || {},
+      leaveBy: d.settings?.leaveBy !== false,
+      leaveBuffer: d.settings?.leaveBuffer != null ? d.settings.leaveBuffer : 10,
       _rev: d._rev,
       weekOffset:keepWeek, dayOffset:keepDay
     };
@@ -1071,6 +1075,7 @@ function renderCard(ev){
   if(ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
   meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
   meta+=remindersBadge(ev);
+  meta+=leaveChip(ev);
   let acts='';
   acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\',\''+(ev._occDate||ev.date)+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
@@ -1350,6 +1355,13 @@ function evForm(ev){
     '<option value="sport"'+(type==='sport'?' selected':'')+'>🏆 Sport Event</option></select></div>'+
     '<div class="field"><label>Name</label><input id="fn" value="'+(ev?escHtml(ev.name):'')+'" placeholder="e.g. Dentist · F1 Belgian GP" autocomplete="off"></div>'+
     '<div class="field"><label>Date</label><input type="date" id="fd" value="'+(ev?ev.date:TODAY)+'"></div>'+
+    '<div class="field"><label>Location <span style="font-weight:400;color:var(--txt3)">\u2014 optional, enables a \u201cleave by\u201d warning</span></label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="floc" style="flex:1" value="'+(ev&&ev.location?escHtml(ev.location):'')+'" placeholder="e.g. Timi\u0219oara" autocomplete="off" onchange="previewTravel()">'+
+        '<button type="button" class="btn sm" onclick="previewTravel(true)">Check</button>'+
+      '</div>'+
+      '<div id="travelInfo" style="font-size:11px;color:var(--txt3);margin-top:5px"></div>'+
+    '</div>'+
     '<div style="display:flex;gap:10px">'+
       '<div class="field" style="flex:1"><label>Start time (24h)</label>'+
         // The real value still lives in #ft so everything that reads the
@@ -1413,6 +1425,7 @@ function doSaveEvent(){
   const date=document.getElementById('fd').value;
   const time=document.getElementById('ft').value;
   const notes=document.getElementById('fno').value;
+  const location=(document.getElementById('floc')?document.getElementById('floc').value:'').trim();
   const reminders=[...document.querySelectorAll('#fremind input:checked')].map(i=>i.value);
   const reminder=reminders.length?reminders[reminders.length-1]:''; // legacy single field, kept for older code paths
   // Keep the original object so fields the form doesn't show survive an
@@ -1429,9 +1442,9 @@ function doSaveEvent(){
   if(type==='sport'){
     const sport=document.getElementById('fsport').value;
     if(!S.sportEvents)S.sportEvents=[];
-    S.sportEvents.push({...keep,id:newId,name,date,time,notes,sport,color:_tc,reminders,reminder});
+    S.sportEvents.push({...keep,id:newId,name,date,time,notes,location,sport,color:_tc,reminders,reminder});
   } else {
-    S.tasks.push({...keep,id:newId,name,date,time,notes,
+    S.tasks.push({...keep,id:newId,name,date,time,notes,location,
       group:document.getElementById('fg').value,
       freq:document.getElementById('fr').value,
       priority:document.getElementById('fp').value,
@@ -1704,6 +1717,13 @@ function openSettings(){
     '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
     '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-car"></i> Travel &amp; leave-by</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:8px">When an event has a location, you get an extra reminder telling you when to set off. Distances are measured from your weather location (<b>'+escHtml(S.wxLocName||'not set')+'</b>).</div>'+
+    '<label class="vopt" style="border:none;padding:4px 0"><input type="checkbox" id="setLeaveBy"'+(S.leaveBy!==false?' checked':'')+' onchange="saveTravelSettings()"><span class="vbox"></span><span><b>Leave-by reminders</b><br><small>Uses a free routing service; falls back to an estimate if it\u2019s unavailable</small></span></label>'+
+    '<div class="field" style="margin-top:6px"><label>Extra time to spare</label>'+
+      '<select id="setLeaveBuffer" onchange="saveTravelSettings()">'+
+        [0,5,10,15,20,30].map(n=>'<option value="'+n+'"'+((S.leaveBuffer!=null?S.leaveBuffer:10)==n?' selected':'')+'>'+(n===0?'None':n+' min')+'</option>').join('')+
+      '</select></div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-bell"></i> Notifications on this device</div>'+
     '<div id="pushStatus" style="font-size:11px;color:var(--txt2);margin-bottom:6px">Checking\u2026</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:4px">'+
@@ -2664,6 +2684,57 @@ async function sendChat(){
     // still does something rather than failing silently.
     addChatMsg(processChat(text),'b');
   }
+}
+
+// ─── TRAVEL / LEAVE BY ───────────────────────────────────
+// When an event has a location the server works out the drive from home and
+// the app shows when to set off. The travel lookup is cached server-side, so
+// the same town costs nothing to look up again.
+function saveTravelSettings(){
+  S.leaveBy = document.getElementById('setLeaveBy').checked;
+  S.leaveBuffer = parseInt(document.getElementById('setLeaveBuffer').value);
+  saveState(); renderAll();
+}
+
+async function previewTravel(force){
+  const inp=document.getElementById('floc'), out=document.getElementById('travelInfo');
+  if(!inp||!out) return;
+  const place=(inp.value||'').trim();
+  if(!place){ out.textContent=''; return; }
+  out.innerHTML='<i class="ti ti-loader-2"></i> Checking the drive\u2026';
+  try{
+    const d=await (await fetch('/api/travel?to='+encodeURIComponent(place)+(force?'&force=1':''))).json();
+    if(d.error){ out.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
+    const t=document.getElementById('ft');
+    const leave=t? leaveTimeFor(t.value, d.mins) : null;
+    out.innerHTML='\ud83d\ude97 '+reminderLabelTxt(d.mins)+' drive'+(d.km?' \u00b7 '+d.km+' km':'')+
+      (d.estimated?' <span style="color:var(--yellow)">(estimated \u2014 router unavailable)</span>':'')+
+      (leave?' \u2014 leave by <b>'+leave+'</b>':'');
+  }catch(e){ out.innerHTML='<span style="color:var(--red)">Could not check travel time.</span>'; }
+}
+function reminderLabelTxt(m){
+  m=parseInt(m);
+  if(m>=60) return Math.floor(m/60)+'h'+(m%60?' '+(m%60)+'m':'');
+  return m+' min';
+}
+// Departure time = start − drive − the slack you configured.
+function leaveTimeFor(hhmm, driveMins){
+  if(!hhmm||driveMins==null) return null;
+  const buf=parseInt(S.leaveBuffer!=null?S.leaveBuffer:10)||0;
+  const [h,m]=hhmm.split(':').map(Number);
+  const d=new Date(); d.setHours(h,m,0,0);
+  d.setMinutes(d.getMinutes()-driveMins-buf);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function leaveChip(ev){
+  if(S.leaveBy===false || !ev.location) return '';
+  const cache=S.travelCache||{};
+  // Match the server's cache key loosely: find an entry for this place.
+  const hit=Object.values(cache).find(x=>x && x.place && x.place.toLowerCase()===String(ev.location).toLowerCase());
+  if(!hit||hit.mins==null) return '';
+  const lv=leaveTimeFor(ev.time, hit.mins);
+  if(!lv) return '';
+  return '<span style="font-size:9px;background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b45;border-radius:10px;padding:1px 6px;display:inline-flex;align-items:center;gap:3px" title="'+escHtml(hit.toName||ev.location)+' \u00b7 '+hit.mins+' min drive'+(hit.estimated?' (estimated)':'')+'"><i class="ti ti-car" style="font-size:9px"></i>leave '+lv+'</span>';
 }
 
 // ─── TIME WHEEL ──────────────────────────────────────────
