@@ -409,7 +409,14 @@ body::before{
 #filterBtn{position:relative}
 #filterBtn .fdot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);display:none;box-shadow:0 0 0 2px #0F1732}
 #filterBtn.on .fdot{display:block}
-@media(max-width:380px){ #tools .tl{display:none} }
+/* Phone widths: labels go, every button becomes an equal round icon.
+   Titles and aria-labels keep them identifiable. */
+@media(max-width:700px){
+  #tools{gap:5px}
+  #tools .tl{display:none}
+  #tools .btn{width:36px;height:36px;padding:0;justify-content:center;border-radius:var(--rp)}
+  #tools .btn i{font-size:17px}
+}
 
 /* ── Assistant dialog ── */
 #chatbot{position:fixed;inset:0;height:auto;z-index:420;display:none;align-items:center;justify-content:center;
@@ -530,8 +537,8 @@ body::before{
 
 <!-- TOOLBAR (top right) — replaces the old banner to give the calendar the space -->
 <div id="tools">
-  <button class="btn acc sm" onclick="openAddTask()"><i class="ti ti-plus"></i><span class="tl">Add event</span></button>
-  <button class="btn sm" id="widgetsBtn" onclick="toggleWidgets(event)" aria-haspopup="true" aria-expanded="false"><i class="ti ti-apps"></i><span class="tl">Widgets</span></button>
+  <button class="btn acc sm" onclick="openAddTask()" title="Add event" aria-label="Add event"><i class="ti ti-plus"></i><span class="tl">Add event</span></button>
+  <button class="btn sm" id="widgetsBtn" onclick="toggleWidgets(event)" aria-haspopup="true" aria-expanded="false" title="Widgets" aria-label="Widgets"><i class="ti ti-apps"></i><span class="tl">Widgets</span></button>
   <button class="btn sm ico" onclick="openChat()" title="Assistant" aria-label="Open assistant"><i class="ti ti-message-circle"></i></button>
   <button class="btn sm ico" id="filterBtn" onclick="openFilter()" title="Choose what to show" aria-label="Choose what to show"><i class="ti ti-adjustments-horizontal"></i><span class="fdot"></span></button>
   <button class="btn sm ico" onclick="openSettings()" title="Settings" aria-label="Settings"><i class="ti ti-settings"></i></button>
@@ -767,6 +774,8 @@ async function loadFromServer(){
       follows: d.follows || {teams:[],competitions:[]},
       travelCache: d.travelCache || {},
       widgets: Array.isArray(d.settings?.widgets) ? d.settings.widgets : null,
+      homeAddress: d.settings?.homeAddress || '',
+      homeName: d.settings?.homeName || '',
       leaveBy: d.settings?.leaveBy !== false,
       leaveBuffer: d.settings?.leaveBuffer != null ? d.settings.leaveBuffer : 10,
       _rev: d._rev,
@@ -1386,6 +1395,7 @@ function colorPicker(cur){
 
 function toggleEvType(){
   initTimePicker(); // form has just been rendered
+  if(document.getElementById('fmode')) onModeChange();
 
   const t=document.getElementById('fevtype').value;
   document.getElementById('task-extra').style.display=t==='task'?'block':'none';
@@ -1404,8 +1414,14 @@ function evForm(ev){
     '<div class="field"><label>Date</label><input type="date" id="fd" value="'+(ev?ev.date:TODAY)+'"></div>'+
     '<div class="field"><label>Location <span style="font-weight:400;color:var(--txt3)">\u2014 optional, enables a \u201cleave by\u201d warning</span></label>'+
       '<div style="display:flex;gap:6px">'+
-        '<input id="floc" style="flex:1" value="'+(ev&&ev.location?escHtml(ev.location):'')+'" placeholder="e.g. Timi\u0219oara" autocomplete="off" onchange="previewTravel()">'+
+        '<input id="floc" style="flex:1" value="'+(ev&&ev.location?escHtml(ev.location):'')+'" placeholder="Street and town, e.g. Str. Gheorghe Laz\u0103r 12, Timi\u0219oara" autocomplete="off" onchange="previewTravel()">'+
         '<button type="button" class="btn sm" onclick="previewTravel(true)">Check</button>'+
+      '</div>'+
+      '<div class="rem-chips" id="fmode" style="margin-top:7px">'+
+        Object.entries(TRAVEL_MODES).map(([k,m])=>'<label class="rem-chip"><input type="radio" name="tmode" value="'+k+'"'+((ev&&ev.travelMode?ev.travelMode:'drive')===k?' checked':'')+' onchange="onModeChange()"><span>'+m.emoji+' '+m.label+'</span></label>').join('')+
+      '</div>'+
+      '<div id="fminsWrap" style="display:none;margin-top:7px">'+
+        '<input id="fmins" type="number" min="1" max="600" placeholder="Journey time in minutes" value="'+(ev&&ev.travelMins?ev.travelMins:'')+'" oninput="previewTravel()">'+
       '</div>'+
       '<div id="travelInfo" style="font-size:11px;color:var(--txt3);margin-top:5px"></div>'+
     '</div>'+
@@ -1473,6 +1489,8 @@ function doSaveEvent(){
   const time=document.getElementById('ft').value;
   const notes=document.getElementById('fno').value;
   const location=(document.getElementById('floc')?document.getElementById('floc').value:'').trim();
+  const travelMode=(document.querySelector('#fmode input:checked')||{}).value||'drive';
+  const travelMins=parseInt((document.getElementById('fmins')||{}).value)||null;
   const reminders=[...document.querySelectorAll('#fremind input:checked')].map(i=>i.value);
   const reminder=reminders.length?reminders[reminders.length-1]:''; // legacy single field, kept for older code paths
   // Keep the original object so fields the form doesn't show survive an
@@ -1489,9 +1507,9 @@ function doSaveEvent(){
   if(type==='sport'){
     const sport=document.getElementById('fsport').value;
     if(!S.sportEvents)S.sportEvents=[];
-    S.sportEvents.push({...keep,id:newId,name,date,time,notes,location,sport,color:_tc,reminders,reminder});
+    S.sportEvents.push({...keep,id:newId,name,date,time,notes,location,travelMode,travelMins,sport,color:_tc,reminders,reminder});
   } else {
-    S.tasks.push({...keep,id:newId,name,date,time,notes,location,
+    S.tasks.push({...keep,id:newId,name,date,time,notes,location,travelMode,travelMins,
       group:document.getElementById('fg').value,
       freq:document.getElementById('fr').value,
       priority:document.getElementById('fp').value,
@@ -1777,7 +1795,17 @@ function openSettings(){
     '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-car"></i> Travel &amp; leave-by</div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-bottom:8px">When an event has a location, you get an extra reminder telling you when to set off. Distances are measured from your weather location (<b>'+escHtml(S.wxLocName||'not set')+'</b>).</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:8px">When an event has a location, you get an extra reminder telling you when to set off.</div>'+
+    '<div class="field"><label>Starting address</label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="homeAddr" style="flex:1" placeholder="Str. \u2026, Lugoj" value="'+escHtml(S.homeAddress||'')+'" autocomplete="off">'+
+        '<button type="button" class="btn sm acc" onclick="saveHome()">Save</button>'+
+      '</div>'+
+      '<div id="homeInfo" style="font-size:10px;color:var(--txt3);margin-top:5px">'+
+        (S.homeName ? '\ud83d\udccd '+escHtml(S.homeName) : 'Not set \u2014 journeys start from the middle of <b>'+escHtml(S.wxLocName||'your town')+'</b>, which can be a km or two out.')+
+      '</div>'+
+      '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Give a street and number for door-to-door times, including trips within the same city.</div>'+
+    '</div>'+
     '<label class="vopt" style="border:none;padding:4px 0"><input type="checkbox" id="setLeaveBy"'+(S.leaveBy!==false?' checked':'')+' onchange="saveTravelSettings()"><span class="vbox"></span><span><b>Leave-by reminders</b><br><small>Uses a free routing service; falls back to an estimate if it\u2019s unavailable</small></span></label>'+
     '<div class="field" style="margin-top:6px"><label>Extra time to spare</label>'+
       '<select id="setLeaveBuffer" onchange="saveTravelSettings()">'+
@@ -2840,25 +2868,65 @@ function resetWidgets(){ saveWidgets(WIDGETS_DEFAULT.slice()); manageWidgets(); 
 // When an event has a location the server works out the drive from home and
 // the app shows when to set off. The travel lookup is cached server-side, so
 // the same town costs nothing to look up again.
+async function saveHome(){
+  const q=(document.getElementById('homeAddr').value||'').trim();
+  const info=document.getElementById('homeInfo');
+  if(!q){ info.textContent='Type your street and town first.'; return; }
+  info.innerHTML='<i class="ti ti-loader-2"></i> Looking it up\u2026';
+  try{
+    const d=await (await fetch('/api/home?q='+encodeURIComponent(q))).json();
+    if(d.error){ info.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
+    S.homeAddress=q; S.homeName=d.name;
+    info.innerHTML='\u2705 \ud83d\udccd '+escHtml(d.name)+(d.precise?'':' <span style="color:var(--yellow)">(town level \u2014 add a street number)</span>');
+    await loadFromServer(); renderAll();
+  }catch(e){ info.innerHTML='<span style="color:var(--red)">Lookup failed.</span>'; }
+}
+
 function saveTravelSettings(){
   S.leaveBy = document.getElementById('setLeaveBy').checked;
   S.leaveBuffer = parseInt(document.getElementById('setLeaveBuffer').value);
   saveState(); renderAll();
 }
 
+const TRAVEL_MODES={
+  drive:{label:'Drive',emoji:'\ud83d\ude97',manual:false},
+  taxi:{label:'Taxi',emoji:'\ud83d\ude95',manual:false},
+  bike:{label:'Bike',emoji:'\ud83d\udeb2',manual:false},
+  walk:{label:'Walk',emoji:'\ud83d\udeb6',manual:false},
+  transit:{label:'Bus / train',emoji:'\ud83d\ude8c',manual:true},
+  custom:{label:'Other',emoji:'\u23f1',manual:true}
+};
+function onModeChange(){
+  const mode=(document.querySelector('#fmode input:checked')||{}).value||'drive';
+  // Bus and train can't be routed automatically, so ask for the time.
+  document.getElementById('fminsWrap').style.display = TRAVEL_MODES[mode].manual ? 'block' : 'none';
+  previewTravel();
+}
+
 async function previewTravel(force){
   const inp=document.getElementById('floc'), out=document.getElementById('travelInfo');
   if(!inp||!out) return;
   const place=(inp.value||'').trim();
+  const mode=(document.querySelector('#fmode input:checked')||{}).value||'drive';
+  const cfg=TRAVEL_MODES[mode];
+  const t=document.getElementById('ft');
   if(!place){ out.textContent=''; return; }
-  out.innerHTML='<i class="ti ti-loader-2"></i> Checking the drive\u2026';
+  // Manual modes need no lookup — you supplied the duration.
+  if(cfg.manual){
+    const mins=parseInt((document.getElementById('fmins')||{}).value);
+    if(!mins){ out.innerHTML='<span style="color:var(--txt3)">Enter how long the journey takes and the leave-by time follows.</span>'; return; }
+    const leave=t?leaveTimeFor(t.value,mins):null;
+    out.innerHTML=cfg.emoji+' '+reminderLabelTxt(mins)+' by '+cfg.label.toLowerCase()+(leave?' \u2014 leave by <b>'+leave+'</b>':'');
+    return;
+  }
+  out.innerHTML='<i class="ti ti-loader-2"></i> Checking the journey\u2026';
   try{
-    const d=await (await fetch('/api/travel?to='+encodeURIComponent(place)+(force?'&force=1':''))).json();
+    const d=await (await fetch('/api/travel?to='+encodeURIComponent(place)+'&mode='+mode+(force?'&force=1':''))).json();
     if(d.error){ out.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
-    const t=document.getElementById('ft');
     const leave=t? leaveTimeFor(t.value, d.mins) : null;
-    out.innerHTML='\ud83d\ude97 '+reminderLabelTxt(d.mins)+' drive'+(d.km?' \u00b7 '+d.km+' km':'')+
+    out.innerHTML=cfg.emoji+' '+reminderLabelTxt(d.mins)+' by '+cfg.label.toLowerCase()+(d.km?' \u00b7 '+d.km+' km':'')+
       (d.estimated?' <span style="color:var(--yellow)">(estimated \u2014 router unavailable)</span>':'')+
+      (d.precise===false?' <span style="color:var(--yellow)">(town centre \u2014 add a street for accuracy)</span>':'')+
       (leave?' \u2014 leave by <b>'+leave+'</b>':'');
   }catch(e){ out.innerHTML='<span style="color:var(--red)">Could not check travel time.</span>'; }
 }
@@ -2878,13 +2946,21 @@ function leaveTimeFor(hhmm, driveMins){
 }
 function leaveChip(ev){
   if(S.leaveBy===false || !ev.location) return '';
-  const cache=S.travelCache||{};
-  // Match the server's cache key loosely: find an entry for this place.
-  const hit=Object.values(cache).find(x=>x && x.place && x.place.toLowerCase()===String(ev.location).toLowerCase());
-  if(!hit||hit.mins==null) return '';
-  const lv=leaveTimeFor(ev.time, hit.mins);
+  const mode=ev.travelMode||'drive';
+  const cfg=TRAVEL_MODES[mode]||TRAVEL_MODES.drive;
+  let mins=parseInt(ev.travelMins)||null, tip='';
+  if(!mins){
+    const hit=Object.values(S.travelCache||{}).find(x=>x && x.place &&
+      x.place.toLowerCase()===String(ev.location).toLowerCase() && (x.mode||'drive')===mode);
+    if(!hit||hit.mins==null) return '';
+    mins=hit.mins;
+    tip=(hit.toName||ev.location)+(hit.estimated?' (estimated)':'')+(hit.precise===false?' (town centre)':'');
+  } else {
+    tip=ev.location+' (your estimate)';
+  }
+  const lv=leaveTimeFor(ev.time, mins);
   if(!lv) return '';
-  return '<span style="font-size:9px;background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b45;border-radius:10px;padding:1px 6px;display:inline-flex;align-items:center;gap:3px" title="'+escHtml(hit.toName||ev.location)+' \u00b7 '+hit.mins+' min drive'+(hit.estimated?' (estimated)':'')+'"><i class="ti ti-car" style="font-size:9px"></i>leave '+lv+'</span>';
+  return '<span style="font-size:9px;background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b45;border-radius:10px;padding:1px 6px;display:inline-flex;align-items:center;gap:3px" title="'+escHtml(tip)+' \u00b7 '+mins+' min by '+escHtml(cfg.label.toLowerCase())+'">'+cfg.emoji+' leave '+lv+'</span>';
 }
 
 // ─── TIME WHEEL ──────────────────────────────────────────
