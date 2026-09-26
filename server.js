@@ -978,7 +978,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-26-past-vs-upcoming';
+const BUILD_VERSION = '2026-09-26-travel-modes-addresses';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1249,6 +1249,10 @@ app.post('/api/data', (req, res) => {
     updated.settings = { ...(current.settings||{}), ...req.body.settings };
     // Belt and braces: never let these be cleared by a client write.
     if (current.settings) {
+      if (current.settings.homeLat)  updated.settings.homeLat  = current.settings.homeLat;
+      if (current.settings.homeLon)  updated.settings.homeLon  = current.settings.homeLon;
+      if (current.settings.homeName) updated.settings.homeName = current.settings.homeName;
+      if (current.settings.homeAddress) updated.settings.homeAddress = current.settings.homeAddress;
       if (current.settings.vapidPublicKey)  updated.settings.vapidPublicKey  = current.settings.vapidPublicKey;
       if (current.settings.vapidPrivateKey) updated.settings.vapidPrivateKey = current.settings.vapidPrivateKey;
     }
@@ -2404,7 +2408,22 @@ async function geocodeLocation(name) {
 // an estimate rather than quietly pretending it's a real route.
 // ═══════════════════════════════════════════════════
 const TRAVEL_TTL_MS = 30*24*3600*1000;   // routes between two towns don't change often
-const TRAVEL_FALLBACK_KMH = 62;          // realistic average incl. towns, for the estimate
+// Per mode: the OSRM routing profile, a fallback speed if routing is
+// unavailable, and whether the duration has to come from you. There is no
+// free timetable source for Romanian buses/trains, so rather than invent a
+// number those modes ask for the journey time once and reuse it.
+const TRAVEL_MODES = {
+  drive:  { label:'Drive',            emoji:'🚗', profile:'driving', kmh:62,  manual:false },
+  taxi:   { label:'Taxi',             emoji:'🚕', profile:'driving', kmh:62,  manual:false, extraMins:8 },
+  bike:   { label:'Bike',             emoji:'🚲', profile:'bike',    kmh:16,  manual:false },
+  walk:   { label:'Walk',             emoji:'🚶', profile:'foot',    kmh:4.8, manual:false },
+  transit:{ label:'Bus / train',      emoji:'🚌', manual:true },
+  custom: { label:'Other',            emoji:'⏱',  manual:true }
+};
+function travelMode(ev){
+  const m = ev && ev.travelMode;
+  return (m && TRAVEL_MODES[m]) ? m : 'drive';
+}
 
 function haversineKm(a, b){
   const R=6371, rad=x=>x*Math.PI/180;
@@ -2413,55 +2432,85 @@ function haversineKm(a, b){
   return 2*R*Math.asin(Math.sqrt(x));
 }
 
-async function drivingRoute(from, to){
+async function drivingRoute(from, to, mode){
+  const cfg = TRAVEL_MODES[mode] || TRAVEL_MODES.drive;
   try{
-    const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false`;
+    const url = `https://router.project-osrm.org/route/v1/${cfg.profile||'driving'}/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false`;
     const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0' } });
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d = await r.json();
     const route = d.routes && d.routes[0];
     if(!route) throw new Error(d.message || 'no route');
-    return { mins: Math.round(route.duration/60), km: Math.round(route.distance/1000), estimated:false };
+    return { mins: Math.round(route.duration/60) + (cfg.extraMins||0), km: Math.round(route.distance/1000), estimated:false, mode };
   }catch(e){
     // Straight-line distance with a road-factor. Rough, but better than no
     // warning at all — and labelled so it's never mistaken for a real route.
     const km = haversineKm(from, to) * 1.28;
-    return { mins: Math.round(km/TRAVEL_FALLBACK_KMH*60), km: Math.round(km), estimated:true, error:e.message };
+    return { mins: Math.round(km/(cfg.kmh||62)*60) + (cfg.extraMins||0), km: Math.round(km), estimated:true, mode, error:e.message };
   }
+}
+
+// Street-level geocoding. Open-Meteo (used for the weather search) only
+// knows towns, so "Str. Lazar 12, Timisoara" would collapse to the city
+// centre — useless for a trip across the same city. Nominatim understands
+// full addresses. It's free but rate-limited, hence the cache and the
+// identifying User-Agent its usage policy requires.
+async function geocodeAddress(q){
+  const query = String(q||'').trim();
+  if(!query) return null;
+  try{
+    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&q='+encodeURIComponent(query);
+    const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0 (personal calendar app)', 'Accept-Language':'ro,en' } });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    if(Array.isArray(d) && d.length){
+      const h = d[0];
+      // Keep the label short — the full display_name is a paragraph.
+      const label = (h.display_name||query).split(',').slice(0,3).join(',').trim();
+      return { lat:+h.lat, lon:+h.lon, label, precise:true };
+    }
+  }catch(e){ console.log('Nominatim lookup failed:', e.message); }
+  // Falls back to the town-level geocoder so a plain city name still works.
+  const g = await geocodeLocation(query);
+  return g ? { ...g, precise:false } : null;
 }
 
 function homeOf(data){
   const st = data.settings || {};
-  if (st.homeLat && st.homeLon) return { lat:+st.homeLat, lon:+st.homeLon, name: st.homeName || 'Home' };
+  if (st.homeLat && st.homeLon) return { lat:+st.homeLat, lon:+st.homeLon, name: st.homeName || 'Home', precise:true };
   // Falls back to the weather location, which is already where you are.
   if (st.wxLat && st.wxLon) return { lat:+st.wxLat, lon:+st.wxLon, name: st.wxLocName || 'Home' };
   return null;
 }
 
-function travelKey(home, place){ return home.lat.toFixed(3)+','+home.lon.toFixed(3)+'|'+String(place).trim().toLowerCase(); }
+function travelKey(home, place, mode){ return home.lat.toFixed(3)+','+home.lon.toFixed(3)+'|'+String(place).trim().toLowerCase()+'|'+(mode||'drive'); }
 
-function travelCached(data, place){
+function travelCached(data, place, mode){
   const home = homeOf(data); if(!home || !place) return null;
-  const hit = (data.travelCache||{})[travelKey(home, place)];
+  const hit = (data.travelCache||{})[travelKey(home, place, mode)];
   if(!hit) return null;
   if(Date.now() - (hit.at||0) > TRAVEL_TTL_MS) return null;
   return hit;
 }
 
 // Resolves (and caches) the drive from home to a place name.
-async function travelFor(data, place, force){
+async function travelFor(data, place, force, mode){
+  mode = (mode && TRAVEL_MODES[mode]) ? mode : 'drive';
   const home = homeOf(data);
   if(!home) return { error:'No home location set — open the weather panel and choose your town.' };
   if(!place || !String(place).trim()) return { error:'No location on this event.' };
-  const key = travelKey(home, place);
+  // Bus/train/other can't be routed: the time comes from what you entered.
+  if(TRAVEL_MODES[mode].manual) return { manual:true, mode, needsMinutes:true };
+  const key = travelKey(home, place, mode);
   if(!force){
-    const hit = travelCached(data, place);
+    const hit = travelCached(data, place, mode);
     if(hit) return hit;
   }
-  const geo = await geocodeLocation(place);
+  const geo = await geocodeAddress(place);
   if(!geo) return { error:'Could not find “'+place+'” on the map.' };
-  const route = await drivingRoute(home, { lat:geo.lat, lon:geo.lon });
-  const entry = { ...route, place, toName: geo.label || place, lat:geo.lat, lon:geo.lon,
+  const route = await drivingRoute(home, { lat:geo.lat, lon:geo.lon }, mode);
+  const entry = { ...route, place, mode, toName: geo.label || place, lat:geo.lat, lon:geo.lon,
+                  precise: geo.precise !== false, fromPrecise: !!home.precise,
                   fromName: home.name, at: Date.now() };
   const cur = readData();
   if(!cur.travelCache) cur.travelCache = {};
@@ -2483,19 +2532,45 @@ async function ensureTravelForUpcoming(data){
   const seen = new Set();
   for(const ev of items){
     const place = String(ev.location).trim();
-    if(seen.has(place.toLowerCase())) continue;
-    seen.add(place.toLowerCase());
-    if(travelCached(data, place)) continue;
-    try{ await travelFor(data, place); }catch(e){ console.log('Travel lookup failed for', place, e.message); }
+    const sig = place.toLowerCase()+'|'+travelMode(ev);
+    if(seen.has(sig)) continue;
+    seen.add(sig);
+    const mode = travelMode(ev);
+    if(TRAVEL_MODES[mode].manual) continue;            // you supplied the duration
+    if(travelCached(data, place, mode)) continue;
+    try{ await travelFor(data, place, false, mode); }catch(e){ console.log('Travel lookup failed for', place, e.message); }
     await sleep(400);   // be polite to the free router
   }
 }
+
+// GET /api/home?q=<address> — resolves and stores your starting point.
+// Without this, journeys start at the middle of your town, which can be a
+// couple of kilometres out.
+app.get('/api/home', async (req, res) => {
+  try{
+    const q = (req.query.q||'').trim();
+    if(!q){
+      const d = readData(); const h = homeOf(d);
+      return res.json(h ? { ...h, address: d.settings && d.settings.homeAddress || '' } : { error:'No home set' });
+    }
+    const geo = await geocodeAddress(q);
+    if(!geo) return res.json({ error:'Could not find “'+q+'”.' });
+    const d = readData();
+    d.settings = d.settings || {};
+    d.settings.homeAddress = q;
+    d.settings.homeLat = geo.lat; d.settings.homeLon = geo.lon; d.settings.homeName = geo.label;
+    // Starting point changed, so every cached journey is now wrong.
+    d.travelCache = {};
+    writeData(d);
+    res.json({ ok:true, lat:geo.lat, lon:geo.lon, name:geo.label, precise:geo.precise!==false });
+  }catch(e){ res.status(500).json({ error:e.message }); }
+});
 
 // GET /api/travel?to=Timisoara[&force=1]
 app.get('/api/travel', async (req, res) => {
   try{
     const data = readData();
-    const out = await travelFor(data, req.query.to, req.query.force === '1');
+    const out = await travelFor(data, req.query.to, req.query.force === '1', req.query.mode);
     res.json(out);
   }catch(e){ res.status(500).json({ error:e.message }); }
 });
@@ -2689,7 +2764,10 @@ function dueReminders(data, nowMs, windowMs){
   const days = [getToday(), addDays(getToday(),1)];
   for (const ev of candidates) {
     const list = remindersOf(ev);
-    if (!list.length) continue;
+    // An event may want ONLY a leave-by warning and no ordinary reminder,
+    // so don't skip it just because the reminder list is empty.
+    const wantsLeave = (data.settings||{}).leaveBy !== false && !!ev.location;
+    if (!list.length && !wantsLeave) continue;
     for (const ds of days) {
       if (!matchesDate(ev, ds)) continue;
       if (ev._type === 'task' && isDoneOn(ev, ds)) continue; // already ticked off for this date
@@ -2699,7 +2777,13 @@ function dueReminders(data, nowMs, windowMs){
       // than a fixed number of minutes, so it's added alongside the others.
       const stx = data.settings || {};
       if (stx.leaveBy !== false && ev.location) {
-        const tr = travelCached(data, ev.location);
+        const mode = travelMode(ev);
+        // A manually entered duration (bus, train, anything we can't route)
+        // takes precedence over a computed one.
+        const manualMins = parseInt(ev.travelMins);
+        const tr = (manualMins > 0)
+          ? { mins: manualMins, manual:true, mode, toName: ev.location }
+          : travelCached(data, ev.location, mode);
         if (tr && tr.mins != null) {
           const buffer = parseInt(stx.leaveBuffer != null ? stx.leaveBuffer : 10) || 0;
           const leaveMs = startMs - (tr.mins + buffer)*60000;
@@ -2761,7 +2845,9 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
         msg += emoji+' <b>'+ev.name+'</b>\n';
         msg += '🕐 Starts '+fmtTime(ev.time)+(item.ds!==getToday()?' · '+item.ds:'')+'\n';
         msg += '📍 '+(t.toName||ev.location)+'\n';
-        msg += '🚗 '+reminderLabel(t.mins)+' drive'+(t.km?' · '+t.km+' km':'')+(t.estimated?' (estimated)':'')+'\n';
+        const mcfg = TRAVEL_MODES[t.mode||'drive'] || TRAVEL_MODES.drive;
+        msg += mcfg.emoji+' '+reminderLabel(t.mins)+' by '+mcfg.label.toLowerCase()+
+               (t.km?' · '+t.km+' km':'')+(t.estimated?' (estimated)':'')+(t.manual?' (your estimate)':'')+'\n';
         if (item.buffer) msg += '⏳ includes '+item.buffer+' min to spare\n';
       } else {
       msg = '⏰ <b>Starting in '+reminderLabel(item.mins)+'</b>\n\n';
