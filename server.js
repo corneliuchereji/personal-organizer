@@ -978,7 +978,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-26-travel-modes-addresses';
+const BUILD_VERSION = '2026-09-26-journey-from-to';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2483,35 +2483,53 @@ function homeOf(data){
   return null;
 }
 
-function travelKey(home, place, mode){ return home.lat.toFixed(3)+','+home.lon.toFixed(3)+'|'+String(place).trim().toLowerCase()+'|'+(mode||'drive'); }
-
-function travelCached(data, place, mode){
-  const home = homeOf(data); if(!home || !place) return null;
-  const hit = (data.travelCache||{})[travelKey(home, place, mode)];
+// "home" means the saved starting address; anything else is the event's own
+// From field. Keying on the text keeps the cache lookup synchronous, which
+// the reminder check needs.
+function fromSig(fromPlace){
+  const f = String(fromPlace||'').trim().toLowerCase();
+  return f || 'home';
+}
+function travelKey(fromPlace, place, mode){
+  return fromSig(fromPlace)+'|'+String(place).trim().toLowerCase()+'|'+(mode||'drive');
+}
+function travelCached(data, place, mode, fromPlace){
+  if(!place) return null;
+  if(fromSig(fromPlace)==='home' && !homeOf(data)) return null;
+  const hit = (data.travelCache||{})[travelKey(fromPlace, place, mode)];
   if(!hit) return null;
   if(Date.now() - (hit.at||0) > TRAVEL_TTL_MS) return null;
   return hit;
 }
 
 // Resolves (and caches) the drive from home to a place name.
-async function travelFor(data, place, force, mode){
+async function travelFor(data, place, force, mode, fromPlace){
   mode = (mode && TRAVEL_MODES[mode]) ? mode : 'drive';
-  const home = homeOf(data);
-  if(!home) return { error:'No home location set — open the weather panel and choose your town.' };
-  if(!place || !String(place).trim()) return { error:'No location on this event.' };
+  if(!place || !String(place).trim()) return { error:'No destination given.' };
   // Bus/train/other can't be routed: the time comes from what you entered.
   if(TRAVEL_MODES[mode].manual) return { manual:true, mode, needsMinutes:true };
-  const key = travelKey(home, place, mode);
+  const key = travelKey(fromPlace, place, mode);
   if(!force){
-    const hit = travelCached(data, place, mode);
+    const hit = travelCached(data, place, mode, fromPlace);
     if(hit) return hit;
+  }
+  // Origin: the event's own From field if given, otherwise your saved
+  // starting address.
+  let home;
+  if(String(fromPlace||'').trim()){
+    const g = await geocodeAddress(fromPlace);
+    if(!g) return { error:'Could not find the starting point “'+fromPlace+'”.' };
+    home = { lat:g.lat, lon:g.lon, name:g.label, precise:g.precise!==false };
+  } else {
+    home = homeOf(data);
+    if(!home) return { error:'No starting address set — add one in Settings, or fill in the From field.' };
   }
   const geo = await geocodeAddress(place);
   if(!geo) return { error:'Could not find “'+place+'” on the map.' };
   const route = await drivingRoute(home, { lat:geo.lat, lon:geo.lon }, mode);
   const entry = { ...route, place, mode, toName: geo.label || place, lat:geo.lat, lon:geo.lon,
                   precise: geo.precise !== false, fromPrecise: !!home.precise,
-                  fromName: home.name, at: Date.now() };
+                  fromPlace: String(fromPlace||'').trim(), fromName: home.name, at: Date.now() };
   const cur = readData();
   if(!cur.travelCache) cur.travelCache = {};
   cur.travelCache[key] = entry;
@@ -2532,13 +2550,13 @@ async function ensureTravelForUpcoming(data){
   const seen = new Set();
   for(const ev of items){
     const place = String(ev.location).trim();
-    const sig = place.toLowerCase()+'|'+travelMode(ev);
+    const sig = fromSig(ev.travelFrom)+'|'+place.toLowerCase()+'|'+travelMode(ev);
     if(seen.has(sig)) continue;
     seen.add(sig);
     const mode = travelMode(ev);
     if(TRAVEL_MODES[mode].manual) continue;            // you supplied the duration
-    if(travelCached(data, place, mode)) continue;
-    try{ await travelFor(data, place, false, mode); }catch(e){ console.log('Travel lookup failed for', place, e.message); }
+    if(travelCached(data, place, mode, ev.travelFrom)) continue;
+    try{ await travelFor(data, place, false, mode, ev.travelFrom); }catch(e){ console.log('Travel lookup failed for', place, e.message); }
     await sleep(400);   // be polite to the free router
   }
 }
@@ -2570,7 +2588,7 @@ app.get('/api/home', async (req, res) => {
 app.get('/api/travel', async (req, res) => {
   try{
     const data = readData();
-    const out = await travelFor(data, req.query.to, req.query.force === '1', req.query.mode);
+    const out = await travelFor(data, req.query.to, req.query.force === '1', req.query.mode, req.query.from);
     res.json(out);
   }catch(e){ res.status(500).json({ error:e.message }); }
 });
@@ -2783,7 +2801,7 @@ function dueReminders(data, nowMs, windowMs){
         const manualMins = parseInt(ev.travelMins);
         const tr = (manualMins > 0)
           ? { mins: manualMins, manual:true, mode, toName: ev.location }
-          : travelCached(data, ev.location, mode);
+          : travelCached(data, ev.location, mode, ev.travelFrom);
         if (tr && tr.mins != null) {
           const buffer = parseInt(stx.leaveBuffer != null ? stx.leaveBuffer : 10) || 0;
           const leaveMs = startMs - (tr.mins + buffer)*60000;
@@ -2844,7 +2862,7 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
         msg  = '🚗 <b>Time to leave</b>\n\n';
         msg += emoji+' <b>'+ev.name+'</b>\n';
         msg += '🕐 Starts '+fmtTime(ev.time)+(item.ds!==getToday()?' · '+item.ds:'')+'\n';
-        msg += '📍 '+(t.toName||ev.location)+'\n';
+        msg += '📍 '+(t.fromName && t.fromPlace ? t.fromName+' → ' : '')+(t.toName||ev.location)+'\n';
         const mcfg = TRAVEL_MODES[t.mode||'drive'] || TRAVEL_MODES.drive;
         msg += mcfg.emoji+' '+reminderLabel(t.mins)+' by '+mcfg.label.toLowerCase()+
                (t.km?' · '+t.km+' km':'')+(t.estimated?' (estimated)':'')+(t.manual?' (your estimate)':'')+'\n';
