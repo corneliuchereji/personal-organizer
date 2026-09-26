@@ -501,6 +501,10 @@ body::before{
 }
 .ecard.past{opacity:.62}
 .ecard.past .ec-title{font-weight:500}
+/* From / To rows in the event form */
+.jrow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.jrow .jlbl{flex:none;width:38px;font-size:11px;font-weight:600;color:var(--txt3);text-align:right}
+.jrow input{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -1412,9 +1416,12 @@ function evForm(ev){
     '<option value="sport"'+(type==='sport'?' selected':'')+'>🏆 Sport Event</option></select></div>'+
     '<div class="field"><label>Name</label><input id="fn" value="'+(ev?escHtml(ev.name):'')+'" placeholder="e.g. Dentist · F1 Belgian GP" autocomplete="off"></div>'+
     '<div class="field"><label>Date</label><input type="date" id="fd" value="'+(ev?ev.date:TODAY)+'"></div>'+
-    '<div class="field"><label>Location <span style="font-weight:400;color:var(--txt3)">\u2014 optional, enables a \u201cleave by\u201d warning</span></label>'+
-      '<div style="display:flex;gap:6px">'+
-        '<input id="floc" style="flex:1" value="'+(ev&&ev.location?escHtml(ev.location):'')+'" placeholder="Street and town, e.g. Str. Gheorghe Laz\u0103r 12, Timi\u0219oara" autocomplete="off" onchange="previewTravel()">'+
+    '<div class="field"><label>Journey <span style="font-weight:400;color:var(--txt3)">\u2014 optional, enables a \u201cleave by\u201d warning</span></label>'+
+      '<div class="jrow"><span class="jlbl">From</span>'+
+        '<input id="ffrom" value="'+(ev&&ev.travelFrom?escHtml(ev.travelFrom):'')+'" placeholder="'+escHtml(S.homeAddress||S.homeName||'your saved starting address')+'" autocomplete="off" onchange="previewTravel()">'+
+      '</div>'+
+      '<div class="jrow"><span class="jlbl">To</span>'+
+        '<input id="floc" value="'+(ev&&ev.location?escHtml(ev.location):'')+'" placeholder="Street and town, e.g. Str. Gheorghe Laz\u0103r 12, Timi\u0219oara" autocomplete="off" onchange="previewTravel()">'+
         '<button type="button" class="btn sm" onclick="previewTravel(true)">Check</button>'+
       '</div>'+
       '<div class="rem-chips" id="fmode" style="margin-top:7px">'+
@@ -1490,6 +1497,7 @@ function doSaveEvent(){
   const notes=document.getElementById('fno').value;
   const location=(document.getElementById('floc')?document.getElementById('floc').value:'').trim();
   const travelMode=(document.querySelector('#fmode input:checked')||{}).value||'drive';
+  const travelFrom=(document.getElementById('ffrom')?document.getElementById('ffrom').value:'').trim();
   const travelMins=parseInt((document.getElementById('fmins')||{}).value)||null;
   const reminders=[...document.querySelectorAll('#fremind input:checked')].map(i=>i.value);
   const reminder=reminders.length?reminders[reminders.length-1]:''; // legacy single field, kept for older code paths
@@ -1507,9 +1515,9 @@ function doSaveEvent(){
   if(type==='sport'){
     const sport=document.getElementById('fsport').value;
     if(!S.sportEvents)S.sportEvents=[];
-    S.sportEvents.push({...keep,id:newId,name,date,time,notes,location,travelMode,travelMins,sport,color:_tc,reminders,reminder});
+    S.sportEvents.push({...keep,id:newId,name,date,time,notes,location,travelFrom,travelMode,travelMins,sport,color:_tc,reminders,reminder});
   } else {
-    S.tasks.push({...keep,id:newId,name,date,time,notes,location,travelMode,travelMins,
+    S.tasks.push({...keep,id:newId,name,date,time,notes,location,travelFrom,travelMode,travelMins,
       group:document.getElementById('fg').value,
       freq:document.getElementById('fr').value,
       priority:document.getElementById('fp').value,
@@ -2921,12 +2929,15 @@ async function previewTravel(force){
   }
   out.innerHTML='<i class="ti ti-loader-2"></i> Checking the journey\u2026';
   try{
-    const d=await (await fetch('/api/travel?to='+encodeURIComponent(place)+'&mode='+mode+(force?'&force=1':''))).json();
+    const from=(document.getElementById('ffrom')||{}).value||'';
+    const d=await (await fetch('/api/travel?to='+encodeURIComponent(place)+'&mode='+mode+
+      (from.trim()?'&from='+encodeURIComponent(from.trim()):'')+(force?'&force=1':''))).json();
     if(d.error){ out.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
     const leave=t? leaveTimeFor(t.value, d.mins) : null;
     out.innerHTML=cfg.emoji+' '+reminderLabelTxt(d.mins)+' by '+cfg.label.toLowerCase()+(d.km?' \u00b7 '+d.km+' km':'')+
       (d.estimated?' <span style="color:var(--yellow)">(estimated \u2014 router unavailable)</span>':'')+
-      (d.precise===false?' <span style="color:var(--yellow)">(town centre \u2014 add a street for accuracy)</span>':'')+
+      (d.precise===false||d.fromPrecise===false?' <span style="color:var(--yellow)">(town centre \u2014 add a street for accuracy)</span>':'')+
+      (d.fromName&&d.fromPlace?' <span style="color:var(--txt3)">from '+escHtml(d.fromName)+'</span>':'')+
       (leave?' \u2014 leave by <b>'+leave+'</b>':'');
   }catch(e){ out.innerHTML='<span style="color:var(--red)">Could not check travel time.</span>'; }
 }
@@ -2950,8 +2961,10 @@ function leaveChip(ev){
   const cfg=TRAVEL_MODES[mode]||TRAVEL_MODES.drive;
   let mins=parseInt(ev.travelMins)||null, tip='';
   if(!mins){
+    const evFrom=String(ev.travelFrom||'').trim().toLowerCase();
     const hit=Object.values(S.travelCache||{}).find(x=>x && x.place &&
-      x.place.toLowerCase()===String(ev.location).toLowerCase() && (x.mode||'drive')===mode);
+      x.place.toLowerCase()===String(ev.location).toLowerCase() && (x.mode||'drive')===mode &&
+      String(x.fromPlace||'').trim().toLowerCase()===evFrom);
     if(!hit||hit.mins==null) return '';
     mins=hit.mins;
     tip=(hit.toName||ev.location)+(hit.estimated?' (estimated)':'')+(hit.precise===false?' (town centre)':'');
