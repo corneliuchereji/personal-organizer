@@ -978,7 +978,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-26-journey-from-to';
+const BUILD_VERSION = '2026-09-27-walk-bike-traffic-fix';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1253,6 +1253,7 @@ app.post('/api/data', (req, res) => {
       if (current.settings.homeLon)  updated.settings.homeLon  = current.settings.homeLon;
       if (current.settings.homeName) updated.settings.homeName = current.settings.homeName;
       if (current.settings.homeAddress) updated.settings.homeAddress = current.settings.homeAddress;
+      if (current.settings.orsKey) updated.settings.orsKey = current.settings.orsKey;
       if (current.settings.vapidPublicKey)  updated.settings.vapidPublicKey  = current.settings.vapidPublicKey;
       if (current.settings.vapidPrivateKey) updated.settings.vapidPrivateKey = current.settings.vapidPrivateKey;
     }
@@ -2412,13 +2413,19 @@ const TRAVEL_TTL_MS = 30*24*3600*1000;   // routes between two towns don't chang
 // unavailable, and whether the duration has to come from you. There is no
 // free timetable source for Romanian buses/trains, so rather than invent a
 // number those modes ask for the journey time once and reuse it.
+// OSRM's free public server hosts the CAR profile only — asking it for a
+// foot or bike route quietly returns the car route, which is why walking a
+// few km once reported the same 8 minutes as driving. So: distance comes
+// from the route, and walking/cycling durations are derived from that
+// distance at a realistic speed. With an OpenRouteService key we use real
+// pedestrian/cycle routing instead (see routeFor).
 const TRAVEL_MODES = {
-  drive:  { label:'Drive',            emoji:'🚗', profile:'driving', kmh:62,  manual:false },
-  taxi:   { label:'Taxi',             emoji:'🚕', profile:'driving', kmh:62,  manual:false, extraMins:8 },
-  bike:   { label:'Bike',             emoji:'🚲', profile:'bike',    kmh:16,  manual:false },
-  walk:   { label:'Walk',             emoji:'🚶', profile:'foot',    kmh:4.8, manual:false },
-  transit:{ label:'Bus / train',      emoji:'🚌', manual:true },
-  custom: { label:'Other',            emoji:'⏱',  manual:true }
+  drive:  { label:'Drive',       emoji:'🚗', osrm:'driving', ors:'driving-car',    kmh:62,  manual:false, traffic:true },
+  taxi:   { label:'Taxi',        emoji:'🚕', osrm:'driving', ors:'driving-car',    kmh:62,  manual:false, traffic:true, extraMins:8 },
+  bike:   { label:'Bike',        emoji:'🚲', osrm:null,      ors:'cycling-regular',kmh:14,  manual:false, detour:1.05 },
+  walk:   { label:'Walk',        emoji:'🚶', osrm:null,      ors:'foot-walking',   kmh:4.7, manual:false, detour:0.92 },
+  transit:{ label:'Bus / train', emoji:'🚌', manual:true },
+  custom: { label:'Other',       emoji:'⏱',  manual:true }
 };
 function travelMode(ev){
   const m = ev && ev.travelMode;
@@ -2432,21 +2439,57 @@ function haversineKm(a, b){
   return 2*R*Math.asin(Math.sqrt(x));
 }
 
-async function drivingRoute(from, to, mode){
+// True multi-profile routing, if a (free) OpenRouteService key is saved.
+async function orsRoute(from, to, cfg, key){
+  const url = `https://api.openrouteservice.org/v2/directions/${cfg.ors}?api_key=${encodeURIComponent(key)}`
+            + `&start=${from.lon},${from.lat}&end=${to.lon},${to.lat}`;
+  const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+  if(!r.ok) throw new Error('ORS HTTP '+r.status);
+  const d = await r.json();
+  const sum = d.features && d.features[0] && d.features[0].properties && d.features[0].properties.summary;
+  if(!sum || sum.duration == null) throw new Error((d.error && (d.error.message||d.error)) || 'no route');
+  return { secs: sum.duration, metres: sum.distance };
+}
+
+// Car distance/duration from OSRM (the only profile it serves publicly).
+async function osrmDriving(from, to){
+  const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false`;
+  const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0 (personal calendar app)' } });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const d = await r.json();
+  const route = d.routes && d.routes[0];
+  if(!route) throw new Error(d.message || 'no route');
+  return { secs: route.duration, metres: route.distance };
+}
+
+async function drivingRoute(from, to, mode, data){
   const cfg = TRAVEL_MODES[mode] || TRAVEL_MODES.drive;
+  const st = (data && data.settings) || {};
+  const orsKey = (st.orsKey||'').trim();
+  // Traffic allowance: routers quote free-flow speeds, which run optimistic
+  // in town. Applies to car-based modes only.
+  const trafficPct = cfg.traffic ? (parseInt(st.trafficPct != null ? st.trafficPct : 20) || 0) : 0;
+  const withExtras = (mins) => Math.max(1, Math.round(mins * (1 + trafficPct/100)) + (cfg.extraMins||0));
+
+  if(orsKey && cfg.ors){
+    try{
+      const o = await orsRoute(from, to, cfg, orsKey);
+      return { mins: withExtras(o.secs/60), km: +(o.metres/1000).toFixed(1), estimated:false, source:'ors', mode, trafficPct };
+    }catch(e){ console.log('ORS routing failed, falling back:', e.message); }
+  }
   try{
-    const url = `https://router.project-osrm.org/route/v1/${cfg.profile||'driving'}/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false`;
-    const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0' } });
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d = await r.json();
-    const route = d.routes && d.routes[0];
-    if(!route) throw new Error(d.message || 'no route');
-    return { mins: Math.round(route.duration/60) + (cfg.extraMins||0), km: Math.round(route.distance/1000), estimated:false, mode };
+    const o = await osrmDriving(from, to);
+    const km = o.metres/1000;
+    if(cfg.osrm === 'driving'){
+      return { mins: withExtras(o.secs/60), km:+km.toFixed(1), estimated:false, source:'osrm', mode, trafficPct };
+    }
+    // Walking/cycling: keep the road distance, apply a sensible speed.
+    const dist = km * (cfg.detour || 1);
+    return { mins: withExtras(dist/(cfg.kmh||5)*60), km:+dist.toFixed(1), estimated:false, derived:true, source:'osrm-distance', mode };
   }catch(e){
-    // Straight-line distance with a road-factor. Rough, but better than no
-    // warning at all — and labelled so it's never mistaken for a real route.
-    const km = haversineKm(from, to) * 1.28;
-    return { mins: Math.round(km/(cfg.kmh||62)*60) + (cfg.extraMins||0), km: Math.round(km), estimated:true, mode, error:e.message };
+    // Nothing reachable: straight-line distance with a road factor.
+    const km = haversineKm(from, to) * 1.28 * (cfg.detour || 1);
+    return { mins: withExtras(km/(cfg.kmh||62)*60), km:+km.toFixed(1), estimated:true, source:'estimate', mode, error:e.message };
   }
 }
 
@@ -2526,7 +2569,7 @@ async function travelFor(data, place, force, mode, fromPlace){
   }
   const geo = await geocodeAddress(place);
   if(!geo) return { error:'Could not find “'+place+'” on the map.' };
-  const route = await drivingRoute(home, { lat:geo.lat, lon:geo.lon }, mode);
+  const route = await drivingRoute(home, { lat:geo.lat, lon:geo.lon }, mode, data);
   const entry = { ...route, place, mode, toName: geo.label || place, lat:geo.lat, lon:geo.lon,
                   precise: geo.precise !== false, fromPrecise: !!home.precise,
                   fromPlace: String(fromPlace||'').trim(), fromName: home.name, at: Date.now() };
@@ -2582,6 +2625,13 @@ app.get('/api/home', async (req, res) => {
     writeData(d);
     res.json({ ok:true, lat:geo.lat, lon:geo.lon, name:geo.label, precise:geo.precise!==false });
   }catch(e){ res.status(500).json({ error:e.message }); }
+});
+
+// Settings that change the maths (traffic allowance, routing key) make the
+// cached journeys wrong, so the app clears them after saving.
+app.post('/api/travel/clear', (req, res) => {
+  try{ const d=readData(); d.travelCache={}; writeData(d); res.json({ok:true}); }
+  catch(e){ res.status(500).json({error:e.message}); }
 });
 
 // GET /api/travel?to=Timisoara[&force=1]
