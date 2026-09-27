@@ -666,6 +666,7 @@ function saveState(){
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
           apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123',
           leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10,
+          trafficPct: S.trafficPct!=null?S.trafficPct:20, orsKey: S.orsKey||'',
           widgets: Array.isArray(S.widgets)?S.widgets:null
         }
     };
@@ -779,6 +780,8 @@ async function loadFromServer(){
       travelCache: d.travelCache || {},
       widgets: Array.isArray(d.settings?.widgets) ? d.settings.widgets : null,
       homeAddress: d.settings?.homeAddress || '',
+      trafficPct: d.settings?.trafficPct != null ? d.settings.trafficPct : 20,
+      orsKey: d.settings?.orsKey || '',
       homeName: d.settings?.homeName || '',
       leaveBy: d.settings?.leaveBy !== false,
       leaveBuffer: d.settings?.leaveBuffer != null ? d.settings.leaveBuffer : 10,
@@ -1815,6 +1818,17 @@ function openSettings(){
       '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Give a street and number for door-to-door times, including trips within the same city.</div>'+
     '</div>'+
     '<label class="vopt" style="border:none;padding:4px 0"><input type="checkbox" id="setLeaveBy"'+(S.leaveBy!==false?' checked':'')+' onchange="saveTravelSettings()"><span class="vbox"></span><span><b>Leave-by reminders</b><br><small>Uses a free routing service; falls back to an estimate if it\u2019s unavailable</small></span></label>'+
+    '<div class="field" style="margin-top:6px"><label>Traffic allowance <span style="font-weight:400;color:var(--txt3)">\u2014 routers quote free-flow speeds, which run optimistic in town</span></label>'+
+      '<select id="setTrafficPct" onchange="saveTravelSettings()">'+
+        [0,10,20,30,40,50].map(n=>'<option value="'+n+'"'+((S.trafficPct!=null?S.trafficPct:20)==n?' selected':'')+'>'+(n===0?'None':'+'+n+'%')+'</option>').join('')+
+      '</select></div>'+
+    '<div class="field" style="margin-top:6px"><label>OpenRouteService key <span style="font-weight:400;color:var(--txt3)">\u2014 optional</span></label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="setOrsKey" style="flex:1" value="'+escHtml(S.orsKey||'')+'" placeholder="Paste a free key for proper walking/cycling routes" autocomplete="off">'+
+        '<button type="button" class="btn sm acc" onclick="saveTravelSettings()">Save</button>'+
+      '</div>'+
+      '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Without a key, walking and cycling times are worked out from the road distance \u2014 close, but they ignore footpaths and shortcuts. A free key at <a href="https://openrouteservice.org/dev/#/signup" target="_blank" rel="noopener" style="color:var(--accent)">openrouteservice.org</a> gives real pedestrian and cycle routing.</div>'+
+    '</div>'+
     '<div class="field" style="margin-top:6px"><label>Extra time to spare</label>'+
       '<select id="setLeaveBuffer" onchange="saveTravelSettings()">'+
         [0,5,10,15,20,30].map(n=>'<option value="'+n+'"'+((S.leaveBuffer!=null?S.leaveBuffer:10)==n?' selected':'')+'>'+(n===0?'None':n+' min')+'</option>').join('')+
@@ -2893,7 +2907,12 @@ async function saveHome(){
 function saveTravelSettings(){
   S.leaveBy = document.getElementById('setLeaveBy').checked;
   S.leaveBuffer = parseInt(document.getElementById('setLeaveBuffer').value);
-  saveState(); renderAll();
+  const tp=document.getElementById('setTrafficPct'); if(tp) S.trafficPct = parseInt(tp.value);
+  const ok=document.getElementById('setOrsKey');     if(ok) S.orsKey = ok.value.trim();
+  saveState();
+  // Journeys were cached with the old settings, so drop them.
+  fetch('/api/travel/clear',{method:'POST'}).catch(()=>{});
+  renderAll();
 }
 
 const TRAVEL_MODES={
@@ -2936,6 +2955,8 @@ async function previewTravel(force){
     const leave=t? leaveTimeFor(t.value, d.mins) : null;
     out.innerHTML=cfg.emoji+' '+reminderLabelTxt(d.mins)+' by '+cfg.label.toLowerCase()+(d.km?' \u00b7 '+d.km+' km':'')+
       (d.estimated?' <span style="color:var(--yellow)">(estimated \u2014 router unavailable)</span>':'')+
+      (d.derived?' <span style="color:var(--txt3)">(from road distance)</span>':'')+
+      (d.trafficPct?' <span style="color:var(--txt3)">incl. +'+d.trafficPct+'% traffic</span>':'')+
       (d.precise===false||d.fromPrecise===false?' <span style="color:var(--yellow)">(town centre \u2014 add a street for accuracy)</span>':'')+
       (d.fromName&&d.fromPlace?' <span style="color:var(--txt3)">from '+escHtml(d.fromName)+'</span>':'')+
       (leave?' \u2014 leave by <b>'+leave+'</b>':'');
