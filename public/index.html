@@ -310,6 +310,8 @@ body::before{
 .ec-title{font-size:15px;font-weight:600;letter-spacing:-.1px}
 .ec-meta{font-size:12px;gap:8px;margin-top:4px}
 .ec-notes{font-size:12px}
+.ec-notes a{word-break:break-all}
+.ecard:hover .ec-notes,.ec-notes:focus-within{-webkit-line-clamp:unset}
 .ec-actions{gap:6px;margin-top:11px}
 .ea{border-radius:var(--rp);padding:5px 11px;font-size:12px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--txt2)}
 .ea:hover{background:var(--bg3);color:var(--txt)}
@@ -505,6 +507,48 @@ body::before{
 .jrow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .jrow .jlbl{flex:none;width:38px;font-size:11px;font-weight:600;color:var(--txt3);text-align:right}
 .jrow input{flex:1;min-width:0}
+/* ── Bible reading plan dialog ── */
+.bib-top{display:flex;gap:8px;margin-bottom:10px}
+.bib-stat{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:14px;padding:9px 6px;text-align:center}
+.bib-stat b{display:block;font-size:19px;font-weight:650;font-variant-numeric:tabular-nums}
+.bib-stat small{font-size:10px;color:var(--txt3)}
+.bib-stat.behind b{color:var(--yellow)}
+.bib-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.bib-bar span{display:block;height:100%;background:linear-gradient(90deg,#8CA8FF,#a78bfa);border-radius:99px;transition:width .3s}
+.bib-sub{font-size:11px;color:var(--txt3);margin:7px 0 10px}
+.bib-list{max-height:min(46vh,380px);overflow-y:auto;border:1px solid var(--border);border-radius:16px;padding:4px}
+.bib-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer}
+.bib-row:hover{background:rgba(255,255,255,.04)}
+.bib-row input{position:absolute;opacity:0;pointer-events:none}
+.bib-row .bib-main{flex:1;min-width:0}
+.bib-row .bib-main b{display:block;font-size:13px;font-weight:600}
+.bib-row .bib-main small{font-size:10px;color:var(--txt3)}
+.bib-row.today{background:rgba(140,168,255,.12);box-shadow:inset 0 0 0 1px rgba(140,168,255,.45)}
+.bib-row.today .bib-main small{color:var(--accent)}
+.bib-row.future{opacity:.62}
+.bib-row.behind .bib-main small{color:var(--yellow)}
+.bib-row.done .bib-main b{text-decoration:line-through;opacity:.5}
+.bib-row.done .bib-main small{opacity:.5}
+/* The tick mark itself — the checkbox styling was scoped to the filter
+   dialog, so these rows showed an empty box even when ticked. */
+.bib-row .vbox{flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border2);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.bib-row input:checked + .vbox{background:var(--accent);border-color:var(--accent)}
+.bib-row input:checked + .vbox::after{content:"";width:5px;height:10px;border:solid var(--accent-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.bib-row input:focus-visible + .vbox{outline:2px solid var(--accent);outline-offset:2px}
+.bib-read{flex:none;color:var(--txt3);padding:4px;border-radius:8px}
+.bib-read:hover{color:var(--accent);background:rgba(255,255,255,.06)}
+/* Suggested-session card at the top of the reading plan */
+.bib-next{background:linear-gradient(135deg,rgba(140,168,255,.18),rgba(167,139,250,.12));
+  border:1px solid rgba(140,168,255,.4);border-radius:18px;padding:14px;margin-bottom:12px}
+.bib-next-lbl{font-size:10px;color:var(--accent);font-weight:600;margin-bottom:3px}
+.bib-next-ref{font-size:19px;font-weight:650;letter-spacing:-.3px}
+.bib-next-sub{font-size:11px;color:var(--txt2);margin-top:3px}
+.bib-next-acts{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap}
+.bib-next-acts .btn{text-decoration:none}
+/* Chapters queued for this session */
+.bib-row.next{background:rgba(140,168,255,.10);box-shadow:inset 0 0 0 1px rgba(140,168,255,.35)}
+.bib-row.next .bib-main small{color:var(--accent)}
+.bib-row.done.next{box-shadow:none}
 </style>
 </head>
 <body>
@@ -792,6 +836,13 @@ async function loadFromServer(){
 }
 
 // ─── HELPERS ─────────────────────────────────────────────
+// Notes may contain a link (the reading plan puts the T4T passage URL
+// there); turn it into something tappable rather than raw text.
+function linkifyNotes(s){
+  return escHtml(s).replace(/(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" target="_blank" rel="noopener" style="color:var(--accent)">$1</a>');
+}
+
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function getGroup(id){return S.groups.find(g=>g.id===id)||{name:'?',color:'#888'}}
 function parseD(s){return new Date(s+'T00:00:00')}
@@ -1141,7 +1192,7 @@ function renderCard(ev){
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
-    (ev.notes?'<div class="ec-notes">'+escHtml(ev.notes)+'</div>':'')+
+    (ev.notes?'<div class="ec-notes">'+linkifyNotes(ev.notes)+'</div>':'')+
     '</div></div>'+
     '<div class="ec-actions">'+acts+'</div>'+
     '</div>';
@@ -1805,6 +1856,18 @@ function openSettings(){
     '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
     '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-book"></i> Bible reading plan</div>'+
+    '<div id="biblePlanInfo" style="font-size:11px;color:var(--txt2);margin-bottom:8px">Checking\u2026</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:6px">'+
+      '<div class="field" style="flex:1;margin:0"><label>Verses a day</label><input id="bibVerses" type="number" min="5" max="300" value="50"></div>'+
+      '<div class="field" style="flex:1;margin:0"><label>Start</label><input id="bibStart" type="date"></div>'+
+      '<div class="field" style="flex:1;margin:0"><label>Time</label><input id="bibTime" type="time" value="06:00" step="300"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn sm acc" style="flex:1;justify-content:center" onclick="makeBiblePlan()"><i class="ti ti-calendar-plus"></i> Create plan</button>'+
+      '<button class="btn sm red" style="flex:1;justify-content:center" onclick="removeBiblePlan()"><i class="ti ti-trash"></i> Remove plan</button>'+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-top:5px">Chapters are never split, so each day gives you at least your target. Every reading links to the passage in the T4T text on eBible.org.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-car"></i> Travel &amp; leave-by</div>'+
     '<div style="font-size:10px;color:var(--txt3);margin-bottom:8px">When an event has a location, you get an extra reminder telling you when to set off.</div>'+
     '<div class="field"><label>Starting address</label>'+
@@ -1889,6 +1952,7 @@ function openSettings(){
     '<div id="tgStatus" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px"></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   refreshPushStatus(); // fill in whether push is active on this device
+  refreshBiblePlan();
   refreshVersionInfo();
 }
 function newGroup(){
@@ -2795,11 +2859,134 @@ async function sendChat(){
   }
 }
 
+// ─── BIBLE READING PLAN ──────────────────────────────────
+// A reading POSITION rather than a dated schedule: chapters are listed one
+// by one, the next session is suggested from wherever you stopped, and
+// finishing Revelation rolls straight back into Genesis.
+let _bible=null;
+async function openBiblePlan(){
+  showModal('Bible reading plan',
+    '<div id="bibBody" style="font-size:12px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Loading\u2026</div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  try{ _bible=await (await fetch('/api/bible/plan')).json(); renderBiblePlan(); }
+  catch(e){ const el=document.getElementById('bibBody'); if(el) el.innerHTML='<span style="color:var(--red)">Could not load the plan.</span>'; }
+}
+
+function renderBiblePlan(){
+  const el=document.getElementById('bibBody'); if(!el) return;
+  if(!_bible || !_bible.active){ el.innerHTML=biblePlanSetupHtml(); return; }
+  const d=_bible;
+  const pct=Math.round(d.chaptersRead/d.totalChapters*100);
+  const s=d.suggestion;
+  el.innerHTML=
+    '<div class="bib-next">'+
+      '<div class="bib-next-lbl">Next session \u00b7 at least '+d.versesPerDay+' verses</div>'+
+      '<div class="bib-next-ref">'+escHtml(s.label)+'</div>'+
+      '<div class="bib-next-sub">'+s.count+' chapter'+(s.count===1?'':'s')+' \u00b7 '+s.verses+' verses'+(s.wraps?' \u00b7 finishes the Bible and starts again':'')+'</div>'+
+      '<div class="bib-next-acts">'+
+        '<button class="btn sm acc" onclick="finishBibleSession()"><i class="ti ti-check"></i> Mark session read</button>'+
+        '<a class="btn sm" href="'+s.url+'" target="_blank" rel="noopener"><i class="ti ti-book"></i> Open in T4T</a>'+
+      '</div>'+
+    '</div>'+
+    '<div class="bib-top">'+
+      '<div class="bib-stat"><b>'+d.chaptersRead+'</b><small>of '+d.totalChapters+' chapters</small></div>'+
+      '<div class="bib-stat"><b>'+pct+'%</b><small>through</small></div>'+
+      '<div class="bib-stat"><b>'+d.cycle+'</b><small>time through</small></div>'+
+    '</div>'+
+    '<div class="bib-bar"><span style="width:'+pct+'%"></span></div>'+
+    '<div class="bib-sub">'+d.versesRead.toLocaleString()+' of '+d.totalVerses.toLocaleString()+' verses read</div>'+
+    '<div class="bib-list" id="bibList">'+d.chapters.map(bibleRow).join('')+'</div>'+
+    '<div style="display:flex;gap:6px;margin-top:10px">'+
+      '<button class="btn sm" onclick="jumpBibleHere()"><i class="ti ti-target"></i> Where I am</button>'+
+      '<span class="msp"></span>'+
+      '<button class="btn sm" onclick="renderBiblePlanSetup()"><i class="ti ti-settings"></i> Change</button>'+
+    '</div>';
+  jumpBibleHere(true);
+}
+
+function bibleRow(x){
+  const cls='bib-row'+(x.read?' done':'')+(x.inSuggestion?' next':'');
+  return '<label class="'+cls+'" data-i="'+x.i+'">'+
+    '<input type="checkbox"'+(x.read?' checked':'')+' onchange="markBibleChapter('+x.i+',this.checked)">'+
+    '<span class="vbox"></span>'+
+    '<span class="bib-main"><b>'+escHtml(x.label)+'</b><small>'+x.verses+' verses</small></span>'+
+    '<a class="bib-read" href="'+x.url+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Read in T4T"><i class="ti ti-external-link"></i></a>'+
+  '</label>';
+}
+
+function jumpBibleHere(instant){
+  const list=document.getElementById('bibList'); if(!list||!_bible) return;
+  const row=list.querySelector('.bib-row.next') || list.querySelector('[data-i="'+_bible.pos+'"]');
+  if(!row) return;
+  // Put the suggested reading just below the top edge, with a couple of
+  // finished chapters visible above it for context. offsetTop is relative
+  // to the scrolling container, so no extra maths is needed.
+  // Measure with rectangles rather than offsetTop: offsetTop is relative to
+  // the nearest POSITIONED ancestor, which isn't this list, so it produced
+  // a scroll position that was quietly wrong.
+  const go=()=>{
+    const delta = row.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    list.scrollTo({ top: Math.max(0, list.scrollTop + delta - 70), behavior: instant?'auto':'smooth' });
+  };
+  go();
+  // Run again on the next frame: immediately after render the rows may not
+  // have their final heights yet, which threw the position off.
+  requestAnimationFrame(go);
+}
+
+async function markBibleChapter(i, read){
+  try{
+    const r=await (await fetch('/api/bible/read',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({index:i,read})})).json();
+    if(r.error) return;
+    _bible=r; renderBiblePlan();
+  }catch(e){}
+}
+async function finishBibleSession(){
+  try{
+    const r=await (await fetch('/api/bible/session',{method:'POST'})).json();
+    if(r.error) return;
+    _bible=r; renderBiblePlan();
+    showToast('\u2705 Session marked read \u2014 next up: <b>'+escHtml(r.suggestion.label)+'</b>');
+  }catch(e){}
+}
+
+function biblePlanSetupHtml(){
+  const v=(_bible&&_bible.versesPerDay)||(_bible&&_bible.defaultVerses)||50;
+  return '<div style="font-size:12px;color:var(--txt2);margin-bottom:10px">Read at your own pace. The app suggests the next chapters that add up to at least your target, and picks up wherever you stopped \u2014 including rolling from Revelation back into Genesis.</div>'+
+    '<div class="field"><label>Verses per session (at least)</label><input id="bibVerses" type="number" min="5" max="300" value="'+v+'"></div>'+
+    '<div style="display:flex;gap:6px;margin-top:8px">'+
+      '<button class="btn sm acc" onclick="createBiblePlan()"><i class="ti ti-check"></i> '+((_bible&&_bible.active)?'Save':'Start reading')+'</button>'+
+      ((_bible&&_bible.active)
+        ? '<button class="btn sm" onclick="renderBiblePlan()">Cancel</button><span class="msp"></span>'+
+          '<button class="btn sm" onclick="restartBiblePlan()"><i class="ti ti-rotate"></i> Start over</button>'+
+          '<button class="btn sm red" onclick="deleteBiblePlan()"><i class="ti ti-trash"></i></button>'
+        : '')+
+    '</div>';
+}
+function renderBiblePlanSetup(){ const el=document.getElementById('bibBody'); if(el) el.innerHTML=biblePlanSetupHtml(); }
+
+async function createBiblePlan(reset){
+  const versesPerDay=parseInt((document.getElementById('bibVerses')||{}).value)||50;
+  const el=document.getElementById('bibBody');
+  el.innerHTML='<i class="ti ti-loader-2"></i> Saving\u2026';
+  try{
+    _bible=await (await fetch('/api/bible/plan',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({versesPerDay,reset:!!reset})})).json();
+    renderBiblePlan();
+  }catch(e){ el.innerHTML='<span style="color:var(--red)">Could not save the plan.</span>'; }
+}
+function restartBiblePlan(){ if(confirm('Start again from Genesis 1?')) createBiblePlan(true); }
+async function deleteBiblePlan(){
+  try{ await fetch('/api/bible/plan/remove',{method:'POST'}); _bible={active:false}; renderBiblePlan(); }catch(e){}
+}
+
 // ─── WIDGET LAUNCHER ─────────────────────────────────────
 // A short list of sites you want one tap away. They open in a new window
 // rather than an iframe: most sites refuse to be framed, and a real tab
 // keeps their own login and layout intact.
 const WIDGETS_DEFAULT=[
+  {id:'w_bible',name:'Bible reading plan', desc:'Tick off what you\u2019ve read', action:'bible', icon:'ti-book'},
   {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
   {id:'w_windy',name:'Windy',      desc:'Weather radar and forecast maps', url:'https://www.windy.com/',    icon:'ti-wind'},
   {id:'w_maps', name:'Google Maps',desc:'Maps and live traffic',           url:'https://maps.google.com/',  icon:'ti-map-2'}
@@ -2840,10 +3027,14 @@ document.addEventListener('click', e=>{
 });
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
+const WIDGET_ACTIONS={ bible: ()=>openBiblePlan() };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
   if(!w) return;
+  // Some widgets are built in and open a dialog here rather than a new tab.
+  if(w.action && WIDGET_ACTIONS[w.action]) return WIDGET_ACTIONS[w.action]();
+  if(!w.url) return;
   // noopener keeps the new tab from being able to touch this page.
   window.open(w.url, '_blank', 'noopener,noreferrer');
 }
@@ -2890,6 +3081,41 @@ function resetWidgets(){ saveWidgets(WIDGETS_DEFAULT.slice()); manageWidgets(); 
 // When an event has a location the server works out the drive from home and
 // the app shows when to set off. The travel lookup is cached server-side, so
 // the same town costs nothing to look up again.
+async function refreshBiblePlan(){
+  const el=document.getElementById('biblePlanInfo'); if(!el) return;
+  const st=document.getElementById('bibStart');
+  if(st && !st.value){ const d=new Date(); d.setDate(d.getDate()+1); st.value=d.toISOString().slice(0,10); }
+  try{
+    const d=await (await fetch('/api/bible/plan')).json();
+    el.innerHTML = d.active
+      ? '\u2705 Plan active \u2014 <b>'+d.days+' days</b>, '+escHtml(d.start)+' to '+escHtml(d.end)+' at '+escHtml(d.time)+'. <b>'+d.remaining+'</b> still to read.'
+      : 'No plan yet. At a minimum of 50 verses a day the whole Bible takes about 481 days.';
+  }catch(e){ el.textContent='Could not check the plan.'; }
+}
+async function makeBiblePlan(){
+  const el=document.getElementById('biblePlanInfo');
+  const versesPerDay=parseInt(document.getElementById('bibVerses').value)||50;
+  const start=document.getElementById('bibStart').value;
+  const time=document.getElementById('bibTime').value||'06:00';
+  el.innerHTML='<i class="ti ti-loader-2"></i> Building the plan\u2026';
+  try{
+    const d=await (await fetch('/api/bible/plan',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({versesPerDay,start,time,reminder:'15'})})).json();
+    if(d.error){ el.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
+    el.innerHTML='\u2705 Created <b>'+d.days+' days</b> ('+d.avgVerses+' verses a day), '+escHtml(d.start)+' to '+escHtml(d.end)+'.';
+    await loadFromServer(); renderAll();
+  }catch(e){ el.innerHTML='<span style="color:var(--red)">Could not create the plan.</span>'; }
+}
+async function removeBiblePlan(){
+  const el=document.getElementById('biblePlanInfo');
+  el.innerHTML='<i class="ti ti-loader-2"></i> Removing\u2026';
+  try{
+    const d=await (await fetch('/api/bible/plan/remove',{method:'POST'})).json();
+    el.textContent='Removed '+d.removed+' reading'+(d.removed===1?'':'s')+'.';
+    await loadFromServer(); renderAll();
+  }catch(e){ el.innerHTML='<span style="color:var(--red)">Could not remove the plan.</span>'; }
+}
+
 async function saveHome(){
   const q=(document.getElementById('homeAddr').value||'').trim();
   const info=document.getElementById('homeInfo');
