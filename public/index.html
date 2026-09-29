@@ -2992,8 +2992,15 @@ const WIDGETS_DEFAULT=[
   {id:'w_maps', name:'Google Maps',desc:'Maps and live traffic',           url:'https://maps.google.com/',  icon:'ti-map-2'}
 ];
 function getWidgets(){
-  const w = S.widgets;
-  return Array.isArray(w) ? w : WIDGETS_DEFAULT;
+  const saved = Array.isArray(S.widgets) ? S.widgets : null;
+  if(!saved) return WIDGETS_DEFAULT.slice();
+  // Built-in entries (the ones that open a dialog rather than a website)
+  // must appear even for someone who saved a custom list before they
+  // existed — otherwise a new feature is invisible to exactly the people
+  // who use the launcher most.
+  const builtIns = WIDGETS_DEFAULT.filter(w => w.action);
+  const missing = builtIns.filter(b => !saved.some(x => x.id === b.id || x.action === b.action));
+  return missing.length ? [...missing, ...saved] : saved;
 }
 function toggleWidgets(e){
   if(e) e.stopPropagation();
