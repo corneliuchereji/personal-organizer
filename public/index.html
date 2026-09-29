@@ -2872,7 +2872,12 @@ async function openBiblePlan(){
   catch(e){ const el=document.getElementById('bibBody'); if(el) el.innerHTML='<span style="color:var(--red)">Could not load the plan.</span>'; }
 }
 
-function renderBiblePlan(){
+function renderBiblePlan(opts){
+  const keepScroll = opts && opts.keepScroll;
+  // Ticking a chapter shouldn't yank the list back to the suggestion —
+  // you're usually reading somewhere else when you tick something off.
+  const prevList = document.getElementById('bibList');
+  const prevTop = prevList ? prevList.scrollTop : null;
   const el=document.getElementById('bibBody'); if(!el) return;
   if(!_bible || !_bible.active){ el.innerHTML=biblePlanSetupHtml(); return; }
   const d=_bible;
@@ -2901,7 +2906,12 @@ function renderBiblePlan(){
       '<span class="msp"></span>'+
       '<button class="btn sm" onclick="renderBiblePlanSetup()"><i class="ti ti-settings"></i> Change</button>'+
     '</div>';
-  jumpBibleHere(true);
+  if(keepScroll && prevTop != null){
+    const list=document.getElementById('bibList');
+    if(list) list.scrollTop = prevTop;
+  } else {
+    jumpBibleHere(true);
+  }
 }
 
 function bibleRow(x){
@@ -2939,7 +2949,7 @@ async function markBibleChapter(i, read){
     const r=await (await fetch('/api/bible/read',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({index:i,read})})).json();
     if(r.error) return;
-    _bible=r; renderBiblePlan();
+    _bible=r; renderBiblePlan({keepScroll:true});
   }catch(e){}
 }
 async function finishBibleSession(){
