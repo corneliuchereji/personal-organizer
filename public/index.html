@@ -2907,8 +2907,11 @@ function renderBiblePlan(opts){
       '<button class="btn sm" onclick="renderBiblePlanSetup()"><i class="ti ti-settings"></i> Change</button>'+
     '</div>';
   if(keepScroll && prevTop != null){
-    const list=document.getElementById('bibList');
-    if(list) list.scrollTop = prevTop;
+    // Set it once now and again after layout — a fresh list has no height
+    // yet, so the first assignment alone gets clamped.
+    const restore=()=>{ const l=document.getElementById('bibList'); if(l) l.scrollTop=prevTop; };
+    restore();
+    requestAnimationFrame(()=>{ restore(); requestAnimationFrame(restore); });
   } else {
     jumpBibleHere(true);
   }
@@ -2949,9 +2952,35 @@ async function markBibleChapter(i, read){
     const r=await (await fetch('/api/bible/read',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({index:i,read})})).json();
     if(r.error) return;
-    _bible=r; renderBiblePlan({keepScroll:true});
+    // Update the existing rows rather than rebuilding the list. Replacing
+    // the HTML and restoring scrollTop can't work reliably: the browser
+    // clamps the value until the new rows have been laid out, so the list
+    // jumped to a different place (Chrome did, Safari didn't).
+    _bible=r; updateBiblePlanInPlace(r);
   }catch(e){}
 }
+
+function updateBiblePlanInPlace(d){
+  const pct=Math.round(d.chaptersRead/d.totalChapters*100);
+  const s=d.suggestion;
+  const set=(sel,val)=>{ const el=document.querySelector(sel); if(el) el.innerHTML=val; };
+  set('.bib-next-ref', escHtml(s.label));
+  set('.bib-next-sub', s.count+' chapter'+(s.count===1?'':'s')+' \u00b7 '+s.verses+' verses'+(s.wraps?' \u00b7 finishes the Bible and starts again':''));
+  const open=document.querySelector('.bib-next-acts a'); if(open) open.href=s.url;
+  const stats=document.querySelectorAll('.bib-top .bib-stat b');
+  if(stats.length>=3){ stats[0].textContent=d.chaptersRead; stats[1].textContent=pct+'%'; stats[2].textContent=d.cycle; }
+  const bar=document.querySelector('.bib-bar span'); if(bar) bar.style.width=pct+'%';
+  set('.bib-sub', d.versesRead.toLocaleString()+' of '+d.totalVerses.toLocaleString()+' verses read');
+  const list=document.getElementById('bibList'); if(!list) return;
+  const byI=new Map(d.chapters.map(c=>[c.i,c]));
+  list.querySelectorAll('.bib-row').forEach(row=>{
+    const c=byI.get(+row.dataset.i); if(!c) return;
+    row.classList.toggle('done', c.read);
+    row.classList.toggle('next', c.inSuggestion);
+    const cb=row.querySelector('input'); if(cb) cb.checked=c.read;
+  });
+}
+
 async function finishBibleSession(){
   try{
     const r=await (await fetch('/api/bible/session',{method:'POST'})).json();
