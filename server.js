@@ -215,25 +215,7 @@ async function pruneSnapshots() {
 // Sends the backup to Telegram as a downloadable file. This is the part
 // that makes it a real backup: the copy lives outside the app entirely, so
 // it survives even if the database itself is lost.
-async function sendBackupToTelegram(token, chatId, label) {
-  const stamp = new Date().toISOString().slice(0,10);
-  const content = JSON.stringify(_cache, null, 2);
-  // Deliberately uses Node's BUILT-IN fetch rather than the node-fetch v2
-  // instance used elsewhere in this file: v2 predates the standard
-  // FormData/Blob APIs and won't build this multipart upload correctly.
-  const nativeFetch = globalThis.fetch;
-  if (!nativeFetch || typeof FormData === 'undefined' || typeof Blob === 'undefined') {
-    throw new Error('This Node version cannot upload files (needs Node 18+).');
-  }
-  const form = new FormData();
-  form.append('chat_id', String(chatId));
-  form.append('caption', `🗂 Organizer backup — ${label} (${stamp})`);
-  form.append('document', new Blob([content], { type: 'application/json' }), `organizer-backup-${stamp}.json`);
-  const r = await nativeFetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: 'POST', body: form });
-  const d = await r.json();
-  if (!d.ok) throw new Error(d.description || 'sendDocument failed');
-  return true;
-}
+
 
 
 // Make sure a pending write isn't lost if the container is stopped.
@@ -478,14 +460,7 @@ async function sendTg(token, chatId, text, replyMarkup) {
     return false;
   }
 }
-async function answerCallback(token, callbackId, text){
-  try{
-    await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ callback_query_id:callbackId, text:text||'', show_alert:false })
-    });
-  }catch(e){ console.log('TG answerCallback error:', e.message); }
-}
+
 
 // ═══════════════════════════════════════════════════
 // MESSAGE BUILDERS
@@ -903,55 +878,7 @@ async function processTgCommand(text, data) {
 // ═══════════════════════════════════════════════════
 // WEBHOOK — Telegram sends messages here
 // ═══════════════════════════════════════════════════
-app.post('/webhook/:token', async (req, res) => {
-  res.sendStatus(200); // always ack fast
-  try {
-    const data = readData();
-    console.log('Webhook received. Body keys:', Object.keys(req.body||{}));
 
-    // Handle "View fixtures" button taps from a daily/weekly briefing.
-    const cb = req.body?.callback_query;
-    if (cb) {
-      const chatId = String(cb.message.chat.id);
-      if (data.settings?.tgToken && (!data.settings.tgChatId || chatId === String(data.settings.tgChatId))) {
-        await answerCallback(data.settings.tgToken, cb.id);
-        const parts = (cb.data||'').split('|'); // "fx|date|competitionId"
-        if (parts[0] === 'fx' && parts[1] && parts[2]) {
-          const [, date, competitionId] = parts;
-          const dayRaw = (data.sportEvents||[]).map(e=>({...e,_type:'sport'})).filter(e=>matchesDate(e,date));
-          const dayGrouped = collapseSportEventsSrv(data, dayRaw);
-          const slot = dayGrouped.find(e=>e._display==='collapsed' && String(e.competitionId)===String(competitionId));
-          const text = slot ? formatFixtureListMsg(slot) : '⚠️ Those fixtures are no longer available (try syncing the app).';
-          await sendTg(data.settings.tgToken, chatId, text);
-        }
-      }
-      return;
-    }
-
-    const msg = req.body?.message;
-    if(!msg?.text){ console.log('No text, skip.'); return; }
-
-    const chatId = String(msg.chat.id);
-    const text   = msg.text;
-    console.log('From chatId:', chatId, '| text:', text);
-    console.log('Stored chatId:', String(data.settings?.tgChatId));
-
-    if(!data.settings?.tgToken){ console.log('No token stored.'); return; }
-
-    // Security: only our chat ID
-    if(data.settings.tgChatId && chatId !== String(data.settings.tgChatId)){
-      console.log('Unauthorized.');
-      await sendTg(data.settings.tgToken, chatId, '⛔ Unauthorized.');
-      return;
-    }
-
-    const reply = await processTgCommand(text, data);
-    console.log('Reply:', reply.slice(0,80));
-    await sendTg(data.settings.tgToken, chatId, reply);
-  } catch(e) {
-    console.log('Webhook error:', e.message);
-  }
-});
 
 // Register webhook with Telegram
 app.post('/api/telegram/register-webhook', async (req, res) => {
@@ -978,7 +905,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-09-28-bible-no-jump';
+const BUILD_VERSION = '2026-10-01-mcp-connector-no-telegram';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1173,40 +1100,16 @@ app.get('/api/reminders/debug', (req, res) => {
 // reports precisely what happened to each. Unlike the individual test
 // buttons, this mirrors what the reminder cron actually does.
 app.post('/api/reminders/test-delivery', async (req, res) => {
-  const d = readData();
-  const token = d.settings && d.settings.tgToken;
-  const chatId = d.settings && d.settings.tgChatId;
-  const out = { telegram: {}, push: {} };
-
-  if (!token || !chatId) {
-    out.telegram = { ok:false, error:'Telegram token or chat ID not set' };
-  } else {
-    // Identify WHICH bot this token belongs to. "Delivered" but nothing
-    // visible almost always means the token is for a different bot than the
-    // chat being watched — so name it rather than leaving it a mystery.
-    try {
-      const me = await (await fetch(`https://api.telegram.org/bot${token}/getMe`)).json();
-      out.telegram.bot = me.ok ? ('@' + me.result.username) : 'unknown (getMe failed)';
-      if (!me.ok) out.telegram.botError = me.description;
-    } catch(e) { out.telegram.bot = 'unknown ('+e.message+')'; }
-    try {
-      const ok = await sendTg(token, chatId, '⏰ <b>Delivery test</b>\n\nIf you can read this, Telegram reminders work.');
-      out.telegram.ok = ok;
-      out.telegram.error = ok ? null : (_lastTgError || 'Telegram returned not-ok');
-      out.telegram.sentToChatId = String(chatId);
-    } catch(e) { out.telegram.ok = false; out.telegram.error = e.message; }
-  }
-
+  // Telegram has been retired, so this now exercises web push only.
+  const out = { telegram: { ok:false, error:'Telegram removed' }, push: {} };
   try {
-    const n = await sendWebPush('⏰ Delivery test', 'If you can see this, push reminders work.');
+    const n = await sendWebPush('⏰ Delivery test', 'If you can see this, reminders work.');
     out.push = { ok: n>0, devices: n, error: n===0 ? 'No subscribed devices' : null };
   } catch(e) { out.push = { ok:false, error:e.message }; }
-
-  out.summary = (out.telegram.ok || out.push.ok)
-    ? 'At least one channel delivered.'
-    : 'BOTH channels failed — see the errors above.';
+  out.summary = out.push.ok ? 'Push delivered.' : 'Push failed — see the error above.';
   res.json(out);
 });
+
 
 app.get('/api/version', (req, res) => {
   res.json({
@@ -1753,16 +1656,7 @@ app.get('/api/snapshots/:id/download', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/backup/send-telegram', async (req, res) => {
-  try {
-    const d = readData();
-    const token = d.settings && d.settings.tgToken;
-    const chatId = d.settings && d.settings.tgChatId;
-    if (!token || !chatId) return res.status(400).json({ error: 'Telegram token/chat ID not configured.' });
-    await sendBackupToTelegram(token, chatId, 'manual backup');
-    res.json({ ok:true });
-  } catch(e) { res.status(500).json({ error: e.message }); }
-});
+
 
 app.post('/api/sports/purge-placeholders', (req, res) => {
   try {
@@ -2753,6 +2647,182 @@ app.post('/api/bible/plan/remove', (req, res) => {
   }catch(e){ res.status(500).json({ error:e.message }); }
 });
 
+// ═══════════════════════════════════════════════════
+// MCP ENDPOINT — lets Claude read and update this organizer.
+// Speaks JSON-RPC over HTTP (MCP streamable transport). The URL carries a
+// long random secret because custom connectors can't send auth headers:
+// anyone holding the URL has full access, so it is treated like a password
+// and can be rotated from Settings.
+// ═══════════════════════════════════════════════════
+function mcpSecret(data, create){
+  const d = data || readData();
+  if(!d.settings) d.settings = {};
+  if(!d.settings.mcpSecret && create){
+    d.settings.mcpSecret = [...Array(4)].map(()=>Math.random().toString(36).slice(2,10)).join('');
+    writeData(d);
+  }
+  return d.settings.mcpSecret || null;
+}
+
+const MCP_TOOLS = [
+  { name:'list_day', description:"What is scheduled on a given day: tasks and sport fixtures.",
+    inputSchema:{ type:'object', properties:{ date:{type:'string', description:'YYYY-MM-DD, or omit for today'} } } },
+  { name:'add_task', description:'Add a task or reminder to the organizer.',
+    inputSchema:{ type:'object', required:['name','date'], properties:{
+      name:{type:'string'}, date:{type:'string', description:'YYYY-MM-DD'},
+      time:{type:'string', description:'HH:MM, 24h. Defaults to 09:00'},
+      notes:{type:'string'}, location:{type:'string', description:'Enables a leave-by warning'},
+      remindMinutes:{type:'array', items:{type:'number'}, description:'e.g. [15, 120]'} } } },
+  { name:'complete_task', description:'Mark a task done (or not done) by name.',
+    inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, done:{type:'boolean'} } } },
+  { name:'delete_task', description:'Delete a task by name.',
+    inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'} } } },
+  { name:'upcoming', description:'Everything scheduled over the next N days (default 7).',
+    inputSchema:{ type:'object', properties:{ days:{type:'number'} } } },
+  { name:'bible_status', description:'Current Bible reading position and the next suggested session.',
+    inputSchema:{ type:'object', properties:{} } },
+  { name:'bible_mark_session', description:'Mark the suggested Bible reading session as read.',
+    inputSchema:{ type:'object', properties:{} } }
+];
+
+function mcpText(obj){ return { content:[{ type:'text', text: typeof obj==='string'?obj:JSON.stringify(obj,null,2) }] }; }
+
+function mcpFindTask(d, name){
+  const n = String(name||'').toLowerCase().trim();
+  return (d.tasks||[]).find(t => (t.name||'').toLowerCase() === n)
+      || (d.tasks||[]).find(t => (t.name||'').toLowerCase().includes(n));
+}
+
+async function mcpCall(name, args){
+  const d = readData();
+  args = args || {};
+  switch(name){
+    case 'list_day': {
+      const ds = /^\d{4}-\d{2}-\d{2}$/.test(args.date||'') ? args.date : getToday();
+      const evs = groupedEventsOnDay(d, ds);
+      if(!evs.length) return mcpText('Nothing scheduled on '+ds+'.');
+      return mcpText({ date: ds, items: evs.map(e=>({
+        type: e._type,
+        name: (e._type==='sport' && e._display==='collapsed') ? e.name+' ('+e.count+' fixtures)' : e.name,
+        time: fmtTime(e.time), done: !!e.done, location: e.location || undefined })) });
+    }
+    case 'upcoming': {
+      const days = Math.min(60, Math.max(1, parseInt(args.days)||7));
+      const out = [];
+      for(let i=0;i<days;i++){
+        const ds = addDays(getToday(), i);
+        const evs = groupedEventsOnDay(d, ds);
+        if(evs.length) out.push({ date: ds, items: evs.map(e=>({ name:e.name, time:fmtTime(e.time), type:e._type })) });
+      }
+      return mcpText(out.length ? out : 'Nothing scheduled in the next '+days+' days.');
+    }
+    case 'add_task': {
+      if(!args.name || !args.date) return mcpText('A name and a date are required.');
+      const grp = (d.groups||[])[0] || { id:'g_pers' };
+      const reminders = Array.isArray(args.remindMinutes) ? args.remindMinutes.map(String) : ['15'];
+      const task = { id: uid(), name: String(args.name), date: args.date, time: fmtTime(args.time||'09:00'),
+        freq:'none', group: grp.id, priority:'normal', notes: args.notes||'',
+        location: args.location||'', reminders, reminder: reminders[0]||'', done:false };
+      d.tasks = d.tasks || []; d.tasks.push(task);
+      writeData(d);
+      return mcpText('Added "'+task.name+'" on '+task.date+' at '+task.time+'.');
+    }
+    case 'complete_task': {
+      const t = mcpFindTask(d, args.name);
+      if(!t) return mcpText('No task matching "'+args.name+'".');
+      t.done = args.done === false ? false : true;
+      writeData(d);
+      return mcpText('"'+t.name+'" marked '+(t.done?'done':'not done')+'.');
+    }
+    case 'delete_task': {
+      const t = mcpFindTask(d, args.name);
+      if(!t) return mcpText('No task matching "'+args.name+'".');
+      d.tasks = d.tasks.filter(x => x.id !== t.id);
+      writeData(d);
+      return mcpText('Deleted "'+t.name+'".');
+    }
+    case 'bible_status': {
+      if(!d.biblePlan) return mcpText('No Bible reading plan has been started.');
+      const st = biblePlanState(d.biblePlan);
+      return mcpText({ next: st.suggestion.label, verses: st.suggestion.verses,
+        chaptersRead: st.chaptersRead, of: st.totalChapters, timeThrough: st.cycle });
+    }
+    case 'bible_mark_session': {
+      if(!d.biblePlan) return mcpText('No Bible reading plan has been started.');
+      const sug = bibleSuggestion(d.biblePlan.pos||0, d.biblePlan.versesPerDay);
+      if(sug.wraps) d.biblePlan.cycle = (d.biblePlan.cycle||1)+1;
+      d.biblePlan.pos = sug.nextPos; d.biblePlan.lastReadAt = new Date().toISOString();
+      writeData(d);
+      const st = biblePlanState(d.biblePlan);
+      return mcpText('Marked as read. Next: '+st.suggestion.label+' ('+st.suggestion.verses+' verses).');
+    }
+    default:
+      return mcpText('Unknown tool: '+name);
+  }
+}
+
+async function mcpHandle(msg){
+  const id = msg.id;
+  const reply = (result) => ({ jsonrpc:'2.0', id, result });
+  switch(msg.method){
+    case 'initialize':
+      return reply({ protocolVersion:'2024-11-05',
+        capabilities:{ tools:{} },
+        serverInfo:{ name:'personal-organizer', version: BUILD_VERSION } });
+    case 'notifications/initialized':
+      return null;                       // a notification: no response
+    case 'ping':
+      return reply({});
+    case 'tools/list':
+      return reply({ tools: MCP_TOOLS });
+    case 'tools/call': {
+      try{
+        const out = await mcpCall(msg.params && msg.params.name, msg.params && msg.params.arguments);
+        return reply(out);
+      }catch(e){
+        return reply({ content:[{ type:'text', text:'Error: '+e.message }], isError:true });
+      }
+    }
+    default:
+      return { jsonrpc:'2.0', id, error:{ code:-32601, message:'Method not found: '+msg.method } };
+  }
+}
+
+app.post('/mcp/:secret', async (req, res) => {
+  const want = mcpSecret(null, false);
+  if(!want || req.params.secret !== want) return res.status(404).json({ error:'Not found' });
+  const body = req.body;
+  const msgs = Array.isArray(body) ? body : [body];
+  const out = [];
+  for(const m of msgs){
+    const r = await mcpHandle(m || {});
+    if(r) out.push(r);
+  }
+  if(!out.length) return res.status(202).end();     // notifications only
+  res.json(Array.isArray(body) ? out : out[0]);
+});
+
+app.get('/mcp/:secret', (req, res) => {
+  const want = mcpSecret(null, false);
+  if(!want || req.params.secret !== want) return res.status(404).json({ error:'Not found' });
+  res.status(405).json({ error:'Use POST (JSON-RPC)' });
+});
+
+app.get('/api/mcp/info', (req, res) => {
+  const d = readData();
+  const secret = mcpSecret(d, true);
+  res.json({ url: (APP_URL||'') + '/mcp/' + secret, tools: MCP_TOOLS.map(t=>t.name) });
+});
+app.post('/api/mcp/rotate', (req, res) => {
+  const d = readData();
+  if(!d.settings) d.settings = {};
+  d.settings.mcpSecret = null;
+  writeData(d);
+  const secret = mcpSecret(readData(), true);
+  res.json({ url: (APP_URL||'') + '/mcp/' + secret });
+});
+
+
 app.get('/api/home', async (req, res) => {
   try{
     const q = (req.query.q||'').trim();
@@ -2871,67 +2941,22 @@ app.get('/api/status', async (req, res) => {
 // ═══════════════════════════════════════════════════
 // CRON SCHEDULING
 // ═══════════════════════════════════════════════════
-let _dailyCron=null, _weeklyCron=null;
+// The daily and weekly briefings were Telegram-only, so they retire with
+// it. setupCrons is kept as a no-op because several places still call it
+// after settings change.
+function setupCrons(){ /* nothing scheduled — notifications are push-based */ }
 
-function setupCrons(settings) {
-  if(_dailyCron)  { _dailyCron.stop();  _dailyCron=null;  }
-  if(_weeklyCron) { _weeklyCron.stop(); _weeklyCron=null; }
-  if(!settings?.tgToken||!settings?.tgChatId) return;
-
-  const hour = String(settings.tgMorningHour||'08').padStart(2,'0');
-  const min  = String(settings.tgMorningMin||'00').padStart(2,'0');
-  const utcH = (parseInt(hour)-3+24)%24; // Bucharest UTC+3
-
-  _dailyCron = cron.schedule(`${min} ${utcH} * * *`, async ()=>{
-    console.log('Sending daily briefing...');
-    const d=readData();
-    const { msg, buttons } = buildDailyMsg(d);
-    await sendTg(settings.tgToken, settings.tgChatId, msg, buttons.length?{inline_keyboard:buttons}:undefined);
-  });
-
-  _weeklyCron = cron.schedule(`${min} ${utcH} * * 1`, async ()=>{
-    console.log('Sending weekly summary...');
-    const d=readData();
-    const { msg, buttons } = buildWeeklyMsg(d);
-    await sendTg(settings.tgToken, settings.tgChatId, msg, buttons.length?{inline_keyboard:buttons}:undefined);
-  });
-
-  console.log(`Crons set: daily at ${hour}:${min} Bucharest time`);
-
-  // Register webhook automatically if APP_URL is set
-  if(APP_URL && settings.tgToken) {
-    const webhookUrl = APP_URL.replace(/\/$/,'')+'/webhook/'+settings.tgToken;
-    fetch(`https://api.telegram.org/bot${settings.tgToken}/setWebhook`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({url:webhookUrl, drop_pending_updates:true})
-    }).then(r=>r.json()).then(d=>console.log('Webhook auto-registered:',d.ok)).catch(()=>{});
-  }
-}
-
-// Monthly automatic backup — 1st of each month at 03:30. Saves a snapshot
-// in the database AND sends the file to Telegram, so there's always an
-// off-platform copy that survives even losing the database.
+// Fixture sync — refreshes followed teams/competitions into sportEvents.
+// Monthly snapshot on the 1st at 03:30. The copy that used to be sent to
+// Telegram is now the folder backup on your PC (see Settings).
 let _backupCron = cron.schedule('30 3 1 * *', async () => {
   console.log('Running monthly backup...');
   try {
     const id = await saveSnapshot('monthly');
     console.log('   Snapshot saved:', id);
-    const d = readData();
-    const token = d.settings && d.settings.tgToken;
-    const chatId = d.settings && d.settings.tgChatId;
-    if (token && chatId) {
-      try {
-        await sendBackupToTelegram(token, chatId, 'monthly automatic backup');
-        console.log('   Backup sent to Telegram.');
-      } catch(e) {
-        console.log('   Telegram backup failed:', e.message);
-        await sendTg(token, chatId, '⚠️ Monthly backup was saved in the app, but sending the file here failed: '+e.message);
-      }
-    }
   } catch(e) { console.log('Monthly backup error:', e.message); }
 });
 
-// Fixture sync — refreshes followed teams/competitions into sportEvents.
 let _fixtureSyncCron = cron.schedule('17 */6 * * *', async () => {
   console.log('Running scheduled fixture sync...');
   try { await syncFixtures(); } catch(e){ console.log('Scheduled sync error:', e.message); }
@@ -3034,8 +3059,7 @@ function reminderLabel(mins){
 let _reminderCron = cron.schedule('* * * * *', async () => {
   try {
     const d = readData();
-    const token = d.settings && d.settings.tgToken;
-    const chatId = d.settings && d.settings.tgChatId;
+    const token = null, chatId = null;          // Telegram retired
     const hasPush = (d.pushSubs || []).length > 0;
     // Previously this returned early without Telegram configured, which
     // would have silently disabled web-push reminders too.
@@ -3072,11 +3096,8 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
       if (ev.notes) msg += '📝 '+ev.notes+'\n';
       // Both channels: Telegram (reliable on phones) and web push (works
       // without opening Telegram). Either failing must not stop the other.
-      let tgOk = false, tgErr = null, pushCount = 0, pushErr = null;
-      if (token && chatId) {
-        try { tgOk = await sendTg(token, chatId, msg); if(!tgOk) tgErr='sendMessage returned not-ok'; }
-        catch(e){ tgErr = e.message; }
-      } else { tgErr = 'Telegram not configured'; }
+      // Telegram has been retired: notifications go out via web push only.
+      let tgOk = false, tgErr = 'Telegram removed', pushCount = 0, pushErr = null;
       try {
         const when = fmtTime(ev.time) + (item.ds!==getToday() ? ' · '+item.ds : '');
         const secsToStart = Math.floor((item.startMs - Date.now())/1000);
@@ -3095,7 +3116,7 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
         );
       } catch(e){ pushErr = e.message; }
 
-      const delivered = tgOk || pushCount > 0;
+      const delivered = pushCount > 0;
       // Only record it as sent if something actually got through. Marking
       // it sent unconditionally (the previous behaviour) meant a failed
       // delivery was never retried AND the failure was invisible — the
@@ -3149,33 +3170,7 @@ app.listen(PORT, async ()=>{
     syncFixtures().catch(e => console.log('Startup sync error:', e.message));
   }
 
-  if(initialData.settings?.tgToken){
-    console.log(`   TG token: set | ChatID: ${initialData.settings.tgChatId||'NOT SET'}`);
-    setupCrons(initialData.settings);
-
-    // Always re-register webhook on startup with current APP_URL
-    if(APP_URL && initialData.settings.tgToken){
-      const webhookUrl = APP_URL.replace(/\/$/,'')+'/webhook/'+initialData.settings.tgToken;
-      console.log(`   Registering webhook: ${webhookUrl}`);
-      try{
-        const r = await fetch(`https://api.telegram.org/bot${initialData.settings.tgToken}/setWebhook`,{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({url:webhookUrl, drop_pending_updates:false})
-        });
-        const d = await r.json();
-        console.log(`   Webhook result: ${d.ok} — ${d.description||'ok'}`);
-        // Send startup notification to user
-        await sendTg(initialData.settings.tgToken, initialData.settings.tgChatId,
-          '🟢 Personal Organizer bot is online!\nSend /help to see available commands.');
-      }catch(e){
-        console.log(`   Webhook error: ${e.message}`);
-      }
-    } else {
-      console.log('   ⚠️  APP_URL not set — webhook not registered. Add APP_URL to your host environment variables.');
-    }
-  } else {
-    console.log('   ⚠️  No Telegram token stored — open the app and configure Telegram settings.');
-  }
+  console.log('   Notifications: web push');
 });
 
 })(); // end async bootstrap
