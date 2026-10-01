@@ -1904,7 +1904,7 @@ function openSettings(){
       '<button class="btn sm red" style="flex:1;justify-content:center" onclick="disablePush()"><i class="ti ti-bell-off"></i> Off</button>'+
     '</div>'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:4px" onclick="testDelivery()"><i class="ti ti-stethoscope"></i> Test reminder delivery (both channels)</button>'+
-    '<div style="font-size:10px;color:var(--txt3);line-height:1.6">Works when the app is closed. On iPhone it only works if the app was added to the Home Screen. Telegram stays on as a backup \u2014 it is more dependable on phones.</div>'+
+    '<div style="font-size:10px;color:var(--txt3);line-height:1.6">Works when the app is closed. On iPhone it only works if the app was added to the Home Screen.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-refresh"></i> App version & updates</div>'+
     '<div id="versionInfo" style="font-size:11px;color:var(--txt2);margin-bottom:6px">Checking\u2026</div>'+
     '<button class="btn sm" style="width:100%;justify-content:center" onclick="forceUpdate()"><i class="ti ti-reload"></i> Check for updates &amp; refresh</button>'+
@@ -1920,39 +1920,40 @@ function openSettings(){
     '</div>'+
     '<div id="installHint" style="font-size:10px;color:var(--txt2);margin-top:5px"></div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-database"></i> Backup & restore</div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">A snapshot is saved automatically on the 1st of each month and sent to you on Telegram. The last '+6+' are kept here.</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">A snapshot is saved automatically on the 1st of each month. The last '+6+' are kept here, and you can also save copies to a folder on this PC (below).</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
       '<a class="btn sm" style="flex:1;justify-content:center;text-decoration:none" href="/api/backup"><i class="ti ti-download"></i> Download</a>'+
       '<button class="btn sm" style="flex:1;justify-content:center" onclick="document.getElementById(\'restoreFile\').click()"><i class="ti ti-upload"></i> Restore file</button>'+
     '</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
       '<button class="btn sm" style="flex:1;justify-content:center" onclick="makeSnapshot()"><i class="ti ti-camera"></i> Save snapshot now</button>'+
-      '<button class="btn sm" style="flex:1;justify-content:center" onclick="sendBackupTelegram()"><i class="ti ti-brand-telegram"></i> Send to Telegram</button>'+
+
     '</div>'+
     '<button class="btn sm" style="width:100%;justify-content:center" onclick="openSnapshots()"><i class="ti ti-history"></i> View saved snapshots</button>'+
     '<input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="doRestore(this)">'+
     '<div id="restoreStatus" style="font-size:11px;margin-top:6px;text-align:center"></div>'+
-    '<div class="slabel" style="margin-top:14px"><i class="ti ti-brand-telegram" style="color:#29b6f6"></i> Telegram notifications</div>'+
-    '<div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.6">'+
-      '1. Open Telegram → search <b>@BotFather</b> → send <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">/newbot</code> → copy token<br>'+
-      '2. Search <b>@userinfobot</b> → send <code style="background:var(--bg3);padding:1px 4px;border-radius:3px">/start</code> → copy your Chat ID<br>'+
-      '3. Start a chat with your new bot (send it any message) first!'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-folder"></i> Backup to a folder on this PC</div>'+
+    '<div id="fsInfo" style="font-size:11px;color:var(--txt2);margin-bottom:6px">Checking\u2026</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="pickBackupFolder()"><i class="ti ti-folder-plus"></i> Choose folder</button>'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="backupToFolder(true)"><i class="ti ti-device-floppy"></i> Back up now</button>'+
     '</div>'+
-    '<div class="field"><label>Bot Token</label><input id="tgTok" value="'+(S.tgToken||'')+'" placeholder="123456:ABC-DEF…" style="font-size:11px"></div>'+
-    '<div style="display:flex;gap:8px">'+
-      '<div class="field" style="flex:1"><label>Your Chat ID</label><input id="tgCid" value="'+(S.tgChatId||'')+'" placeholder="123456789" style="font-size:11px"></div>'+
-      '<div class="field" style="width:90px"><label>Morning at</label><input type="time" id="tgHour" value="'+(S.tgMorningHour||'08')+':00" style="font-size:11px"></div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-top:5px">Saves a dated copy whenever you open the app, at most once a day. Works in Chrome and Edge on a computer \u2014 on a phone use Download above.</div>'+
+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-plug"></i> Connect to Claude</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">Add this address in Claude \u2192 Settings \u2192 Connectors \u2192 Add custom connector. Claude can then read your schedule and add or complete tasks.</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<input id="mcpUrl" readonly value="" style="flex:1;font-size:11px" onclick="this.select()">'+
+      '<button class="btn sm" onclick="copyMcpUrl()"><i class="ti ti-copy"></i></button>'+
     '</div>'+
-    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
-      '<button class="btn sm acc" onclick="saveTgSettings()"><i class="ti ti-device-floppy"></i> Save</button>'+
-      '<button class="btn sm" onclick="sendTgTest()"><i class="ti ti-send"></i> Send test</button>'+
-      '<button class="btn sm" onclick="sendTgDaily()"><i class="ti ti-calendar-day"></i> Send today</button>'+
-      '<button class="btn sm" onclick="sendTgWeekly()"><i class="ti ti-calendar-week"></i> Send weekly</button>'+
-    '</div>'+
-    '<div id="tgStatus" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px"></div>',
+    '<div style="font-size:10px;color:var(--yellow);margin-top:5px">Treat this address like a password \u2014 anyone who has it can read and change your data.</div>'+
+    '<div style="margin-top:6px"><button class="btn sm red" onclick="rotateMcpUrl()"><i class="ti ti-refresh"></i> Generate a new address</button></div>'+
+    '<div id="mcpStatus" style="font-size:11px;margin-top:5px"></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   refreshPushStatus(); // fill in whether push is active on this device
   refreshBiblePlan();
+  refreshFsInfo();
+  refreshMcpInfo();
   refreshVersionInfo();
 }
 function newGroup(){
@@ -2048,16 +2049,7 @@ async function makeSnapshot(){
   }catch(e){ el.style.color='var(--red)'; el.textContent='Failed: '+e.message; }
 }
 
-async function sendBackupTelegram(){
-  const el=document.getElementById('restoreStatus');
-  el.style.color='var(--txt3)'; el.innerHTML='<i class="ti ti-loader-2"></i> Sending…';
-  try{
-    const r=await fetch('/api/backup/send-telegram',{method:'POST'});
-    const d=await r.json();
-    if(d.error){ el.style.color='var(--red)'; el.textContent='Failed: '+d.error; return; }
-    el.style.color='var(--green)'; el.textContent='✅ Backup sent to your Telegram chat.';
-  }catch(e){ el.style.color='var(--red)'; el.textContent='Failed: '+e.message; }
-}
+
 
 async function openSnapshots(){
   showModal('Saved snapshots','<div id="snapBody" style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Loading…</div>',
@@ -2443,18 +2435,7 @@ function saveTgSettings(){
   setTimeout(()=>{const el=document.getElementById('tgStatus');if(el)el.textContent=''},3000);
 }
 
-async function tgSend(text){
-  if(!S.tgToken||!S.tgChatId)return false;
-  try{
-    const r=await fetch('https://api.telegram.org/bot'+S.tgToken+'/sendMessage',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:S.tgChatId,text,parse_mode:'HTML'})
-    });
-    const d=await r.json();
-    return d.ok;
-  }catch(e){return false}
-}
+
 
 function buildDailyMsg(dateStr){
   const d=parseD(dateStr);
@@ -2548,89 +2529,8 @@ function buildWeeklyMsg(){
   return msg;
 }
 
-async function tgSend(text){
-  if(!S.tgToken||!S.tgChatId)return{ok:false,err:'No token or chat ID set'};
-  try{
-    const r=await fetch('/api/telegram/send',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({token:S.tgToken,chatId:S.tgChatId,text})
-    });
-    const d=await r.json();
-    return{ok:d.ok,err:d.err||''};
-  }catch(e){return{ok:false,err:e.message||'Network error'}}
-}
-
-async function sendTgTest(){
-  const el=document.getElementById('tgStatus');
-  if(el)el.textContent='Sending…';
-  const res=await tgSend('👋 Hello from your Personal Organizer! Telegram notifications are working correctly.');
-  if(el){
-    if(res.ok){
-      el.style.color='var(--green)';
-      el.textContent='✅ Test message sent! Check Telegram.';
-    } else {
-      el.style.color='var(--red)';
-      el.textContent='❌ Failed: '+res.err;
-    }
-    setTimeout(()=>{if(el)el.textContent='';el.style.color='var(--green)'},6000);
-  }
-}
-
-async function sendTgDaily(){
-  const el=document.getElementById('tgStatus');
-  if(el)el.textContent='Sending…';
-  const res=await tgSend(buildDailyMsg(TODAY));
-  if(el){
-    el.style.color=res.ok?'var(--green)':'var(--red)';
-    el.textContent=res.ok?'✅ Daily briefing sent!':'❌ Failed: '+res.err;
-    setTimeout(()=>{if(el)el.textContent='';el.style.color='var(--green)'},6000);
-  }
-}
-
-async function sendTgWeekly(){
-  const el=document.getElementById('tgStatus');
-  if(el)el.textContent='Sending…';
-  const res=await tgSend(buildWeeklyMsg());
-  if(el){
-    el.style.color=res.ok?'var(--green)':'var(--red)';
-    el.textContent=res.ok?'✅ Weekly summary sent!':'❌ Failed: '+res.err;
-    setTimeout(()=>{if(el)el.textContent='';el.style.color='var(--green)'},6000);
-  }
-}
-
-// Auto-schedule daily and weekly messages
-const _tgTimers={daily:null,weekly:null};
-function scheduleTgMessages(){
-  if(!S.tgToken||!S.tgChatId)return;
-  // Clear old timers
-  if(_tgTimers.daily)clearTimeout(_tgTimers.daily);
-  if(_tgTimers.weekly)clearTimeout(_tgTimers.weekly);
-
-  const now=new Date();
-  const morningH=parseInt(S.tgMorningHour||'08');
-
-  // Daily: fire at morning hour, then every 24h
-  const nextDaily=new Date();
-  nextDaily.setHours(morningH,0,0,0);
-  if(nextDaily<=now)nextDaily.setDate(nextDaily.getDate()+1);
-  const dailyDelay=nextDaily-now;
-  _tgTimers.daily=setTimeout(async function tick(){
-    await tgSend(buildDailyMsg(fmtD(new Date())));
-    _tgTimers.daily=setTimeout(tick,86400000); // repeat every 24h
-  },dailyDelay);
-
-  // Weekly: fire next Monday at morning hour
-  const nextMonday=new Date();
-  const daysUntilMon=(8-nextMonday.getDay())%7||7; // days until next Monday
-  nextMonday.setDate(nextMonday.getDate()+daysUntilMon);
-  nextMonday.setHours(morningH,0,0,0);
-  const weeklyDelay=nextMonday-now;
-  _tgTimers.weekly=setTimeout(async function tickW(){
-    await tgSend(buildWeeklyMsg());
-    _tgTimers.weekly=setTimeout(tickW,7*86400000); // repeat every 7 days
-  },weeklyDelay);
-}
+// Telegram has been retired — reminders go out via web push, and backups
+// go to the folder you choose in Settings.
 
 // ─── CHATBOT ──────────────────────────────────────────────
 function addChatMsg(text,role){
@@ -3415,7 +3315,7 @@ function openFilter(){
     opt('vSport','Sport events','Fixtures from the teams and competitions you follow',v.sport,false)+
     opt('vTeams','Favourite teams only','Hide other fixtures from followed competitions',v.teamsOnly,!v.sport)+
     '</div>'+
-    '<div style="font-size:12px;color:var(--txt3);margin-top:8px">Only changes this device\u2019s view \u2014 reminders and Telegram briefings still cover everything.</div>',
+    '<div style="font-size:12px;color:var(--txt3);margin-top:8px">Only changes this device\u2019s view \u2014 reminders still cover everything.</div>',
     '<button class="btn" onclick="resetFilter()">Show everything</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
 }
 function applyFilter(){
@@ -3514,6 +3414,93 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
+const APP_BUILD='2026-10-01-mcp-connector-no-telegram';
+// ─── BACKUP TO A PC FOLDER ───────────────────────────────
+// Replaces the backups that used to be sent to Telegram. The browser can
+// only write to a folder you pick, and only while the app is open, so this
+// is desktop Chrome/Edge; elsewhere the Download button still works.
+const FS_DB='org-fs', FS_KEY='backupDir';
+function fsIdb(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(FS_DB,1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('h');
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+async function fsSaveHandle(h){ const db=await fsIdb(); return new Promise(r=>{ const t=db.transaction('h','readwrite'); t.objectStore('h').put(h,FS_KEY); t.oncomplete=r; }); }
+async function fsGetHandle(){ const db=await fsIdb(); return new Promise(r=>{ const t=db.transaction('h','readonly'); const q=t.objectStore('h').get(FS_KEY); q.onsuccess=()=>r(q.result||null); q.onerror=()=>r(null); }); }
+
+function fsSupported(){ return typeof window.showDirectoryPicker === 'function'; }
+
+async function refreshFsInfo(){
+  const el=document.getElementById('fsInfo'); if(!el) return;
+  if(!fsSupported()){
+    el.innerHTML='<span style="color:var(--txt3)">This browser can\u2019t write to a folder. Use <b>Download</b> above, or open the app in Chrome or Edge on a computer.</span>';
+    return;
+  }
+  const h=await fsGetHandle();
+  const last=lsGet('org:fsLast');
+  el.innerHTML = h
+    ? '\u2705 Saving to <b>'+escHtml(h.name)+'</b>'+(last?' \u00b7 last backup '+escHtml(last.slice(0,10)):'')
+    : 'No folder chosen yet.';
+}
+async function pickBackupFolder(){
+  const el=document.getElementById('fsInfo');
+  if(!fsSupported()){ refreshFsInfo(); return; }
+  try{
+    const h=await window.showDirectoryPicker({ id:'organizer-backup', mode:'readwrite' });
+    await fsSaveHandle(h);
+    el.innerHTML='\u2705 Folder set \u2014 backing up\u2026';
+    await backupToFolder(true);
+  }catch(e){ if(e && e.name!=='AbortError') el.innerHTML='<span style="color:var(--red)">Could not use that folder.</span>'; }
+}
+async function backupToFolder(force){
+  const el=document.getElementById('fsInfo');
+  if(!fsSupported()) return;
+  const h=await fsGetHandle();
+  if(!h){ if(force && el) el.textContent='Choose a folder first.'; return; }
+  // Once a day is plenty; the data changes slowly.
+  const last=lsGet('org:fsLast');
+  if(!force && last && (Date.now()-new Date(last).getTime()) < 20*3600*1000) return;
+  try{
+    const perm=await h.queryPermission({mode:'readwrite'});
+    if(perm!=='granted'){
+      const ask=await h.requestPermission({mode:'readwrite'});
+      if(ask!=='granted'){ if(el) el.innerHTML='<span style="color:var(--yellow)">Permission to that folder was declined.</span>'; return; }
+    }
+    const data=await (await fetch('/api/backup')).text();
+    const name='organizer-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    const fh=await h.getFileHandle(name,{create:true});
+    const w=await fh.createWritable(); await w.write(data); await w.close();
+    lsSet('org:fsLast', new Date().toISOString());
+    if(el) el.innerHTML='\u2705 Saved <b>'+escHtml(name)+'</b> to <b>'+escHtml(h.name)+'</b>';
+  }catch(e){ if(el) el.innerHTML='<span style="color:var(--red)">Backup failed: '+escHtml(e.message)+'</span>'; }
+}
+// Opportunistic daily backup when the app is opened.
+window.addEventListener('load', ()=>{ setTimeout(()=>backupToFolder(false), 4000); });
+
+// ─── CLAUDE CONNECTOR ────────────────────────────────────
+async function refreshMcpInfo(){
+  const el=document.getElementById('mcpUrl'); if(!el) return;
+  try{ const d=await (await fetch('/api/mcp/info')).json(); el.value=d.url||''; }catch(e){}
+}
+function copyMcpUrl(){
+  const el=document.getElementById('mcpUrl'); if(!el) return;
+  el.select();
+  navigator.clipboard?.writeText(el.value).then(()=>{
+    const s=document.getElementById('mcpStatus'); if(s){ s.style.color='var(--green)'; s.textContent='Copied.'; setTimeout(()=>s.textContent='',2500); }
+  }).catch(()=>{});
+}
+async function rotateMcpUrl(){
+  if(!confirm('Generate a new address? The old one stops working, and you will need to update the connector in Claude.')) return;
+  const s=document.getElementById('mcpStatus');
+  try{
+    const d=await (await fetch('/api/mcp/rotate',{method:'POST'})).json();
+    document.getElementById('mcpUrl').value=d.url||'';
+    if(s){ s.style.color='var(--green)'; s.textContent='New address generated \u2014 update it in Claude.'; }
+  }catch(e){ if(s){ s.style.color='var(--red)'; s.textContent='Could not generate a new address.'; } }
+}
+
 async function refreshVersionInfo(){
   const el=document.getElementById('versionInfo');
   if(!el) return;
@@ -3522,7 +3509,10 @@ async function refreshVersionInfo(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     const started = d.startedAt ? new Date(d.startedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-    el.innerHTML='Server build: <b>'+escHtml(d.version||'unknown')+'</b><br>'+
+    const match = d.version === APP_BUILD;
+    el.innerHTML='App build: <b>'+escHtml(APP_BUILD)+'</b>'+
+                 (match?'':' <span style="color:var(--yellow)">\u2014 differs from the server, so one of the two files is out of date</span>')+'<br>'+
+                 'Server build: <b>'+escHtml(d.version||'unknown')+'</b><br>'+
                  '<span style="color:var(--txt3)">running since '+escHtml(started)+
                  ' · storage: '+(d.features&&d.features.upstashStorage?'Upstash':'file')+'</span>';
   }catch(e){
@@ -3696,10 +3686,7 @@ async function testDelivery(){
     el.style.textAlign='left';
     // Naming the bot matters: "delivered" with nothing visible usually
     // means the token belongs to a different bot than the chat you have open.
-    const botLine = d.telegram.bot
-      ? '<div style="color:var(--txt2);margin-left:18px">sent as <b>'+escHtml(d.telegram.bot)+'</b> to chat '+escHtml(d.telegram.sentToChatId||'')+'</div>'
-      : '';
-    el.innerHTML='<div>'+line('Telegram',d.telegram)+'</div>'+botLine+
+    el.innerHTML=
                  '<div>'+line('Push'+(d.push.devices!=null?' ('+d.push.devices+' device)':''),d.push)+'</div>'+
                  '<div style="margin-top:4px;color:var(--txt2)">'+escHtml(d.summary)+'</div>';
   }catch(e){ el.innerHTML='<span style="color:var(--red)">Failed: '+escHtml(e.message)+'</span>'; }
