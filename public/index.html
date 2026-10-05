@@ -516,8 +516,19 @@ body::before{
 .bib-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
 .bib-bar span{display:block;height:100%;background:linear-gradient(90deg,#8CA8FF,#a78bfa);border-radius:99px;transition:width .3s}
 .bib-sub{font-size:11px;color:var(--txt3);margin:7px 0 10px}
-.bib-list{max-height:min(46vh,380px);overflow-y:auto;border:1px solid var(--border);border-radius:16px;padding:4px}
-.bib-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer}
+.bib-list{overflow-y:auto;border:1px solid var(--border);border-radius:16px;padding:4px;
+  max-height:min(46vh,380px);overscroll-behavior:contain}
+/* The dialog itself must not scroll: header and buttons stay put and only
+   the chapter list moves, so the controls never disappear off the top. */
+/* Leave room for the dialog's own title and the action row beneath, or the
+   Done button ends up clipped and the dialog becomes scrollable again. */
+.bib-dialog{display:flex;flex-direction:column;max-height:calc(88vh - 170px)}
+.bib-dialog .bib-list{flex:1 1 auto;max-height:none;min-height:130px}
+/* position:relative anchors the visually-hidden checkbox to its own row.
+   Without it the input resolves against a distant ancestor, and focusing it
+   made the browser scroll the whole dialog to a seemingly random point
+   (Chrome does this; Safari doesn't, which is why iOS looked fine). */
+.bib-row{position:relative;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer}
 .bib-row:hover{background:rgba(255,255,255,.04)}
 .bib-row input{position:absolute;opacity:0;pointer-events:none}
 .bib-row .bib-main{flex:1;min-width:0}
@@ -2779,7 +2790,8 @@ function renderBiblePlan(opts){
   const prevList = document.getElementById('bibList');
   const prevTop = prevList ? prevList.scrollTop : null;
   const el=document.getElementById('bibBody'); if(!el) return;
-  if(!_bible || !_bible.active){ el.innerHTML=biblePlanSetupHtml(); return; }
+  if(!_bible || !_bible.active){ el.classList.remove('bib-dialog'); el.innerHTML=biblePlanSetupHtml(); return; }
+  el.classList.add('bib-dialog');
   const d=_bible;
   const pct=Math.round(d.chaptersRead/d.totalChapters*100);
   const s=d.suggestion;
@@ -3414,7 +3426,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-01-mcp-connector-no-telegram';
+const APP_BUILD='2026-10-02-bible-dialog-scroll-fix';
 // ─── BACKUP TO A PC FOLDER ───────────────────────────────
 // Replaces the backups that used to be sent to Telegram. The browser can
 // only write to a folder you pick, and only while the app is open, so this
