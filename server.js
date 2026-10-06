@@ -905,7 +905,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-02-bible-dialog-scroll-fix';
+const BUILD_VERSION = '2026-10-06-reminder-opens-right-day';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3110,7 +3110,7 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
             : when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : ''),
           // Same tag as the in-page fallback so the device shows one
           // notification, not two, if both happen to fire.
-          { date: item.ds, tag: 'rem-'+ev.id+'-'+item.ds+(item.leave?'-leave':'') },
+          { date: item.ds, id: ev.id, tag: 'rem-'+ev.id+'-'+item.ds+(item.leave?'-leave':'') },
           // Expire when the event starts — never deliver a stale reminder.
           { ttl: secsToStart, urgency: 'high' }
         );
