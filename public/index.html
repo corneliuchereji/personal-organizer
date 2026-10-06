@@ -560,6 +560,11 @@ body::before{
 .bib-row.next{background:rgba(140,168,255,.10);box-shadow:inset 0 0 0 1px rgba(140,168,255,.35)}
 .bib-row.next .bib-main small{color:var(--accent)}
 .bib-row.done.next{box-shadow:none}
+/* Briefly ring the event a reminder was about, so it's obvious which one
+   the notification referred to. */
+@keyframes evFlash{0%{box-shadow:0 0 0 0 rgba(140,168,255,.65)}70%{box-shadow:0 0 0 10px rgba(140,168,255,0)}100%{box-shadow:0 0 0 0 rgba(140,168,255,0)}}
+.ecard.flash{animation:evFlash 1.3s ease-out 2;border-color:rgba(140,168,255,.75)}
+@media (prefers-reduced-motion:reduce){ .ecard.flash{animation:none;border-color:rgba(140,168,255,.75)} }
 </style>
 </head>
 <body>
@@ -1199,7 +1204,7 @@ function renderCard(ev){
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard'+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'">'+
+  return '<div class="ecard'+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
@@ -3426,7 +3431,48 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-02-bible-dialog-scroll-fix';
+const APP_BUILD='2026-10-06-reminder-opens-right-day';
+// ─── OPENING FROM A NOTIFICATION ─────────────────────────
+// A reminder can be for tomorrow (or later), so tapping it has to move the
+// view to THAT day — opening on today showed a different day's events and
+// left you guessing what the reminder was about.
+function openOnDate(ds, evId){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ds||'')) return;
+  const today=parseD(TODAY), target=parseD(ds);
+  const diff=Math.round((target-today)/86400000);
+  S.dayOffset=diff;
+  _selDay=ds;
+  // Move the month view too, so the calendar shows the same day.
+  S.weekOffset=(target.getFullYear()-today.getFullYear())*12 + (target.getMonth()-today.getMonth());
+  renderAll();
+  if(evId) setTimeout(()=>flashEvent(evId), 120);
+}
+function flashEvent(evId){
+  const card=document.querySelector('.ecard[data-ev="'+(window.CSS&&CSS.escape?CSS.escape(evId):evId)+'"]');
+  if(!card) return;
+  card.scrollIntoView({block:'center', behavior:'smooth'});
+  card.classList.add('flash');
+  setTimeout(()=>card.classList.remove('flash'), 2600);
+}
+// Opened fresh from a notification: ?d=YYYY-MM-DD&ev=<id>
+function handleOpenParams(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const d=q.get('d');
+    if(d){
+      openOnDate(d, q.get('ev'));
+      // Tidy the address bar so a later refresh doesn't jump again.
+      history.replaceState({}, '', location.pathname);
+    }
+  }catch(e){}
+}
+// Already open: the service worker tells us which day to show.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', e=>{
+    if(e.data && e.data.type==='OPEN_DATE' && e.data.date) openOnDate(e.data.date, e.data.id);
+  });
+}
+
 // ─── BACKUP TO A PC FOLDER ───────────────────────────────
 // Replaces the backups that used to be sent to Telegram. The browser can
 // only write to a folder you pick, and only while the app is open, so this
@@ -3770,6 +3816,7 @@ renderWx(); // shows loading state until real data arrives
 // Load data from server then render
 loadFromServer().then(()=>{
   renderAll();
+  handleOpenParams();     // opened from a reminder? jump to that day
   loadWeather(); // fetch real weather for the saved/default location
   scheduleAllReminders(); // local browser notifications
 });
