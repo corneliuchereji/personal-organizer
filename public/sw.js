@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v11';
+const CACHE = 'organizer-shell-v12';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -96,7 +96,12 @@ self.addEventListener('message', event => {
 // new tabs each time.
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const target = new URL('/', self.location.origin).href;
+  // Carry the reminder's date and event through, so the app can open on the
+  // right day instead of today — a "1 day before" reminder is about
+  // tomorrow, and landing on today showed the wrong events entirely.
+  const d = (event.notification.data) || {};
+  const qs = d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '')) : '';
+  const target = new URL('/' + qs, self.location.origin).href;
   event.waitUntil((async () => {
     const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
     // Prefer an existing window belonging to this app. On iOS the installed
@@ -106,9 +111,9 @@ self.addEventListener('notificationclick', event => {
     for (const c of list) {
       if (c.url && c.url.startsWith(self.location.origin)) {
         if ('focus' in c) {
-          try {
-            if ('navigate' in c && c.url !== target) await c.navigate(target);
-          } catch (e) {}
+          // An already-open window is told which day to show, rather than
+          // being navigated — reloading would lose any unsaved state.
+          try { c.postMessage({ type:'OPEN_DATE', date: d.date || null, id: d.id || null }); } catch (e) {}
           return c.focus();
         }
       }
