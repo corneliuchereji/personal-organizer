@@ -905,7 +905,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-06-reminder-opens-right-day';
+const BUILD_VERSION = '2026-10-07-timer-and-giving';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2822,6 +2822,85 @@ app.post('/api/mcp/rotate', (req, res) => {
   res.json({ url: (APP_URL||'') + '/mcp/' + secret });
 });
 
+
+// ═══════════════════════════════════════════════════
+// GIVING / TITHE TRACKER
+// Income entries and gifts given, with the share due worked out per month.
+// Figures are rounded to whole currency units only for display; the stored
+// values stay exact.
+// ═══════════════════════════════════════════════════
+function titheData(d){
+  if(!d.tithe) d.tithe = { percent:10, currency:'RON', entries:[] };
+  if(!Array.isArray(d.tithe.entries)) d.tithe.entries = [];
+  return d.tithe;
+}
+function titheMonthKey(ds){ return String(ds||'').slice(0,7); }
+
+function titheSummary(t, month){
+  const rows = t.entries.filter(e => titheMonthKey(e.date) === month);
+  const income = rows.filter(e=>e.type==='income').reduce((s,e)=>s+(+e.amount||0),0);
+  const given  = rows.filter(e=>e.type==='given').reduce((s,e)=>s+(+e.amount||0),0);
+  const due = income * (t.percent/100);
+  return { month, income, given, due, outstanding: due - given,
+           entries: rows.sort((a,b)=> (a.date<b.date?1:-1)) };
+}
+
+// Everything before this month, so you can see if you are ahead or behind
+// overall rather than only within the current month.
+function titheCarry(t, month){
+  const past = t.entries.filter(e => titheMonthKey(e.date) < month);
+  const income = past.filter(e=>e.type==='income').reduce((s,e)=>s+(+e.amount||0),0);
+  const given  = past.filter(e=>e.type==='given').reduce((s,e)=>s+(+e.amount||0),0);
+  return given - income*(t.percent/100);      // positive = given ahead
+}
+
+app.get('/api/tithe', (req, res) => {
+  try{
+    const d = readData();
+    const t = titheData(d);
+    const month = /^\d{4}-\d{2}$/.test(req.query.month||'') ? req.query.month : getToday().slice(0,7);
+    const months = [...new Set(t.entries.map(e=>titheMonthKey(e.date)))].sort().reverse();
+    res.json({ percent:t.percent, currency:t.currency, month,
+               ...titheSummary(t, month), carry: titheCarry(t, month), months });
+  }catch(e){ res.status(500).json({ error:e.message }); }
+});
+
+app.post('/api/tithe/entry', (req, res) => {
+  try{
+    const { type, amount, date, note } = req.body || {};
+    if(!['income','given'].includes(type)) return res.status(400).json({ error:'type must be income or given' });
+    const amt = Math.round((parseFloat(amount)||0)*100)/100;
+    if(!(amt > 0)) return res.status(400).json({ error:'Amount must be more than zero' });
+    const d = readData();
+    const t = titheData(d);
+    t.entries.push({ id: uid(), type, amount: amt,
+      date: /^\d{4}-\d{2}-\d{2}$/.test(date||'') ? date : getToday(),
+      note: String(note||'').slice(0,120) });
+    writeData(d);
+    res.json({ ok:true });
+  }catch(e){ res.status(500).json({ error:e.message }); }
+});
+
+app.post('/api/tithe/delete', (req, res) => {
+  try{
+    const d = readData();
+    const t = titheData(d);
+    t.entries = t.entries.filter(e => e.id !== (req.body||{}).id);
+    writeData(d);
+    res.json({ ok:true });
+  }catch(e){ res.status(500).json({ error:e.message }); }
+});
+
+app.post('/api/tithe/settings', (req, res) => {
+  try{
+    const d = readData();
+    const t = titheData(d);
+    if(req.body.percent != null) t.percent = Math.min(100, Math.max(0, parseFloat(req.body.percent)||10));
+    if(req.body.currency) t.currency = String(req.body.currency).slice(0,6);
+    writeData(d);
+    res.json({ ok:true, percent:t.percent, currency:t.currency });
+  }catch(e){ res.status(500).json({ error:e.message }); }
+});
 
 app.get('/api/home', async (req, res) => {
   try{
