@@ -905,7 +905,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-07-timer-and-giving';
+const BUILD_VERSION = '2026-10-07-giving-balance-card-styles';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2836,14 +2836,20 @@ function titheData(d){
 }
 function titheMonthKey(ds){ return String(ds||'').slice(0,7); }
 
-function titheSummary(t, month){
+function titheSummary(t, month, carryIn){
   const rows = t.entries.filter(e => titheMonthKey(e.date) === month);
   const income = rows.filter(e=>e.type==='income').reduce((s,e)=>s+(+e.amount||0),0);
   const given  = rows.filter(e=>e.type==='given').reduce((s,e)=>s+(+e.amount||0),0);
   const due = income * (t.percent/100);
-  return { month, income, given, due, outstanding: due - given,
+  // What's left to give takes the earlier balance into account: give extra
+  // one month and less is owed the next; fall short and it rolls forward.
+  const carry = carryIn || 0;                 // positive = given ahead
+  const remaining = round2(due - given - carry);
+  return { month, income, given, due,
+           outstanding: remaining,            // may be negative = still ahead
            entries: rows.sort((a,b)=> (a.date<b.date?1:-1)) };
 }
+function round2(n){ return Math.round((+n||0)*100)/100; }
 
 // Everything before this month, so you can see if you are ahead or behind
 // overall rather than only within the current month.
@@ -2851,7 +2857,7 @@ function titheCarry(t, month){
   const past = t.entries.filter(e => titheMonthKey(e.date) < month);
   const income = past.filter(e=>e.type==='income').reduce((s,e)=>s+(+e.amount||0),0);
   const given  = past.filter(e=>e.type==='given').reduce((s,e)=>s+(+e.amount||0),0);
-  return given - income*(t.percent/100);      // positive = given ahead
+  return round2(given - income*(t.percent/100));   // positive = given ahead
 }
 
 app.get('/api/tithe', (req, res) => {
@@ -2860,8 +2866,9 @@ app.get('/api/tithe', (req, res) => {
     const t = titheData(d);
     const month = /^\d{4}-\d{2}$/.test(req.query.month||'') ? req.query.month : getToday().slice(0,7);
     const months = [...new Set(t.entries.map(e=>titheMonthKey(e.date)))].sort().reverse();
+    const carry = round2(titheCarry(t, month));
     res.json({ percent:t.percent, currency:t.currency, month,
-               ...titheSummary(t, month), carry: titheCarry(t, month), months });
+               ...titheSummary(t, month, carry), carry, months });
   }catch(e){ res.status(500).json({ error:e.message }); }
 });
 
