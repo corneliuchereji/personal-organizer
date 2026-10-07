@@ -565,6 +565,62 @@ body::before{
 @keyframes evFlash{0%{box-shadow:0 0 0 0 rgba(140,168,255,.65)}70%{box-shadow:0 0 0 10px rgba(140,168,255,0)}100%{box-shadow:0 0 0 0 rgba(140,168,255,0)}}
 .ecard.flash{animation:evFlash 1.3s ease-out 2;border-color:rgba(140,168,255,.75)}
 @media (prefers-reduced-motion:reduce){ .ecard.flash{animation:none;border-color:rgba(140,168,255,.75)} }
+/* ── Life timer ── */
+.tmr-tabs{display:flex;gap:6px;margin-bottom:12px;background:rgba(255,255,255,.05);padding:4px;border-radius:var(--rp)}
+.tmr-tab{flex:1;border:none;background:transparent;color:var(--txt2);font:inherit;font-size:12px;font-weight:600;
+  padding:7px 10px;border-radius:var(--rp);cursor:pointer}
+.tmr-tab.on{background:var(--accent);color:var(--accent-ink)}
+.tmr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tmr-grid.four{grid-template-columns:repeat(4,1fr)}
+.tmr-cell{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px;padding:12px 6px;text-align:center}
+/* Big totals (seconds runs to ten digits) must shrink rather than spill. */
+.tmr-cell b{display:block;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.5px;
+  font-size:20px;line-height:1.15;white-space:nowrap}
+.tmr-cell b.sm{font-size:16px;letter-spacing:-.3px}
+.tmr-cell b.xs{font-size:13px;letter-spacing:-.2px}
+.tmr-cell small{font-size:10px;color:var(--txt3)}
+.tmr-grid.four .tmr-cell b{font-size:22px}
+.tmr-age{text-align:center;margin:4px 0 10px}
+.tmr-age b{display:block;font-size:54px;font-weight:650;letter-spacing:-2px;line-height:1;
+  background:linear-gradient(135deg,#8CA8FF,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tmr-age span{font-size:12px;color:var(--txt3)}
+.tmr-sub{font-size:11px;color:var(--txt3);margin-bottom:7px;text-align:center}
+.tmr-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:12px}
+.tmr-bar span{display:block;height:100%;background:linear-gradient(90deg,#8CA8FF,#a78bfa);border-radius:99px;transition:width .5s}
+.tmr-note{font-size:11px;color:var(--txt3);margin-top:9px;text-align:center;line-height:1.5}
+.tmr-born{font-size:10px;color:var(--txt3);margin-top:12px;text-align:center;padding-top:10px;border-top:1px solid var(--border)}
+@media(max-width:420px){ .tmr-grid.four{grid-template-columns:repeat(2,1fr)} }
+/* ── Giving tracker ── */
+.tithe-dialog{display:flex;flex-direction:column;max-height:calc(88vh - 170px)}
+.th-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.th-nav b{font-size:14px;font-weight:650}
+.th-head{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:10px}
+.th-due{text-align:center;margin-bottom:10px}
+.th-due small{font-size:10px;color:var(--txt3);display:block}
+.th-due b{display:block;font-size:30px;font-weight:650;letter-spacing:-1px;
+  background:linear-gradient(135deg,#8CA8FF,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.th-due span{font-size:11px;color:var(--txt3)}
+.th-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:10px}
+.th-bar span{display:block;height:100%;background:linear-gradient(90deg,#34d399,#8CA8FF);border-radius:99px;transition:width .4s}
+.th-line{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--txt2)}
+.th-line b{font-variant-numeric:tabular-nums;color:var(--txt)}
+.th-line.owe b{color:var(--yellow)}
+.th-carry{font-size:10px;color:var(--txt3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);text-align:center}
+.th-add{display:grid;grid-template-columns:1.1fr 1.4fr 1.1fr;gap:6px}
+.th-add input{font-size:13px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);width:100%}
+.th-btns{display:flex;gap:6px;margin-top:6px}
+.th-btns .btn{flex:1;justify-content:center}
+.th-list{margin-top:10px;overflow-y:auto;flex:1 1 auto;min-height:90px;overscroll-behavior:contain}
+.th-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+.th-row:last-child{border-bottom:none}
+.th-row > i:first-child{font-size:15px;flex:none;color:var(--txt3)}
+.th-row.income > i:first-child{color:#34d399}
+.th-row.given > i:first-child{color:#a78bfa}
+.th-main{flex:1;min-width:0}
+.th-main b{display:block;font-size:13px;font-variant-numeric:tabular-nums}
+.th-main small{font-size:10px;color:var(--txt3)}
+.th-empty{font-size:12px;color:var(--txt3);text-align:center;padding:16px 0}
+@media(max-width:420px){ .th-add{grid-template-columns:1fr 1fr} .th-add #thNote{grid-column:1/-1} }
 </style>
 </head>
 <body>
@@ -727,6 +783,7 @@ function saveState(){
           apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123',
           leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10,
           trafficPct: S.trafficPct!=null?S.trafficPct:20, orsKey: S.orsKey||'',
+          birthday: S.birthday||'',
           widgets: Array.isArray(S.widgets)?S.widgets:null
         }
     };
@@ -840,6 +897,7 @@ async function loadFromServer(){
       travelCache: d.travelCache || {},
       widgets: Array.isArray(d.settings?.widgets) ? d.settings.widgets : null,
       homeAddress: d.settings?.homeAddress || '',
+      birthday: d.settings?.birthday || '',
       trafficPct: d.settings?.trafficPct != null ? d.settings.trafficPct : 20,
       orsKey: d.settings?.orsKey || '',
       homeName: d.settings?.homeName || '',
@@ -1061,7 +1119,9 @@ function agendaEventsOnDay(ds){
 }
 
 // ─── MODAL ───────────────────────────────────────────────
-function closeModal(){document.getElementById('modal').classList.remove('open');if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}}
+function closeModal(){
+  // The life timer ticks once a second; stop it as soon as its dialog goes.
+  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}}
 function showModal(title,body,acts){
   document.getElementById('mTitle').textContent=title;
   document.getElementById('mBody').innerHTML=body;
@@ -2775,6 +2835,253 @@ async function sendChat(){
   }
 }
 
+// ─── GIVING TRACKER ──────────────────────────────────────
+// Records what came in and what you gave, and works out the share due for
+// each month. The running balance carries across months, so a month where
+// you gave extra isn't forgotten the moment it ends.
+let _tithe=null, _titheMonth=null;
+
+function money(v, cur){
+  const n=Math.abs(+v||0);
+  return (v<0?'-':'')+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+' '+(cur||'');
+}
+function monthLabel(m){
+  const [y,mo]=String(m).split('-').map(Number);
+  return new Date(y,mo-1,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+}
+function shiftTitheMonth(n){
+  const [y,m]=_titheMonth.split('-').map(Number);
+  const d=new Date(y, m-1+n, 1);
+  _titheMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  loadTithe();
+}
+async function openTithe(){
+  _titheMonth=_titheMonth||TODAY.slice(0,7);
+  showModal('Giving',
+    '<div id="titheBody" style="font-size:12px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Loading\u2026</div>',
+    '<button class="btn sm" onclick="titheSettings()"><i class="ti ti-settings"></i></button>'+
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  loadTithe();
+}
+async function loadTithe(){
+  try{
+    _tithe=await (await fetch('/api/tithe?month='+encodeURIComponent(_titheMonth))).json();
+    renderTithe();
+  }catch(e){
+    const el=document.getElementById('titheBody');
+    if(el) el.innerHTML='<span style="color:var(--red)">Could not load.</span>';
+  }
+}
+function renderTithe(){
+  const el=document.getElementById('titheBody'); if(!el||!_tithe) return;
+  const t=_tithe, cur=t.currency;
+  const pct = t.income>0 ? Math.min(100, Math.round(t.given/t.due*100)) : 0;
+  const owing = t.outstanding;
+  const carry = t.carry;
+  el.classList.add('tithe-dialog');
+  el.innerHTML=
+    '<div class="th-nav">'+
+      '<button class="btn ghost ico sm" onclick="shiftTitheMonth(-1)"><i class="ti ti-chevron-left"></i></button>'+
+      '<b>'+escHtml(monthLabel(t.month))+'</b>'+
+      '<button class="btn ghost ico sm" onclick="shiftTitheMonth(1)"><i class="ti ti-chevron-right"></i></button>'+
+    '</div>'+
+    '<div class="th-head">'+
+      '<div class="th-due"><small>'+t.percent+'% of '+money(t.income,cur)+'</small><b>'+money(t.due,cur)+'</b><span>to give this month</span></div>'+
+      '<div class="th-bar"><span style="width:'+pct+'%"></span></div>'+
+      '<div class="th-line"><span>Given</span><b>'+money(t.given,cur)+'</b></div>'+
+      '<div class="th-line'+(owing>0.005?' owe':'')+'"><span>'+(owing>0.005?'Still to give':'Given in full')+'</span><b>'+
+        (owing>0.005?money(owing,cur):'\u2713')+'</b></div>'+
+      (Math.abs(carry)>0.005
+        ? '<div class="th-carry">'+(carry>0
+            ? 'You were <b>'+money(carry,cur)+'</b> ahead before this month'
+            : 'Carried over from before: <b>'+money(-carry,cur)+'</b> still owing')+'</div>'
+        : '')+
+    '</div>'+
+    '<div class="th-add">'+
+      '<input id="thAmt" type="number" step="0.01" min="0" placeholder="Amount" inputmode="decimal">'+
+      '<input id="thNote" placeholder="Note (optional)">'+
+      '<input id="thDate" type="date" value="'+(_titheMonth===TODAY.slice(0,7)?TODAY:_titheMonth+'-01')+'">'+
+    '</div>'+
+    '<div class="th-btns">'+
+      '<button class="btn sm" onclick="addTithe(\'income\')"><i class="ti ti-plus"></i> Income</button>'+
+      '<button class="btn sm acc" onclick="addTithe(\'given\')"><i class="ti ti-heart"></i> Given</button>'+
+    '</div>'+
+    '<div id="thErr" style="font-size:11px;color:var(--red);margin-top:5px"></div>'+
+    '<div class="th-list">'+
+      (t.entries.length ? t.entries.map(e=>
+        '<div class="th-row '+e.type+'">'+
+          '<i class="ti '+(e.type==='income'?'ti-wallet':'ti-heart')+'"></i>'+
+          '<span class="th-main"><b>'+money(e.amount,cur)+'</b>'+
+            '<small>'+escHtml(e.date)+(e.note?' \u00b7 '+escHtml(e.note):'')+'</small></span>'+
+          '<button class="btn ghost ico sm" onclick="delTithe(\''+e.id+'\')" aria-label="Delete"><i class="ti ti-x"></i></button>'+
+        '</div>').join('')
+        : '<div class="th-empty">Nothing recorded for this month yet.</div>')+
+    '</div>';
+}
+async function addTithe(type){
+  const amt=document.getElementById('thAmt').value;
+  const note=document.getElementById('thNote').value;
+  const date=document.getElementById('thDate').value;
+  const err=document.getElementById('thErr');
+  if(!(parseFloat(amt)>0)){ err.textContent='Enter an amount first.'; return; }
+  try{
+    const r=await (await fetch('/api/tithe/entry',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({type,amount:amt,note,date})})).json();
+    if(r.error){ err.textContent=r.error; return; }
+    // Follow the entry to its own month, or it would vanish from view.
+    if(date && date.slice(0,7)!==_titheMonth) _titheMonth=date.slice(0,7);
+    loadTithe();
+  }catch(e){ err.textContent='Could not save.'; }
+}
+async function delTithe(id){
+  try{ await fetch('/api/tithe/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}); loadTithe(); }
+  catch(e){}
+}
+function titheSettings(){
+  const t=_tithe||{percent:10,currency:'RON'};
+  showModal('Giving settings',
+    '<div style="display:flex;gap:8px">'+
+      '<div class="field" style="flex:1;margin:0"><label>Share to give</label><input id="thPct" type="number" min="0" max="100" step="0.5" value="'+t.percent+'"></div>'+
+      '<div class="field" style="flex:1;margin:0"><label>Currency</label><input id="thCur" value="'+escHtml(t.currency)+'"></div>'+
+    '</div>',
+    '<button class="btn" onclick="openTithe()">Cancel</button><span class="msp"></span>'+
+    '<button class="btn acc" onclick="saveTitheSettings()">Save</button>');
+}
+async function saveTitheSettings(){
+  const percent=document.getElementById('thPct').value, currency=document.getElementById('thCur').value;
+  try{ await fetch('/api/tithe/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({percent,currency})}); }catch(e){}
+  openTithe();
+}
+
+// ─── LIFE TIMER ──────────────────────────────────────────
+// Two ways of looking at the same instant: everything since you were born
+// counted up in each unit, and the current year measured from your last
+// birthday. Ticks every second while the dialog is open.
+let _timerInt=null, _timerView='totals';
+
+function birthDate(){
+  const b = S.birthday || '1985-02-26T05:00';
+  const d = new Date(b);
+  return isNaN(d) ? new Date('1985-02-26T05:00') : d;
+}
+
+// Calendar-accurate breakdown: whole months and days rather than averages,
+// so "7 months" means seven actual months, not 30-day blocks.
+function calendarDiff(from, to){
+  let y = to.getFullYear()-from.getFullYear();
+  let m = to.getMonth()-from.getMonth();
+  let d = to.getDate()-from.getDate();
+  let h = to.getHours()-from.getHours();
+  let mi = to.getMinutes()-from.getMinutes();
+  let s = to.getSeconds()-from.getSeconds();
+  if(s<0){ s+=60; mi--; }
+  if(mi<0){ mi+=60; h--; }
+  if(h<0){ h+=24; d--; }
+  if(d<0){ const prev=new Date(to.getFullYear(), to.getMonth(), 0).getDate(); d+=prev; m--; }
+  if(m<0){ m+=12; y--; }
+  return {y,m,d,h,mi,s};
+}
+function lastBirthday(now, b){
+  const t=new Date(now.getFullYear(), b.getMonth(), b.getDate(), b.getHours(), b.getMinutes(), b.getSeconds());
+  if(t>now) t.setFullYear(t.getFullYear()-1);
+  return t;
+}
+function nextBirthday(now, b){
+  const t=new Date(now.getFullYear(), b.getMonth(), b.getDate(), b.getHours(), b.getMinutes(), b.getSeconds());
+  if(t<=now) t.setFullYear(t.getFullYear()+1);
+  return t;
+}
+function nfmt(n){ return Number(n).toLocaleString(); }
+function ordinal(n){
+  const s=['th','st','nd','rd'], v=n%100;
+  return n+(s[(v-20)%10]||s[v]||s[0]);
+}
+
+function openLifeTimer(){
+  showModal('Life timer',
+    '<div id="timerBody"></div>',
+    '<button class="btn sm" onclick="editBirthday()"><i class="ti ti-cake"></i> Birth date</button>'+
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  renderLifeTimer();
+  clearInterval(_timerInt);
+  _timerInt=setInterval(()=>{
+    // Stop by itself once the dialog is gone.
+    if(!document.getElementById('timerBody')){ clearInterval(_timerInt); _timerInt=null; return; }
+    renderLifeTimer();
+  }, 1000);
+}
+
+function renderLifeTimer(){
+  const el=document.getElementById('timerBody'); if(!el) return;
+  const b=birthDate(), now=new Date();
+  if(now<b){ el.innerHTML='<div style="font-size:12px;color:var(--red)">That birth date is in the future.</div>'; return; }
+  const ms=now-b;
+  const tabs='<div class="tmr-tabs">'+
+      '<button class="tmr-tab'+(_timerView==='totals'?' on':'')+'" onclick="setTimerView(\'totals\')">Lifetime totals</button>'+
+      '<button class="tmr-tab'+(_timerView==='year'?' on':'')+'" onclick="setTimerView(\'year\')">This year</button>'+
+    '</div>';
+  let body;
+  if(_timerView==='totals'){
+    const full=calendarDiff(b, now);
+    const totalMonths=full.y*12+full.m;
+    // Size each figure by its length: "41" and "1,313,102,871" can't share
+    // a font size inside a fixed-width cell without wrapping or spilling.
+    const cell=(v,l)=>{
+      const txt=nfmt(v);
+      const cls = txt.length>11 ? ' xs' : txt.length>8 ? ' sm' : '';
+      return '<div class="tmr-cell"><b class="'+cls.trim()+'">'+txt+'</b><small>'+l+'</small></div>';
+    };
+    body='<div class="tmr-grid">'+
+        cell(full.y,'years')+
+        cell(totalMonths,'months')+
+        cell(Math.floor(ms/86400000),'days')+
+        cell(Math.floor(ms/3600000),'hours')+
+        cell(Math.floor(ms/60000),'minutes')+
+        cell(Math.floor(ms/1000),'seconds')+
+      '</div>'+
+      '<div class="tmr-note">Each figure is the whole span so far, counted in that unit.</div>';
+  } else {
+    const since=calendarDiff(lastBirthday(now,b), now);
+    const nb=nextBirthday(now,b), to=calendarDiff(now, nb);
+    const yearsOld=calendarDiff(b, now).y;
+    const yearMs=nb-lastBirthday(now,b), pct=Math.min(100,Math.max(0,Math.round((now-lastBirthday(now,b))/yearMs*100)));
+    const cell=(v,l)=>'<div class="tmr-cell"><b>'+nfmt(v)+'</b><small>'+l+'</small></div>';
+    body='<div class="tmr-age"><b>'+yearsOld+'</b><span>years old</span></div>'+
+      '<div class="tmr-sub">Since your last birthday</div>'+
+      '<div class="tmr-grid four">'+
+        cell(since.m,'months')+ cell(since.d,'days')+ cell(since.h,'hours')+ cell(since.mi,'minutes')+
+      '</div>'+
+      '<div class="tmr-bar"><span style="width:'+pct+'%"></span></div>'+
+      '<div class="tmr-note">'+pct+'% through your '+ordinal(yearsOld+1)+' year \u00b7 next birthday in <b>'+
+        (to.m?to.m+' months ':'')+to.d+' days '+to.h+'h '+to.mi+'m</b></div>';
+  }
+  el.innerHTML=tabs+body+
+    '<div class="tmr-born">Born '+b.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+
+      ' at '+String(b.getHours()).padStart(2,'0')+':'+String(b.getMinutes()).padStart(2,'0')+'</div>';
+}
+function setTimerView(v){ _timerView=v; renderLifeTimer(); }
+
+function editBirthday(){
+  const b=birthDate();
+  const d=b.getFullYear()+'-'+String(b.getMonth()+1).padStart(2,'0')+'-'+String(b.getDate()).padStart(2,'0');
+  const t=String(b.getHours()).padStart(2,'0')+':'+String(b.getMinutes()).padStart(2,'0');
+  clearInterval(_timerInt); _timerInt=null;
+  showModal('Birth date',
+    '<div style="display:flex;gap:8px">'+
+      '<div class="field" style="flex:1;margin:0"><label>Date</label><input type="date" id="bdDate" value="'+d+'"></div>'+
+      '<div class="field" style="flex:1;margin:0"><label>Time</label><input type="time" id="bdTime" value="'+t+'"></div>'+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-top:8px">The time matters for the hour and minute counters.</div>',
+    '<button class="btn" onclick="openLifeTimer()">Cancel</button><span class="msp"></span>'+
+    '<button class="btn acc" onclick="saveBirthday()">Save</button>');
+}
+function saveBirthday(){
+  const d=document.getElementById('bdDate').value, t=document.getElementById('bdTime').value||'00:00';
+  if(d){ S.birthday=d+'T'+t; saveState(); }
+  openLifeTimer();
+}
+
 // ─── BIBLE READING PLAN ──────────────────────────────────
 // A reading POSITION rather than a dated schedule: chapters are listed one
 // by one, the next session is suggested from wherever you stopped, and
@@ -2943,6 +3250,8 @@ async function deleteBiblePlan(){
 // keeps their own login and layout intact.
 const WIDGETS_DEFAULT=[
   {id:'w_bible',name:'Bible reading plan', desc:'Tick off what you\u2019ve read', action:'bible', icon:'ti-book'},
+  {id:'w_timer',name:'Life timer', desc:'How long you\u2019ve been here, counting', action:'timer', icon:'ti-hourglass'},
+  {id:'w_tithe',name:'Giving', desc:'Income, the share due and what you\u2019ve given', action:'tithe', icon:'ti-heart-handshake'},
   {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
   {id:'w_windy',name:'Windy',      desc:'Weather radar and forecast maps', url:'https://www.windy.com/',    icon:'ti-wind'},
   {id:'w_maps', name:'Google Maps',desc:'Maps and live traffic',           url:'https://maps.google.com/',  icon:'ti-map-2'}
@@ -2990,7 +3299,7 @@ document.addEventListener('click', e=>{
 });
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
-const WIDGET_ACTIONS={ bible: ()=>openBiblePlan() };
+const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe() };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -3431,7 +3740,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-06-reminder-opens-right-day';
+const APP_BUILD='2026-10-07-timer-and-giving';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
