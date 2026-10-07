@@ -599,6 +599,11 @@ body::before{
 .th-due small{font-size:10px;color:var(--txt3);display:block}
 .th-due b{display:block;font-size:30px;font-weight:650;letter-spacing:-1px;
   background:linear-gradient(135deg,#8CA8FF,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.th-due.done b{background:linear-gradient(135deg,#34d399,#8CA8FF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:40px}
+.th-due.ahead b{background:linear-gradient(135deg,#34d399,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.th-line.total{border-top:1px solid var(--border);margin-top:6px;padding-top:8px;font-weight:600}
+.th-line.total.owe b{color:var(--yellow)}
+.th-line.total.ahead b{color:#34d399}
 .th-due span{font-size:11px;color:var(--txt3)}
 .th-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:10px}
 .th-bar span{display:block;height:100%;background:linear-gradient(90deg,#34d399,#8CA8FF);border-radius:99px;transition:width .4s}
@@ -621,6 +626,36 @@ body::before{
 .th-main small{font-size:10px;color:var(--txt3)}
 .th-empty{font-size:12px;color:var(--txt3);text-align:center;padding:16px 0}
 @media(max-width:420px){ .th-add{grid-template-columns:1fr 1fr} .th-add #thNote{grid-column:1/-1} }
+/* ══ Personal vs sport events ══
+   Two different objects deserve two different shapes. Personal events stay
+   as solid cards with a group-coloured spine. Sport reads like a ticket:
+   tinted, lighter, with a perforated edge — recognisable at a glance from
+   across the day list without relying on colour alone. */
+.ecard.task{background:var(--bg2);border:1px solid var(--border)}
+.ecard.task .ec-bar{width:4px;border-radius:99px}
+.ecard.task .ec-title{font-weight:600}
+
+.ecard.sport{
+  position:relative;
+  background:
+    linear-gradient(135deg, rgba(140,168,255,.10), rgba(167,139,250,.05) 55%, rgba(255,255,255,.02));
+  border:1px solid rgba(140,168,255,.20);
+  padding-left:20px;
+}
+/* Perforated spine, like a torn ticket stub. */
+.ecard.sport::before{
+  content:"";position:absolute;left:9px;top:14px;bottom:14px;width:2px;border-radius:99px;
+  background:repeating-linear-gradient(to bottom, rgba(255,255,255,.34) 0 4px, transparent 4px 9px);
+}
+.ecard.sport .ec-bar{display:none}
+.ecard.sport .ec-title{font-weight:650;letter-spacing:-.2px}
+.ecard.sport .ec-meta{opacity:.95}
+.ecard.sport .ea{background:rgba(255,255,255,.06)}
+/* The sport name reads as a small pill rather than loose text. */
+.ecard.sport .ec-meta > span:first-child{
+  background:rgba(255,255,255,.08);border-radius:99px;padding:1px 7px;font-weight:600}
+.ecard.sport:hover{border-color:rgba(140,168,255,.34)}
+@media (prefers-reduced-motion:no-preference){ .ecard.sport{transition:border-color .15s} }
 </style>
 </head>
 <body>
@@ -1264,7 +1299,7 @@ function renderCard(ev){
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard'+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'">'+
+  return '<div class="ecard task'+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
@@ -1326,7 +1361,7 @@ function renderSportCard(ev){
     // Generic competition slot — matches not involving a followed team never
     // spell out team names. Multiple at once show a count; a single fixture just shows the competition.
     let title=escHtml(ev.name)+(ev.count>1?' <span style="color:var(--txt3);font-weight:400;font-size:11px">('+ev.count+' matches)</span>':'');
-    return '<div class="ecard" onclick="showFixtureList(\''+ev.id.replace(/'/g,'')+'\')" style="cursor:pointer">'+
+    return '<div class="ecard sport" onclick="showFixtureList(\''+ev.id.replace(/'/g,'')+'\')" style="cursor:pointer">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
       '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badgeImg(ev.competitionLogo,ev.name,col)+
       '<div class="ec-body" style="padding-left:0"><div class="ec-title">'+title+'</div><div class="ec-meta">'+meta+'</div></div></div></div>'+
@@ -1350,7 +1385,7 @@ function renderSportCard(ev){
         '<div style="color:var(--txt2);line-height:1.5;min-width:0">'+nameHtml+'</div>'+
         '<span style="color:var(--txt3);white-space:nowrap;flex-shrink:0">'+(scoreTxt||fmtTime(f.time))+'</span></div>';
     }).join('');
-    return '<div class="ecard">'+
+    return '<div class="ecard sport">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
       '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badgeImg(ev.competitionLogo,ev.name,col)+
       '<div class="ec-body" style="padding-left:0"><div class="ec-title">'+escHtml(ev.name)+'</div><div class="ec-meta">'+meta+'</div></div></div></div>'+
@@ -1367,7 +1402,7 @@ function renderSportCard(ev){
   if(hasTeams){
     let acts='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
     if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-    return '<div class="ecard" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer;padding:14px;border:1px solid '+col+'55;background:linear-gradient(135deg,'+col+'14,var(--bg2))">'+
+    return '<div class="ecard sport" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer;padding:14px;border:1px solid '+col+'55;background:linear-gradient(135deg,'+col+'14,var(--bg2))">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+';width:4px"></div>'+
       '<div class="ec-body" style="padding-left:0">'+
       // Always two fixed rows (home on top, away below) rather than a
@@ -1395,7 +1430,7 @@ function renderSportCard(ev){
   const badges = badgeImg(ev.competitionLogo,ev.name,col);
   let acts='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
   if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer">'+
+  return '<div class="ecard sport" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badges+
     '<div class="ec-body" style="padding-left:0"><div class="ec-title">'+escHtml(ev.name)+(scoreTxt?' <span style="color:var(--txt2);font-weight:700">'+scoreTxt+'</span>':'')+'</div>'+
@@ -2875,10 +2910,17 @@ async function loadTithe(){
 function renderTithe(){
   const el=document.getElementById('titheBody'); if(!el||!_tithe) return;
   const t=_tithe, cur=t.currency;
-  const pct = t.income>0 ? Math.min(100, Math.round(t.given/t.due*100)) : 0;
+  const target = t.due + Math.max(0, -t.carry);     // this month's share plus anything owed from before
+  const pct = target>0 ? Math.min(100, Math.round(t.given/target*100)) : (t.given>0?100:0);
   const owing = t.outstanding;
   const carry = t.carry;
   el.classList.add('tithe-dialog');
+  const remaining = t.outstanding;
+  const settled = Math.abs(remaining) < 0.005;
+  const ahead = remaining < -0.005;
+  // Headline shows what is LEFT, not what was due: seeing the full amount
+  // after giving it in full read as though nothing had been paid.
+  const headline = settled ? '0.00 '+cur : money(Math.abs(remaining), cur);
   el.innerHTML=
     '<div class="th-nav">'+
       '<button class="btn ghost ico sm" onclick="shiftTitheMonth(-1)"><i class="ti ti-chevron-left"></i></button>'+
@@ -2886,16 +2928,21 @@ function renderTithe(){
       '<button class="btn ghost ico sm" onclick="shiftTitheMonth(1)"><i class="ti ti-chevron-right"></i></button>'+
     '</div>'+
     '<div class="th-head">'+
-      '<div class="th-due"><small>'+t.percent+'% of '+money(t.income,cur)+'</small><b>'+money(t.due,cur)+'</b><span>to give this month</span></div>'+
+      '<div class="th-due'+(settled?' done':ahead?' ahead':'')+'">'+
+        '<small>'+t.percent+'% of '+money(t.income,cur)+' = '+money(t.due,cur)+'</small>'+
+        '<b>'+(settled?'\u2713':headline)+'</b>'+
+        '<span>'+(settled?'all given \u2014 nothing left':(ahead?'given ahead':'left to give'))+'</span>'+
+      '</div>'+
       '<div class="th-bar"><span style="width:'+pct+'%"></span></div>'+
+      '<div class="th-line"><span>Due this month</span><b>'+money(t.due,cur)+'</b></div>'+
       '<div class="th-line"><span>Given</span><b>'+money(t.given,cur)+'</b></div>'+
-      '<div class="th-line'+(owing>0.005?' owe':'')+'"><span>'+(owing>0.005?'Still to give':'Given in full')+'</span><b>'+
-        (owing>0.005?money(owing,cur):'\u2713')+'</b></div>'+
       (Math.abs(carry)>0.005
-        ? '<div class="th-carry">'+(carry>0
-            ? 'You were <b>'+money(carry,cur)+'</b> ahead before this month'
-            : 'Carried over from before: <b>'+money(-carry,cur)+'</b> still owing')+'</div>'
+        ? '<div class="th-line"><span>'+(carry>0?'Brought forward (ahead)':'Brought forward (owed)')+'</span><b>'+
+          money(Math.abs(carry),cur)+'</b></div>'
         : '')+
+      '<div class="th-line total'+(settled?'':(ahead?' ahead':' owe'))+'"><span>'+
+        (settled?'Settled':(ahead?'Ahead by':'Still to give'))+'</span><b>'+
+        (settled?'\u2713':money(Math.abs(remaining),cur))+'</b></div>'+
     '</div>'+
     '<div class="th-add">'+
       '<input id="thAmt" type="number" step="0.01" min="0" placeholder="Amount" inputmode="decimal">'+
@@ -3740,7 +3787,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-07-timer-and-giving';
+const APP_BUILD='2026-10-07-giving-balance-card-styles';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
