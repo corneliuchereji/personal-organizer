@@ -656,6 +656,9 @@ body::before{
   background:rgba(255,255,255,.08);border-radius:99px;padding:1px 7px;font-weight:600}
 .ecard.sport:hover{border-color:rgba(140,168,255,.34)}
 @media (prefers-reduced-motion:no-preference){ .ecard.sport{transition:border-color .15s} }
+/* Kickoff time: the one place a sport card states when it starts. */
+.ec-kick{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.ecard.sport .ec-meta{gap:7px;align-items:baseline}
 </style>
 </head>
 <body>
@@ -1355,7 +1358,10 @@ function liveBadge(ev){
 function renderSportCard(ev){
   const col=ev._color||sportColor(ev.sport,ev);
   const gName=ev.sport||'sport';
-  let meta='<span style="color:'+col+';font-size:9px">'+gName+'</span><span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
+  // One kickoff time per card, shown here under the competition name. The
+  // fixture rows below repeat the same time, so they no longer print it.
+  let meta='<span style="color:'+col+';font-size:9px">'+gName+'</span>'+
+    '<span class="ec-kick" style="color:'+col+'">'+fmtTime(ev.time)+'</span>';
 
   if(ev._display==='collapsed'){
     // Generic competition slot — matches not involving a followed team never
@@ -1383,7 +1389,9 @@ function renderSportCard(ev){
         : '<div>'+escHtml(f.name)+liveBadge(f)+'</div>';
       return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:6px 0 6px 30px;font-size:11px;cursor:pointer" onclick="event.stopPropagation();showSportDetail(\''+f.id+'\')">'+
         '<div style="color:var(--txt2);line-height:1.5;min-width:0">'+nameHtml+'</div>'+
-        '<span style="color:var(--txt3);white-space:nowrap;flex-shrink:0">'+(scoreTxt||fmtTime(f.time))+'</span></div>';
+        // Every fixture in this block kicks off at the same time, already
+        // shown in the header — printing it again on each row was noise.
+        (scoreTxt ? '<span style="color:var(--txt3);white-space:nowrap;flex-shrink:0">'+scoreTxt+'</span>' : '')+'</div>';
     }).join('');
     return '<div class="ecard sport">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
@@ -3787,7 +3795,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-07-giving-balance-card-styles';
+const APP_BUILD='2026-10-08-kickoff-time';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
