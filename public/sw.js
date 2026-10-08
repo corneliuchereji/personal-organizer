@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v12';
+const CACHE = 'organizer-shell-v13';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -58,16 +58,23 @@ self.addEventListener('push', event => {
       renotify: true,
       data
     });
-    // App-icon badge (the dot/number like WhatsApp). Counts unread pushes
-    // and is cleared when the app is next opened. Not supported
-    // everywhere, so failure is ignored rather than breaking the
-    // notification itself.
+    // App-icon badge (the dot/number like WhatsApp). Each delivered
+    // reminder is remembered as {id,date,tag}; the badge shows how many are
+    // still open. A task's entry is removed only when that task is marked
+    // Done in the app (index.html → syncAppBadge), not merely by opening it.
+    // Not supported everywhere, so failure is ignored rather than breaking
+    // the notification itself.
     try {
       const cache = await caches.open('organizer-badge');
-      const prev = await cache.match('count');
-      const n = prev ? (parseInt(await prev.text()) || 0) + 1 : 1;
-      await cache.put('count', new Response(String(n)));
-      if (self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(n);
+      const prev = await cache.match('items');
+      let items = [];
+      try { items = prev ? JSON.parse(await prev.text()) : []; } catch (e) {}
+      if (!Array.isArray(items)) items = [];
+      const tag = data.tag || 'organizer';
+      // The same reminder re-sent (same tag) counts once.
+      if (!items.some(x => x.tag === tag)) items.push({ id: data.id || null, date: data.date || null, tag });
+      await cache.put('items', new Response(JSON.stringify(items)));
+      if (self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(items.length);
     } catch (e) {}
   })());
 });
@@ -85,7 +92,7 @@ self.addEventListener('message', event => {
     event.waitUntil((async () => {
       try {
         const cache = await caches.open('organizer-badge');
-        await cache.put('count', new Response('0'));
+        await cache.put('items', new Response('[]'));
         if (self.navigator && self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
       } catch (e) {}
     })());
