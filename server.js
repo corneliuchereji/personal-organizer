@@ -905,7 +905,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-09-task-colors';
+const BUILD_VERSION = '2026-10-09-sport-tool';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2673,6 +2673,16 @@ const MCP_TOOLS = [
       time:{type:'string', description:'HH:MM, 24h. Defaults to 09:00'},
       notes:{type:'string'}, location:{type:'string', description:'Enables a leave-by warning'},
       remindMinutes:{type:'array', items:{type:'number'}, description:'e.g. [15, 120]'} } } },
+  { name:'add_sport_event', description:'Add a one-off sport event (race, match, classic) to the organizer. Shown as a sport card, not a personal task.',
+    inputSchema:{ type:'object', required:['name','date'], properties:{
+      name:{type:'string'}, date:{type:'string', description:'YYYY-MM-DD'},
+      time:{type:'string', description:'HH:MM, 24h, Bucharest time. Defaults to 12:00'},
+      sport:{type:'string', description:'One of: f1, motogp, wec, n24h, cycling, tdf, giro, football, snooker, other'},
+      competitionName:{type:'string', description:'e.g. "IMSA", "UCI World Tour"'},
+      notes:{type:'string'},
+      remindMinutes:{type:'array', items:{type:'number'}, description:'e.g. [60]. Defaults to none'} } } },
+  { name:'delete_sport_event', description:'Delete a manually added sport event by name.',
+    inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, date:{type:'string', description:'YYYY-MM-DD, to pick one if several match'} } } },
   { name:'complete_task', description:'Mark a task done (or not done) by name.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, done:{type:'boolean'} } } },
   { name:'delete_task', description:'Delete a task by name.',
@@ -2726,6 +2736,33 @@ async function mcpCall(name, args){
       d.tasks = d.tasks || []; d.tasks.push(task);
       writeData(d);
       return mcpText('Added "'+task.name+'" on '+task.date+' at '+task.time+'.');
+    }
+    case 'add_sport_event': {
+      if(!args.name || !/^\d{4}-\d{2}-\d{2}$/.test(args.date||'')) return mcpText('A name and a YYYY-MM-DD date are required.');
+      const COLORS={f1:'#e879a0',motogp:'#f97316',tdf:'#fbbf24',giro:'#f87171',ucl:'#4f8ef7',seriea:'#34d399',bundesliga:'#fb923c',
+        wec:'#60a5fa',n24h:'#2dd4bf',cycling:'#fbbf24',snooker:'#a78bfa',football:'#4f8ef7',other:'#94a3b8'};
+      const sport = COLORS[String(args.sport||'').toLowerCase()] ? String(args.sport).toLowerCase() : 'other';
+      d.sportEvents = d.sportEvents || [];
+      const dup = d.sportEvents.find(e => e.date===args.date && (e.name||'').toLowerCase()===String(args.name).toLowerCase());
+      if(dup) return mcpText('"'+dup.name+'" is already on '+dup.date+'.');
+      const reminders = Array.isArray(args.remindMinutes) ? args.remindMinutes.map(String) : [];
+      const ev = { id: uid(), source:'manual', provider:'manual', freq:'none',
+        name: String(args.name), date: args.date, time: fmtTime(args.time||'12:00'), sport,
+        competitionName: args.competitionName || '', notes: args.notes || '',
+        color: COLORS[sport], reminders, reminder: reminders[0] || '' };
+      d.sportEvents.push(ev);
+      writeData(d);
+      return mcpText('Added sport event "'+ev.name+'" ('+sport+') on '+ev.date+' at '+ev.time+'.');
+    }
+    case 'delete_sport_event': {
+      const n = String(args.name||'').toLowerCase().trim();
+      const list = (d.sportEvents||[]).filter(e => e.source==='manual' || !e.provider || e.provider==='manual');
+      const hit = list.find(e => (e.name||'').toLowerCase()===n && (!args.date || e.date===args.date))
+               || list.find(e => (e.name||'').toLowerCase().includes(n) && (!args.date || e.date===args.date));
+      if(!hit) return mcpText('No manually added sport event matching "'+args.name+'".');
+      d.sportEvents = d.sportEvents.filter(e => e.id !== hit.id);
+      writeData(d);
+      return mcpText('Deleted "'+hit.name+'" ('+hit.date+').');
     }
     case 'complete_task': {
       const t = mcpFindTask(d, args.name);
