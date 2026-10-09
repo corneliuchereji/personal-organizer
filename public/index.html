@@ -631,24 +631,24 @@ body::before{
    as solid cards with a group-coloured spine. Sport reads like a ticket:
    tinted, lighter, with a perforated edge — recognisable at a glance from
    across the day list without relying on colour alone. */
-/* Personal tasks/events: warm amber card with cream text, so they never
-   blend in with the cool blue sport tickets. The text colours are set by
-   redefining the colour variables inside the card, which also recolours
-   the inline time / repeat labels that use var(--txt3). */
-.ecard.task{
-  --txt:#FFF1D6;--txt2:#E2C08F;--txt3:#C9A472;
-  --border:rgba(251,191,36,.26);--border2:rgba(251,191,36,.34);
-  background:linear-gradient(135deg, rgba(251,191,36,.20), rgba(249,115,22,.09) 60%, rgba(255,255,255,.02));
-  border:1px solid var(--border);color:var(--txt)
-}
-.ecard.task .ec-bar{width:4px;border-radius:99px}
-.ecard.task .ec-title{font-weight:650;color:var(--txt)}
-.ecard.task .ec-meta > span:nth-child(2){color:var(--txt2)!important;font-weight:600;font-variant-numeric:tabular-nums}
-.ecard.task .ec-notes{color:var(--txt2)}
-.ecard.task .ea{background:rgba(251,191,36,.07);color:var(--txt2);border-color:var(--border)}
-.ecard.task .ea:hover{background:rgba(251,191,36,.16);color:var(--txt)}
-.ecard.task .plabel.normal{background:rgba(251,191,36,.18);color:#FCD34D}
-.ecard.task:hover{border-color:var(--border2)}
+/* Personal tasks/events: "ivory paper" — cream cards with dark ink and a
+   serif title, so they read as calm personal notes and never blend in with
+   the cool blue sport tickets. Text colours are set by redefining the
+   colour variables inside the card, which also recolours the inline
+   time / repeat labels that use var(--txt3). */
+.ecard.task{--txt:#2B2733;--txt2:#6E6878;--txt3:#8F889A;--border:rgba(43,39,51,.10);--border2:rgba(43,39,51,.16);
+  background:linear-gradient(180deg,#F6F1E8,#EFE8DC);border:1px solid rgba(255,255,255,.6);color:var(--txt);
+  box-shadow:0 10px 24px -12px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.7) inset;padding:16px 16px 14px}
+.ecard.task .ec-title{font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;font-weight:600;font-size:17px;letter-spacing:0;color:var(--txt)}
+.ecard.task .ec-meta > span:nth-child(2){color:var(--txt)!important;font-weight:600}
+.ecard.task .ea{background:rgba(43,39,51,.04);color:var(--txt2);border:1px solid rgba(43,39,51,.10)}
+.ecard.task .ea:hover{background:rgba(43,39,51,.09);color:var(--txt)}
+.ecard.task .plabel.normal{background:rgba(43,39,51,.07);color:#5E586A}
+.ecard.task .rem-badge{background:rgba(124,92,214,.10)!important;color:#6B4FC8!important;border-color:rgba(124,92,214,.22)!important}
+.ecard.task.done{opacity:.55}
+.chip.task{background:#EFE8DC!important;color:#3A3542!important;border-color:transparent!important;font-weight:600}
+.ecard.task.past{opacity:.72}
+.ecard.task:hover{border-color:rgba(255,255,255,.8)}
 
 .ecard.sport{
   position:relative;
@@ -1540,7 +1540,7 @@ function renderCal(){
         // stands out at a glance.
         const isPast = ds < TODAY;
         const isDone = ev._type==='task' && ev.done;
-        const cls = 'chip'+(isPast?' past':'')+(isDone?' done':'');
+        const cls = 'chip'+(isSport?' sport':' task')+(isPast?' past':'')+(isDone?' done':'');
         const tip = escHtml(ev.name)+(isDone?' — done':(isPast?' — past':''));
         return '<div class="'+cls+'" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+tip+'">'+icon+escHtml(ev.name)+'</div>';
       }).join('');
@@ -2605,7 +2605,7 @@ function buildDailyMsg(dateStr){
 function remindersBadge(ev){
   const list=remindersOf(ev);
   if(!list.length) return '';
-  return '<span style="font-size:9px;background:#a78bfa20;color:#a78bfa;border:1px solid #a78bfa40;border-radius:10px;padding:1px 6px;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-bell" style="font-size:9px"></i>'+
+  return '<span class="rem-badge" style="font-size:9px;background:#a78bfa20;color:#a78bfa;border:1px solid #a78bfa40;border-radius:10px;padding:1px 6px;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-bell" style="font-size:9px"></i>'+
     list.map(reminderLabelShort).join(' \u00b7 ')+' before</span>';
 }
 
@@ -3811,7 +3811,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-09-sport-tool';
+const APP_BUILD='2026-10-09-ivory-tasks';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
