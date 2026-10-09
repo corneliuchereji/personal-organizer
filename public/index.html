@@ -631,9 +631,24 @@ body::before{
    as solid cards with a group-coloured spine. Sport reads like a ticket:
    tinted, lighter, with a perforated edge — recognisable at a glance from
    across the day list without relying on colour alone. */
-.ecard.task{background:var(--bg2);border:1px solid var(--border)}
+/* Personal tasks/events: warm amber card with cream text, so they never
+   blend in with the cool blue sport tickets. The text colours are set by
+   redefining the colour variables inside the card, which also recolours
+   the inline time / repeat labels that use var(--txt3). */
+.ecard.task{
+  --txt:#FFF1D6;--txt2:#E2C08F;--txt3:#C9A472;
+  --border:rgba(251,191,36,.26);--border2:rgba(251,191,36,.34);
+  background:linear-gradient(135deg, rgba(251,191,36,.20), rgba(249,115,22,.09) 60%, rgba(255,255,255,.02));
+  border:1px solid var(--border);color:var(--txt)
+}
 .ecard.task .ec-bar{width:4px;border-radius:99px}
-.ecard.task .ec-title{font-weight:600}
+.ecard.task .ec-title{font-weight:650;color:var(--txt)}
+.ecard.task .ec-meta > span:nth-child(2){color:var(--txt2)!important;font-weight:600;font-variant-numeric:tabular-nums}
+.ecard.task .ec-notes{color:var(--txt2)}
+.ecard.task .ea{background:rgba(251,191,36,.07);color:var(--txt2);border-color:var(--border)}
+.ecard.task .ea:hover{background:rgba(251,191,36,.16);color:var(--txt)}
+.ecard.task .plabel.normal{background:rgba(251,191,36,.18);color:#FCD34D}
+.ecard.task:hover{border-color:var(--border2)}
 
 .ecard.sport{
   position:relative;
@@ -3796,7 +3811,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-08-badge-on-done';
+const APP_BUILD='2026-10-09-task-colors';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
