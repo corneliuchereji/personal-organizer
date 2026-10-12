@@ -784,6 +784,11 @@ button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vop
 .map-inline{margin-left:4px;vertical-align:middle}
 .leaflet-container{font-family:inherit;background:#0d1224}
 .leaflet-control-attribution{font-size:10px}
+
+/* ══ Full event titles ══ Long names wrap onto a second line instead of
+   being cut off with "…"; personal titles are a touch smaller to fit. */
+.ec-title{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.25}
+.ecard.task .ec-title{font-size:15.5px;line-height:1.28;text-wrap:pretty}
 </style>
 </head>
 <body>
@@ -4166,7 +4171,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-12-map-private';
+const APP_BUILD='2026-10-12-full-titles';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
