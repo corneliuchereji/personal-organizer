@@ -19,6 +19,141 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ═══════════════════════════════════════════════════
+// PRIVATE SETTINGS (password-protected)
+// API keys, the home address, the Claude connector link and restore
+// actions sit behind a password. The password is stored only as a scrypt
+// hash. Unlocking gives the browser a short-lived token; secrets are never
+// included in /api/data, so a visitor with the app's address alone can't
+// read them. Forgot the password? Set PRIVATE_PASSWORD_RESET=yes in the
+// host's environment, redeploy, set a new one, then remove the variable.
+// ═══════════════════════════════════════════════════
+const crypto = require('crypto');
+const PRIVATE_SETTING_KEYS = ['footballDataKey','highlightlyKey','apiFootballKey','tsdbKey','orsKey',
+  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass'];
+const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey'];
+const PRIV_TTL_MS = 30*60*1000;              // 30 min, renewed while in use
+const _privSessions = new Map();             // token -> expiry
+let _privFails = 0, _privLockUntil = 0;
+
+function privResetMode(){ return process.env.PRIVATE_PASSWORD_RESET === 'yes'; }
+function privHasPassword(d){ return !privResetMode() && !!(d.settings && d.settings.privatePass && d.settings.privatePass.hash); }
+function privHash(pw, salt){ return crypto.scryptSync(String(pw), salt, 64).toString('hex'); }
+function privNewSession(){ const t = crypto.randomBytes(24).toString('hex'); _privSessions.set(t, Date.now()+PRIV_TTL_MS); return t; }
+function privTokenOf(req){ return req.get('X-Private-Token') || ''; }
+function privValid(tok){
+  if(!tok) return false;
+  const exp = _privSessions.get(tok);
+  if(!exp) return false;
+  if(exp < Date.now()){ _privSessions.delete(tok); return false; }
+  _privSessions.set(tok, Date.now()+PRIV_TTL_MS);
+  return true;
+}
+function requirePrivate(req, res, next){
+  if(privValid(privTokenOf(req))) return next();
+  res.status(401).json({ error:'Private settings are locked — unlock them in Settings first.', locked:true });
+}
+// What any visitor gets: everything the calendar needs, minus secrets.
+function publicView(d){
+  const out = { ...d };
+  const st = { ...(d.settings||{}) };
+  st.hasHome = !!(st.homeLat && st.homeLon);
+  st.privateSet = privHasPassword(d);
+  for(const k of PRIVATE_SETTING_KEYS) delete st[k];
+  out.settings = st;
+  delete out.pushSubs;
+  if(d.travelCache){
+    out.travelCache = {};
+    for(const [k,v] of Object.entries(d.travelCache)){
+      if(!v) continue;
+      const c = { ...v }; delete c.line; delete c.fromLat; delete c.fromLon;
+      if(!c.fromPlace) delete c.fromName;           // the home label is your street
+      out.travelCache[k] = c;
+    }
+  }
+  return out;
+}
+// A browser save can never set or clear a secret; those go through
+// /api/private only.
+function stripPrivateIncoming(settings){
+  if(!settings || typeof settings !== 'object') return settings;
+  const o = { ...settings };
+  for(const k of PRIVATE_SETTING_KEYS) delete o[k];
+  delete o.hasHome; delete o.privateSet;
+  return o;
+}
+function privPasswordOk(pw){ return typeof pw === 'string' && pw.length >= 6 && pw.length <= 200; }
+
+app.get('/api/private/status', (req, res) => {
+  const d = readData();
+  res.json({ hasPassword: privHasPassword(d), unlocked: privValid(privTokenOf(req)) });
+});
+app.post('/api/private/setup', (req, res) => {
+  const d = readData();
+  if(privHasPassword(d)) return res.status(409).json({ error:'A password is already set.' });
+  const pw = req.body && req.body.password;
+  if(!privPasswordOk(pw)) return res.status(400).json({ error:'Use at least 6 characters.' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  d.settings = d.settings || {};
+  d.settings.privatePass = { salt, hash: privHash(pw, salt), at: new Date().toISOString() };
+  writeData(d);
+  _privSessions.clear();
+  res.json({ ok:true, token: privNewSession() });
+});
+app.post('/api/private/unlock', (req, res) => {
+  const now = Date.now();
+  if(now < _privLockUntil) return res.status(429).json({ error:'Too many wrong attempts — try again in a few minutes.' });
+  const d = readData();
+  if(!privHasPassword(d)) return res.status(400).json({ error:'No password set yet.', needsSetup:true });
+  const pp = d.settings.privatePass;
+  const pw = String((req.body && req.body.password) || '');
+  const got = Buffer.from(privHash(pw, pp.salt), 'hex'), want = Buffer.from(pp.hash, 'hex');
+  if(got.length === want.length && crypto.timingSafeEqual(got, want)){
+    _privFails = 0;
+    return res.json({ ok:true, token: privNewSession() });
+  }
+  _privFails++;
+  if(_privFails >= 5){ _privFails = 0; _privLockUntil = now + 5*60*1000; }
+  res.status(401).json({ error:'Wrong password.' });
+});
+app.post('/api/private/lock', (req, res) => {
+  _privSessions.delete(privTokenOf(req));
+  res.json({ ok:true });
+});
+app.post('/api/private/password', requirePrivate, (req, res) => {
+  const d = readData();
+  const { current, password } = req.body || {};
+  const pp = d.settings && d.settings.privatePass;
+  if(pp && privHash(String(current||''), pp.salt) !== pp.hash) return res.status(401).json({ error:'Current password is wrong.' });
+  if(!privPasswordOk(password)) return res.status(400).json({ error:'Use at least 6 characters.' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  d.settings.privatePass = { salt, hash: privHash(password, salt), at: new Date().toISOString() };
+  writeData(d);
+  _privSessions.clear();
+  res.json({ ok:true, token: privNewSession() });
+});
+app.get('/api/private', requirePrivate, (req, res) => {
+  const st = readData().settings || {};
+  res.json({ footballDataKey: st.footballDataKey||'', highlightlyKey: st.highlightlyKey||'', orsKey: st.orsKey||'',
+             homeAddress: st.homeAddress||'', homeName: st.homeName||'' });
+});
+app.post('/api/private', requirePrivate, (req, res) => {
+  const d = readData(); d.settings = d.settings || {};
+  let routing = false;
+  for(const k of PRIV_EDITABLE){
+    if(req.body && typeof req.body[k] === 'string'){
+      if(k === 'orsKey' && d.settings.orsKey !== req.body[k].trim()) routing = true;
+      d.settings[k] = req.body[k].trim();
+    }
+  }
+  if(routing) d.travelCache = {};               // routes depend on the key
+  writeData(d);
+  res.json({ ok:true });
+});
+// Everything below these prefixes needs the private unlock.
+['/api/restore','/api/mcp','/api/home','/api/telegram'].forEach(pfx => app.use(pfx, requirePrivate));
+app.use('/api/snapshots/:id/restore', requirePrivate);
+
+// ═══════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════
 const DEFAULT_DATA = {
@@ -905,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-09-ivory-tasks';
+const BUILD_VERSION = '2026-10-12-map-private';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1138,7 +1273,7 @@ app.post('/api/chat', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/data', (req, res) => res.json(readData()));
+app.get('/api/data', (req, res) => res.json(publicView(readData())));
 
 app.post('/api/data', (req, res) => {
   const current = readData();
@@ -1149,7 +1284,7 @@ app.post('/api/data', (req, res) => {
   // browser doesn't know about — most damagingly the VAPID keys, whose
   // regeneration silently invalidates every existing push subscription.
   if (req.body.settings) {
-    updated.settings = { ...(current.settings||{}), ...req.body.settings };
+    updated.settings = { ...(current.settings||{}), ...stripPrivateIncoming(req.body.settings) };
     // Belt and braces: never let these be cleared by a client write.
     if (current.settings) {
       if (current.settings.homeLat)  updated.settings.homeLat  = current.settings.homeLat;
@@ -1165,7 +1300,8 @@ app.post('/api/data', (req, res) => {
   if (!req.body.pushSubs) updated.pushSubs = current.pushSubs || [];
   // Travel results are server-owned, like pushSubs — a client save must
   // not clear them (the browser never sends this field).
-  if (!req.body.travelCache) updated.travelCache = current.travelCache || {};
+  updated.travelCache = current.travelCache || {};
+  updated.pushSubs = current.pushSubs || [];
 
   // A client sends the revision it last loaded. If the server has moved on
   // since (another device saved, or Telegram added something), this payload
@@ -1222,7 +1358,7 @@ app.post('/api/data', (req, res) => {
 // but settings.
 app.post('/api/settings', (req, res) => {
   const current = readData();
-  current.settings = { ...(current.settings||{}), ...(req.body||{}) };
+  current.settings = { ...(current.settings||{}), ...stripPrivateIncoming(req.body||{}) };
   writeData(current);
   setupCrons(current.settings);
   res.json({ ok:true, _rev: current._rev });
@@ -1566,7 +1702,10 @@ const ACM_EL_FIXTURES = [
 // ═══════════════════════════════════════════════════
 app.get('/api/backup', (req, res) => {
   try {
-    const d = readData();
+    // Backups leave the secrets out (keys, home address, password hash):
+    // restoring keeps whatever is currently saved for those.
+    const d = publicView(readData());
+    delete d.settings.hasHome; delete d.settings.privateSet;
     const stamp = new Date().toISOString().slice(0,10);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="organizer-backup-${stamp}.json"`);
@@ -1588,7 +1727,7 @@ app.post('/api/restore', (req, res) => {
       sportEvents: Array.isArray(incoming.sportEvents) ? incoming.sportEvents : (current.sportEvents||[]),
       groups: Array.isArray(incoming.groups) && incoming.groups.length ? incoming.groups : current.groups,
       follows: incoming.follows || current.follows || { teams:[], competitions:[] },
-      settings: { ...(current.settings||{}), ...(incoming.settings||{}) },
+      settings: { ...(current.settings||{}), ...stripPrivateIncoming(incoming.settings||{}) },
       sentReminders: incoming.sentReminders || current.sentReminders || {}
     };
     writeData(merged);
@@ -1636,8 +1775,13 @@ app.post('/api/snapshots/:id/restore', async (req, res) => {
     // Save a safety snapshot of the CURRENT state first, so restoring the
     // wrong one is itself reversible.
     await saveSnapshot('pre-restore');
-    writeData(snap.data);
-    if (snap.data.settings) setupCrons(snap.data.settings);
+    // An older snapshot must not undo the current password or keys.
+    const cur = readData();
+    const restored = { ...snap.data, settings: { ...stripPrivateIncoming((snap.data && snap.data.settings) || {}) } };
+    for(const k of PRIVATE_SETTING_KEYS){ if(cur.settings && cur.settings[k] !== undefined) restored.settings[k] = cur.settings[k]; }
+    restored.pushSubs = cur.pushSubs || [];
+    writeData(restored);
+    setupCrons(restored.settings);
     res.json({
       ok:true,
       tasks: (snap.data.tasks||[]).length,
@@ -1652,7 +1796,8 @@ app.get('/api/snapshots/:id/download', async (req, res) => {
     if (!snap || !snap.data) return res.status(404).json({ error: 'Snapshot not found' });
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="organizer-${req.params.id}.json"`);
-    res.send(JSON.stringify(snap.data, null, 2));
+    const pv = publicView(snap.data); delete pv.settings.hasHome; delete pv.settings.privateSet;
+    res.send(JSON.stringify(pv, null, 2));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2342,18 +2487,31 @@ async function orsRoute(from, to, cfg, key){
   const d = await r.json();
   const sum = d.features && d.features[0] && d.features[0].properties && d.features[0].properties.summary;
   if(!sum || sum.duration == null) throw new Error((d.error && (d.error.message||d.error)) || 'no route');
-  return { secs: sum.duration, metres: sum.distance };
+  const geom = d.features[0].geometry;
+  return { secs: sum.duration, metres: sum.distance, line: routeLine(geom && geom.coordinates) };
+}
+
+// Route shape for the map: [lat,lon] pairs, thinned to at most ~300 points
+// and rounded to ~1 m so a cached journey stays small.
+function routeLine(coords){
+  if(!Array.isArray(coords) || coords.length < 2) return null;
+  const step = Math.max(1, Math.ceil(coords.length / 300));
+  const out = [];
+  for(let i=0;i<coords.length;i+=step) out.push([+coords[i][1].toFixed(5), +coords[i][0].toFixed(5)]);
+  const last = coords[coords.length-1];
+  out.push([+last[1].toFixed(5), +last[0].toFixed(5)]);
+  return out;
 }
 
 // Car distance/duration from OSRM (the only profile it serves publicly).
 async function osrmDriving(from, to){
-  const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false&alternatives=false`;
+  const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=simplified&geometries=geojson&alternatives=false`;
   const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0 (personal calendar app)' } });
   if(!r.ok) throw new Error('HTTP '+r.status);
   const d = await r.json();
   const route = d.routes && d.routes[0];
   if(!route) throw new Error(d.message || 'no route');
-  return { secs: route.duration, metres: route.distance };
+  return { secs: route.duration, metres: route.distance, line: routeLine(route.geometry && route.geometry.coordinates) };
 }
 
 async function drivingRoute(from, to, mode, data){
@@ -2368,18 +2526,19 @@ async function drivingRoute(from, to, mode, data){
   if(orsKey && cfg.ors){
     try{
       const o = await orsRoute(from, to, cfg, orsKey);
-      return { mins: withExtras(o.secs/60), km: +(o.metres/1000).toFixed(1), estimated:false, source:'ors', mode, trafficPct };
+      return { mins: withExtras(o.secs/60), km: +(o.metres/1000).toFixed(1), estimated:false, source:'ors', mode, trafficPct, line:o.line };
     }catch(e){ console.log('ORS routing failed, falling back:', e.message); }
   }
   try{
     const o = await osrmDriving(from, to);
     const km = o.metres/1000;
     if(cfg.osrm === 'driving'){
-      return { mins: withExtras(o.secs/60), km:+km.toFixed(1), estimated:false, source:'osrm', mode, trafficPct };
+      return { mins: withExtras(o.secs/60), km:+km.toFixed(1), estimated:false, source:'osrm', mode, trafficPct, line:o.line };
     }
     // Walking/cycling: keep the road distance, apply a sensible speed.
     const dist = km * (cfg.detour || 1);
-    return { mins: withExtras(dist/(cfg.kmh||5)*60), km:+dist.toFixed(1), estimated:false, derived:true, source:'osrm-distance', mode };
+    // The car road is drawn as an approximation of the walking/cycling path.
+    return { mins: withExtras(dist/(cfg.kmh||5)*60), km:+dist.toFixed(1), estimated:false, derived:true, source:'osrm-distance', mode, line:o.line };
   }catch(e){
     // Nothing reachable: straight-line distance with a road factor.
     const km = haversineKm(from, to) * 1.28 * (cfg.detour || 1);
@@ -2466,7 +2625,8 @@ async function travelFor(data, place, force, mode, fromPlace){
   const route = await drivingRoute(home, { lat:geo.lat, lon:geo.lon }, mode, data);
   const entry = { ...route, place, mode, toName: geo.label || place, lat:geo.lat, lon:geo.lon,
                   precise: geo.precise !== false, fromPrecise: !!home.precise,
-                  fromPlace: String(fromPlace||'').trim(), fromName: home.name, at: Date.now() };
+                  fromPlace: String(fromPlace||'').trim(), fromName: home.name,
+                  fromLat: home.lat, fromLon: home.lon, at: Date.now() };
   const cur = readData();
   if(!cur.travelCache) cur.travelCache = {};
   cur.travelCache[key] = entry;
@@ -2978,8 +3138,34 @@ app.get('/api/travel', async (req, res) => {
   try{
     const data = readData();
     const out = await travelFor(data, req.query.to, req.query.force === '1', req.query.mode, req.query.from);
-    res.json(out);
+    const { line, fromLat, fromLon, ...rest } = out || {};
+    res.json(rest);
   }catch(e){ res.status(500).json({ error:e.message }); }
+});
+
+// GET /api/travel/map?to=…&mode=…&from=…  -> start, end and route shape
+// for the map dialog. Bus/train/other have no router, so those show the two
+// ends only.
+app.get('/api/travel/map', async (req, res) => {
+  try{
+    const data = readData();
+    const to = req.query.to, from = req.query.from, mode = (req.query.mode && TRAVEL_MODES[req.query.mode]) ? req.query.mode : 'drive';
+    if(!to || !String(to).trim()) return res.json({ error:'No destination given.' });
+    if(TRAVEL_MODES[mode].manual){
+      let start;
+      if(String(from||'').trim()){ const g = await geocodeAddress(from); if(g) start = { lat:g.lat, lon:g.lon, name:g.label }; }
+      else { const h = homeOf(data); if(h) start = { lat:h.lat, lon:h.lon, name:h.name }; }
+      const g = await geocodeAddress(to);
+      if(!g) return res.json({ error:'Could not find “'+to+'” on the map.' });
+      return res.json({ mode, manual:true, from: start || null, to:{ lat:g.lat, lon:g.lon, name:g.label }, line:null });
+    }
+    let e = await travelFor(data, to, false, mode, from);
+    // Journeys cached before maps existed have no start point or shape.
+    if(e && !e.error && (e.fromLat == null || (!e.line && !e.estimated))) e = await travelFor(readData(), to, true, mode, from);
+    if(!e || e.error) return res.json({ error: (e && e.error) || 'No route.' });
+    res.json({ mode, mins:e.mins, km:e.km, estimated:!!e.estimated, derived:!!e.derived,
+      from:{ lat:e.fromLat, lon:e.fromLon, name:e.fromName }, to:{ lat:e.lat, lon:e.lon, name:e.toName }, line:e.line || null });
+  }catch(err){ res.status(500).json({ error:err.message }); }
 });
 
 // GET /api/weather?q=Timisoara            -> geocodes the name first
