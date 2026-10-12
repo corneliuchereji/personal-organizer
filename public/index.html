@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Personal Organizer</title>
 <!-- PWA: the manifest + service worker are what make Android Chrome and
      desktop browsers offer a real "Install" option. iOS installs without
@@ -69,7 +69,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .wx-day-l{font-size:10px;color:var(--txt2)}
 .wx-day-r{font-size:9px;color:#60a5fa;margin-top:2px}
 .wx-windy{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 14px;padding:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;color:var(--accent);text-decoration:none}
-.wx-windy:hover{background:var(--bg3)}
+@media (hover:hover) and (pointer:fine){ .wx-windy:hover{background:var(--bg3)} }
 /* CRYPTO */
 .cr-row{display:flex;gap:10px;align-items:stretch}
 .cr-coin{flex:1;display:flex;flex-direction:column;gap:2px}
@@ -106,7 +106,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .month-dow{text-align:center;font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;padding:4px 0}
 .month-week{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
 .month-day{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:4px 5px;min-height:74px;cursor:pointer;transition:border-color .15s,background .15s;overflow:hidden}
-.month-day:hover{border-color:var(--border2);background:var(--bg2)}
+@media (hover:hover) and (pointer:fine){ .month-day:hover{border-color:var(--border2);background:var(--bg2)} }
 .month-day.today{border-color:var(--accent);background:var(--bg2)}
 .month-day.today .mday-num{color:var(--accent);font-weight:700}
 .month-day.other-month{opacity:.25}
@@ -127,10 +127,10 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .ec-notes{font-size:10px;color:var(--txt2);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ec-actions{display:flex;gap:4px;margin-top:7px;flex-wrap:wrap}
 .ea{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;font-size:10px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--txt2);cursor:pointer;font-family:inherit;transition:background .12s,color .12s}
-.ea:hover{background:var(--bg3);color:var(--txt)}
-.ea.red:hover{background:#f8717120;color:var(--red)}
-.ea.grn:hover{background:#34d39920;color:var(--green)}
-.ea.ylw:hover{background:#fbbf2420;color:var(--yellow)}
+@media (hover:hover) and (pointer:fine){ .ea:hover{background:var(--bg3);color:var(--txt)} }
+@media (hover:hover) and (pointer:fine){ .ea.red:hover{background:#f8717120;color:var(--red)} }
+@media (hover:hover) and (pointer:fine){ .ea.grn:hover{background:#34d39920;color:var(--green)} }
+@media (hover:hover) and (pointer:fine){ .ea.ylw:hover{background:#fbbf2420;color:var(--yellow)} }
 /* PRIORITY */
 .plabel{font-size:9px;padding:1px 5px;border-radius:10px;font-weight:700}
 .plabel.low{background:#64748b30;color:#94a3b8}
@@ -147,7 +147,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .chat-inp{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:8px 14px;color:var(--txt);font-size:12px;font-family:inherit;resize:none;outline:none;max-height:80px;line-height:1.4}
 .chat-inp:focus{border-color:var(--accent)}
 .chat-send{width:36px;height:36px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.chat-send:hover{background:#3a7de8}
+@media (hover:hover) and (pointer:fine){ .chat-send:hover{background:#3a7de8} }
 /* MODAL */
 .mbg{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}
 .mbg.open{display:flex}
@@ -163,13 +163,13 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe U
 .msp{flex:1}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;font-size:12px;font-family:inherit;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg2);color:var(--txt);cursor:pointer;white-space:nowrap;transition:background .15s}
-.btn:hover{background:var(--bg3)}
+@media (hover:hover) and (pointer:fine){ .btn:hover{background:var(--bg3)} }
 .btn.acc{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.acc:hover{background:#3a7de8}
+@media (hover:hover) and (pointer:fine){ .btn.acc:hover{background:#3a7de8} }
 .btn.red{color:var(--red);border-color:transparent}
-.btn.red:hover{background:#f8717120}
+@media (hover:hover) and (pointer:fine){ .btn.red:hover{background:#f8717120} }
 .btn.ghost{border-color:transparent;background:transparent}
-.btn.ghost:hover{background:var(--bg2)}
+@media (hover:hover) and (pointer:fine){ .btn.ghost:hover{background:var(--bg2)} }
 .btn.sm{padding:4px 9px;font-size:11px}
 .btn.ico{padding:5px 8px;border-radius:6px}
 /* SPORT DETAIL */
@@ -290,11 +290,11 @@ body::before{
 #topbar h1 i{color:var(--accent)}
 /* ── Buttons: soft pills ── */
 .btn{border-radius:var(--rp);background:var(--bg2);border:1px solid var(--border);color:var(--txt);font-weight:500;padding:7px 15px}
-.btn:hover{background:var(--bg3)}
+@media (hover:hover) and (pointer:fine){ .btn:hover{background:var(--bg3)} }
 .btn.acc{background:var(--accent);border-color:transparent;color:var(--accent-ink);font-weight:600}
-.btn.acc:hover{background:#A3B9FF}
+@media (hover:hover) and (pointer:fine){ .btn.acc:hover{background:#A3B9FF} }
 .btn.ghost{background:transparent;border-color:transparent}
-.btn.ghost:hover{background:var(--bg2)}
+@media (hover:hover) and (pointer:fine){ .btn.ghost:hover{background:var(--bg2)} }
 .btn.red{background:rgba(248,113,113,.10);border-color:transparent}
 .btn.sm{padding:6px 12px;font-size:12px}
 .btn.ico{border-radius:var(--rp);padding:7px 9px}
@@ -314,7 +314,7 @@ body::before{
 .ecard:hover .ec-notes,.ec-notes:focus-within{-webkit-line-clamp:unset}
 .ec-actions{gap:6px;margin-top:11px}
 .ea{border-radius:var(--rp);padding:5px 11px;font-size:12px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--txt2)}
-.ea:hover{background:var(--bg3);color:var(--txt)}
+@media (hover:hover) and (pointer:fine){ .ea:hover{background:var(--bg3);color:var(--txt)} }
 .plabel{border-radius:var(--rp);padding:2px 8px;font-size:10px;font-weight:600}
 .plabel.normal{background:rgba(140,168,255,.14);color:var(--accent)}
 /* Times line up down the page */
@@ -325,7 +325,7 @@ body::before{
 .month-grid,.month-dow-row,.month-week{gap:5px}
 .month-dow{text-transform:none;letter-spacing:0;font-size:11px;font-weight:600;color:var(--txt3)}
 .month-day{background:rgba(255,255,255,.035);border:1px solid transparent;border-radius:12px;padding:6px 6px;min-height:78px}
-.month-day:hover{background:var(--bg2);border-color:var(--border)}
+@media (hover:hover) and (pointer:fine){ .month-day:hover{background:var(--bg2);border-color:var(--border)} }
 .month-day.today{background:rgba(140,168,255,.10);border-color:rgba(140,168,255,.55)}
 .month-day.today .mday-num{color:var(--accent);font-weight:700}
 .month-day.selected{background:rgba(140,168,255,.08);border-color:rgba(140,168,255,.35)}
@@ -341,7 +341,7 @@ body::before{
 .chat-inp{border-radius:var(--rp);background:var(--bg2);border:1px solid var(--border);font-size:14px;padding:10px 16px}
 .chat-inp:focus{border-color:rgba(140,168,255,.6)}
 .chat-send{width:42px;height:42px;background:var(--accent);color:var(--accent-ink)}
-.chat-send:hover{background:#A3B9FF}
+@media (hover:hover) and (pointer:fine){ .chat-send:hover{background:#A3B9FF} }
 /* ── Modals: solid-enough glass to read comfortably ── */
 .mbg{background:rgba(6,10,28,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .mbox{background:var(--glass-solid);-webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);
@@ -479,7 +479,7 @@ body::before{
 #wdrop.open{display:flex}
 .witem{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 11px;border:none;border-radius:12px;
   background:transparent;color:var(--txt);font:inherit;font-size:13px;cursor:pointer}
-.witem:hover{background:var(--bg3)}
+@media (hover:hover) and (pointer:fine){ .witem:hover{background:var(--bg3)} }
 .witem:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .witem > i:first-child{color:var(--accent);font-size:17px;flex:none}
 .witem span{flex:1;min-width:0;display:block}
@@ -529,7 +529,7 @@ body::before{
    made the browser scroll the whole dialog to a seemingly random point
    (Chrome does this; Safari doesn't, which is why iOS looked fine). */
 .bib-row{position:relative;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer}
-.bib-row:hover{background:rgba(255,255,255,.04)}
+@media (hover:hover) and (pointer:fine){ .bib-row:hover{background:rgba(255,255,255,.04)} }
 .bib-row input{position:absolute;opacity:0;pointer-events:none}
 .bib-row .bib-main{flex:1;min-width:0}
 .bib-row .bib-main b{display:block;font-size:13px;font-weight:600}
@@ -547,7 +547,7 @@ body::before{
 .bib-row input:checked + .vbox::after{content:"";width:5px;height:10px;border:solid var(--accent-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .bib-row input:focus-visible + .vbox{outline:2px solid var(--accent);outline-offset:2px}
 .bib-read{flex:none;color:var(--txt3);padding:4px;border-radius:8px}
-.bib-read:hover{color:var(--accent);background:rgba(255,255,255,.06)}
+@media (hover:hover) and (pointer:fine){ .bib-read:hover{color:var(--accent);background:rgba(255,255,255,.06)} }
 /* Suggested-session card at the top of the reading plan */
 .bib-next{background:linear-gradient(135deg,rgba(140,168,255,.18),rgba(167,139,250,.12));
   border:1px solid rgba(140,168,255,.4);border-radius:18px;padding:14px;margin-bottom:12px}
@@ -642,13 +642,13 @@ body::before{
 .ecard.task .ec-title{font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;font-weight:600;font-size:17px;letter-spacing:0;color:var(--txt)}
 .ecard.task .ec-meta > span:nth-child(2){color:var(--txt)!important;font-weight:600}
 .ecard.task .ea{background:rgba(43,39,51,.04);color:var(--txt2);border:1px solid rgba(43,39,51,.10)}
-.ecard.task .ea:hover{background:rgba(43,39,51,.09);color:var(--txt)}
+@media (hover:hover) and (pointer:fine){ .ecard.task .ea:hover{background:rgba(43,39,51,.09);color:var(--txt)} }
 .ecard.task .plabel.normal{background:rgba(43,39,51,.07);color:#5E586A}
 .ecard.task .rem-badge{background:rgba(124,92,214,.10)!important;color:#6B4FC8!important;border-color:rgba(124,92,214,.22)!important}
 .ecard.task.done{opacity:.55}
 .chip.task{background:#EFE8DC!important;color:#3A3542!important;border-color:transparent!important;font-weight:600}
 .ecard.task.past{opacity:.72}
-.ecard.task:hover{border-color:rgba(255,255,255,.8)}
+@media (hover:hover) and (pointer:fine){ .ecard.task:hover{border-color:rgba(255,255,255,.8)} }
 
 .ecard.sport{
   position:relative;
@@ -669,11 +669,121 @@ body::before{
 /* The sport name reads as a small pill rather than loose text. */
 .ecard.sport .ec-meta > span:first-child{
   background:rgba(255,255,255,.08);border-radius:99px;padding:1px 7px;font-weight:600}
-.ecard.sport:hover{border-color:rgba(140,168,255,.34)}
+@media (hover:hover) and (pointer:fine){ .ecard.sport:hover{border-color:rgba(140,168,255,.34)} }
 @media (prefers-reduced-motion:no-preference){ .ecard.sport{transition:border-color .15s} }
 /* Kickoff time: the one place a sport card states when it starts. */
 .ec-kick{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
 .ecard.sport .ec-meta{gap:7px;align-items:baseline}
+
+/* ══ Feel & polish (Emil Kowalski design-engineering + mobile-native rules) ══
+   Small invisible details that make the PWA feel like an installed app. */
+:root{
+  --ease-out:cubic-bezier(0.23,1,0.32,1);       /* strong ease-out for UI */
+  --ease-in-out:cubic-bezier(0.77,0,0.175,1);   /* on-screen movement */
+}
+/* No grey flash over tapped elements on iPhone/Android; every tappable
+   thing below gets its own press state instead. */
+html{-webkit-tap-highlight-color:transparent}
+/* Pop-ups size to the *visible* screen (keyboard, home indicator), not the
+   largest possible viewport. The vh value stays as the fallback. */
+@supports (height:100dvh){ .mbox{max-height:88dvh} }
+/* iOS zooms the page into any text box under 16px. Pinch-zoom is allowed
+   again, so the boxes are 16px on touch screens instead. */
+@media (pointer:coarse){
+  input,textarea,select,.field input,.field select,.field textarea,.th-add input,.wx-loc-bar input{font-size:16px!important}
+}
+/* Controls: instant response, no double-tap delay, no long-press text
+   selection or callout on button labels. */
+button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vopt,.titem{
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* Press feedback: buttons give a little as your finger lands, so the app
+   feels like it heard you before you let go. */
+.btn,.ea,.chat-send,.bib-read{
+  transition:transform 140ms var(--ease-out),background-color 150ms ease,color 150ms ease,border-color 150ms ease}
+.btn:active,.ea:active,.bib-read:active{transform:scale(0.97)}
+.chat-send:active{transform:scale(0.94)}
+.month-day{transition:transform 140ms var(--ease-out),border-color 150ms ease,background-color 150ms ease}
+.month-day:active{transform:scale(0.98)}
+.ecard.sport[onclick]{transition:transform 160ms var(--ease-out),border-color 150ms ease}
+.ecard.sport[onclick]:active{transform:scale(0.99)}
+/* Modals ease in instead of popping: scale from 0.96 (never from 0) plus a
+   fade, centred because a modal isn't anchored to its trigger. */
+@keyframes mbgIn{from{opacity:0}to{opacity:1}}
+@keyframes mboxIn{from{opacity:0;transform:translateY(8px) scale(0.96)}to{opacity:1;transform:none}}
+.mbg.open{animation:mbgIn 180ms ease-out}
+.mbg.open .mbox{animation:mboxIn 240ms var(--ease-out)}
+/* Toast and day-swipe use the stronger curve too. */
+#toast{transition:opacity 200ms var(--ease-out),transform 260ms var(--ease-out)}
+.swipe-l{animation:slideL 220ms var(--ease-out)}
+.swipe-r{animation:slideR 220ms var(--ease-out)}
+/* Personal cards: a soft layered shadow carries the depth instead of a
+   hard outline. */
+.ecard.task{border-color:rgba(255,255,255,.55);
+  box-shadow:0 1px 2px rgba(0,0,0,.18),0 10px 24px -12px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.7) inset}
+/* Reduced motion: keep fades, drop movement and scaling. */
+@media (prefers-reduced-motion:reduce){
+  .btn:active,.ea:active,.bib-read:active,.chat-send:active,.month-day:active,.ecard.sport[onclick]:active{transform:none}
+  .mbg.open .mbox{animation:mbgIn 180ms ease-out}
+}
+
+/* ══ Readability pass (from the Impeccable design checker) ══
+   Contrast to WCAG AA (4.5:1) and an 11px floor for functional text. */
+/* Faint grey secondary text was ~3.6:1 on the dark panels. */
+:root{--txt3:#929DC2}
+.month-day.past-day .mday-num{opacity:.62}
+/* Group name on the cream cards: the group's own colour mixed darker, so
+   "Work" in light green no longer disappears into the paper (was 1.7:1).
+   The coloured spine keeps the original colour. */
+.ecard.task .grp-name{color:var(--txt2)!important}
+@supports (color:color-mix(in srgb,red 50%,blue)){
+  .ecard.task .grp-name{color:color-mix(in srgb,var(--gc) 42%,#201c26)!important}
+}
+/* Priority, reminder and button labels in ink tones that hold up on cream. */
+.ecard.task .plabel.normal{color:#4E4859}
+.ecard.task .plabel.low{background:rgba(43,39,51,.07);color:#4E4859}
+.ecard.task .plabel.high{background:rgba(234,88,12,.12);color:#9A3412}
+.ecard.task .plabel.very{background:rgba(220,38,38,.12);color:#991B1B}
+.ecard.task .rem-badge{color:#5B3FB8!important;background:rgba(91,63,184,.09)!important;border-color:rgba(91,63,184,.22)!important}
+.ecard.task .ea{color:#5E586A}
+/* Sport labels in the month view: lightened toward white (was 3.3:1). */
+@supports (color:color-mix(in srgb,red 50%,blue)){
+  .chip.sport{color:color-mix(in srgb,var(--c) 62%,#fff)!important}
+}
+/* Nothing functional below 11px. */
+.grp-name,.rem-badge,.plabel,.ecard.sport .ec-meta > span:first-child{font-size:11px!important}
+.rem-badge i{font-size:11px!important}
+.wx-hint{font-size:11px}
+#wxLoc{font-size:12px}
+@media (min-width:601px){ .chip{font-size:11px} }
+
+/* ══ Private settings ══ */
+.priv-head{color:var(--txt)}
+.priv-box{border:1px solid var(--border);border-radius:16px;padding:12px;background:rgba(255,255,255,.03)}
+.priv-lead{font-size:12px;color:var(--txt2);margin-bottom:8px;line-height:1.5}
+.priv-msg{font-size:12px;margin-top:8px}
+.priv-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--green)}
+.priv-box > input,.priv-box > div > input{width:100%;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);
+  border:1px solid var(--border);color:var(--txt);font-family:inherit;font-size:14px;outline:none}
+.priv-box > input:focus,.priv-box > div > input:focus{border-color:var(--accent)}
+/* ══ Route map ══ */
+.map-ov{z-index:500}
+.map-box{width:640px;max-width:100%;padding:14px;display:flex;flex-direction:column;gap:10px}
+.map-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.map-head b{font-size:16px;font-weight:650}
+.map-sub{font-size:12px;color:var(--txt2);margin-top:2px}
+.rmap{height:min(56vh,420px);min-height:240px;border-radius:14px;overflow:hidden;background:#0d1224;position:relative}
+.rmap-wait{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:var(--txt2);padding:16px;text-align:center}
+.rinfo{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rstat{font-size:12px;color:var(--txt2);background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:99px;padding:4px 10px}
+.rstat b{color:var(--txt);font-weight:650}
+.rstat.lv{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fbbf24}
+.rstat.lv b{color:#fcd34d}
+.rnote{flex-basis:100%;font-size:12px;color:var(--txt2);line-height:1.5}
+.racts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.racts a.btn{text-decoration:none}
+.map-inline{margin-left:4px;vertical-align:middle}
+.leaflet-container{font-family:inherit;background:#0d1224}
+.leaflet-control-attribution{font-size:10px}
 </style>
 </head>
 <body>
@@ -828,14 +938,11 @@ function saveState(){
         sportEvents: (S.sportEvents||[]).filter(e=>e.source!=='auto'),
         groups: S.groups,
         settings:{
-          tgToken: S.tgToken||'',
-          tgChatId: S.tgChatId||'',
           tgMorningHour: S.tgMorningHour||'08',
           tgMorningMin: S.tgMorningMin||'00',
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
-          apiFootballKey: S.apiFootballKey||'', footballDataKey: S.footballDataKey||'', highlightlyKey: S.highlightlyKey||'', tsdbKey: S.tsdbKey||'123',
           leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10,
-          trafficPct: S.trafficPct!=null?S.trafficPct:20, orsKey: S.orsKey||'',
+          trafficPct: S.trafficPct!=null?S.trafficPct:20,
           birthday: S.birthday||'',
           widgets: Array.isArray(S.widgets)?S.widgets:null
         }
@@ -949,7 +1056,8 @@ async function loadFromServer(){
       follows: d.follows || {teams:[],competitions:[]},
       travelCache: d.travelCache || {},
       widgets: Array.isArray(d.settings?.widgets) ? d.settings.widgets : null,
-      homeAddress: d.settings?.homeAddress || '',
+      hasHome: !!d.settings?.hasHome,
+      privateSet: !!d.settings?.privateSet,
       birthday: d.settings?.birthday || '',
       trafficPct: d.settings?.trafficPct != null ? d.settings.trafficPct : 20,
       orsKey: d.settings?.orsKey || '',
@@ -1307,7 +1415,7 @@ function renderCard(ev){
   const col=getGroup(ev.group).color;
   const gName=getGroup(ev.group).name;
   const pri=ev.priority||'normal';
-  let meta='<span style="color:'+col+';font-size:9px">'+gName+'</span>';
+  let meta='<span class="grp-name" style="--gc:'+col+';color:'+col+';font-size:9px">'+gName+'</span>';
   meta+='<span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
   if(ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
   meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
@@ -1316,6 +1424,7 @@ function renderCard(ev){
   let acts='';
   acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\',\''+(ev._occDate||ev.date)+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
+  if(ev.location) acts+='<button class="ea" onclick="openRouteMapFor(\''+ev.id+'\')"><i class="ti ti-map-2"></i>Map</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
   return '<div class="ecard task'+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'">'+
@@ -1425,6 +1534,7 @@ function renderSportCard(ev){
   // the user specifically follows, so it should stand out.
   if(hasTeams){
     let acts='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
+    if(ev.location) acts+='<button class="ea" onclick="event.stopPropagation();openRouteMapFor(\''+ev.id+'\')"><i class="ti ti-map-2"></i>Map</button>';
     if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
     return '<div class="ecard sport" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer;padding:14px;border:1px solid '+col+'55;background:linear-gradient(135deg,'+col+'14,var(--bg2))">'+
       '<div class="ec-top"><div class="ec-bar" style="background:'+col+';width:4px"></div>'+
@@ -1453,7 +1563,8 @@ function renderSportCard(ev){
   }
   const badges = badgeImg(ev.competitionLogo,ev.name,col);
   let acts='<button class="ea" onclick="showSportDetail(\''+ev.id+'\')"><i class="ti ti-info-circle"></i>Details</button>';
-  if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
+  if(ev.location) acts+='<button class="ea" onclick="event.stopPropagation();openRouteMapFor(\''+ev.id+'\')"><i class="ti ti-map-2"></i>Map</button>';
+    if(ev.source!=='auto') acts+='<button class="ea red" onclick="delSport(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
   return '<div class="ecard sport" onclick="showSportDetail(\''+ev.id+'\')" style="cursor:pointer">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div style="display:flex;align-items:center;gap:8px;flex:1">'+badges+
@@ -1542,7 +1653,7 @@ function renderCal(){
         const isDone = ev._type==='task' && ev.done;
         const cls = 'chip'+(isSport?' sport':' task')+(isPast?' past':'')+(isDone?' done':'');
         const tip = escHtml(ev.name)+(isDone?' — done':(isPast?' — past':''));
-        return '<div class="'+cls+'" style="background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+tip+'">'+icon+escHtml(ev.name)+'</div>';
+        return '<div class="'+cls+'" style="--c:'+col+';background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+tip+'">'+icon+escHtml(ev.name)+'</div>';
       }).join('');
       if(evs.length>maxChips)chips+='<div class="mday-more">+'+(evs.length-maxChips)+' more…</div>';
       html+='<div class="month-day'+(c.other?' other-month':'')+(ds<TODAY?' past-day':'')+(isToday?' today':'')+(isSel&&!isToday?' selected':'')+(evs.length?' has-events':'')+'" onclick="selectDay(\''+ds+'\')">';
@@ -1607,7 +1718,7 @@ function evForm(ev){
     '<div class="field"><label>Date</label><input type="date" id="fd" value="'+(ev?ev.date:TODAY)+'"></div>'+
     '<div class="field"><label>Journey <span style="font-weight:400;color:var(--txt3)">\u2014 optional, enables a \u201cleave by\u201d warning</span></label>'+
       '<div class="jrow"><span class="jlbl">From</span>'+
-        '<input id="ffrom" value="'+(ev&&ev.travelFrom?escHtml(ev.travelFrom):'')+'" placeholder="'+escHtml(S.homeAddress||S.homeName||'your saved starting address')+'" autocomplete="off" onchange="previewTravel()">'+
+        '<input id="ffrom" value="'+(ev&&ev.travelFrom?escHtml(ev.travelFrom):'')+'" placeholder="'+escHtml(S.hasHome?'your saved starting address':'your town centre (set a home under Settings \u2192 Private)')+'" autocomplete="off" onchange="previewTravel()">'+
       '</div>'+
       '<div class="jrow"><span class="jlbl">To</span>'+
         '<input id="floc" value="'+(ev&&ev.location?escHtml(ev.location):'')+'" placeholder="Street and town, e.g. Str. Gheorghe Laz\u0103r 12, Timi\u0219oara" autocomplete="off" onchange="previewTravel()">'+
@@ -1983,13 +2094,7 @@ function openSettings(){
     '<div class="slabel">Groups</div>'+
     '<div>'+S.groups.map(g=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="width:10px;height:10px;border-radius:50%;background:'+g.color+';flex-shrink:0;display:inline-block"></span><span style="flex:1;font-size:13px">'+escHtml(g.name)+'</span><button class="btn sm" onclick="editGroup(\''+g.id+'\')"><i class="ti ti-edit"></i></button><button class="btn sm red" onclick="delGroup(\''+g.id+'\')"><i class="ti ti-trash"></i></button></div>').join('')+'</div>'+
     '<button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="newGroup()"><i class="ti ti-plus"></i> New group</button>'+
-    '<div class="slabel" style="margin-top:14px"><i class="ti ti-ball-football"></i> Sport data & follows</div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-bottom:4px">football-data.org key — powers Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League and 6 other major competitions:</div>'+
-    '<div style="display:flex;gap:6px;margin-bottom:8px"><input id="fdKIn" value="'+(S.footballDataKey||'')+'" placeholder="football-data.org key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.footballDataKey=document.getElementById(\'fdKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-bottom:10px">Free key at <a href="https://www.football-data.org/client/register" target="_blank" style="color:var(--accent)">football-data.org</a>.</div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin-bottom:4px">Highlightly key — powers Football & Handball TEAMS/national squads (any club worldwide) plus Handball competitions:</div>'+
-    '<div style="display:flex;gap:6px"><input id="hlKIn" value="'+(S.highlightlyKey||'')+'" placeholder="Highlightly API key…" style="flex:1;padding:7px 9px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--txt);font-size:12px;outline:none"><button class="btn sm acc" onclick="S.highlightlyKey=document.getElementById(\'hlKIn\').value.trim();saveState();openSettings()">Save</button></div>'+
-    '<div style="font-size:10px;color:var(--txt3);margin:4px 0 10px">Free key (100 req/day, shared across sports) at <a href="https://highlightly.net/sport-api/" target="_blank" style="color:var(--accent)">highlightly.net</a>.</div>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-ball-football"></i> Sport follows</div>'+
     '<button class="btn" style="width:100%;justify-content:center" onclick="openFollowManager()"><i class="ti ti-star"></i> Manage followed teams & competitions</button>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-book"></i> Bible reading plan</div>'+
     '<div id="biblePlanInfo" style="font-size:11px;color:var(--txt2);margin-bottom:8px">Checking\u2026</div>'+
@@ -2005,32 +2110,16 @@ function openSettings(){
     '<div style="font-size:10px;color:var(--txt3);margin-top:5px">Chapters are never split, so each day gives you at least your target. Every reading links to the passage in the T4T text on eBible.org.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-car"></i> Travel &amp; leave-by</div>'+
     '<div style="font-size:10px;color:var(--txt3);margin-bottom:8px">When an event has a location, you get an extra reminder telling you when to set off.</div>'+
-    '<div class="field"><label>Starting address</label>'+
-      '<div style="display:flex;gap:6px">'+
-        '<input id="homeAddr" style="flex:1" placeholder="Str. \u2026, Lugoj" value="'+escHtml(S.homeAddress||'')+'" autocomplete="off">'+
-        '<button type="button" class="btn sm acc" onclick="saveHome()">Save</button>'+
-      '</div>'+
-      '<div id="homeInfo" style="font-size:10px;color:var(--txt3);margin-top:5px">'+
-        (S.homeName ? '\ud83d\udccd '+escHtml(S.homeName) : 'Not set \u2014 journeys start from the middle of <b>'+escHtml(S.wxLocName||'your town')+'</b>, which can be a km or two out.')+
-      '</div>'+
-      '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Give a street and number for door-to-door times, including trips within the same city.</div>'+
-    '</div>'+
     '<label class="vopt" style="border:none;padding:4px 0"><input type="checkbox" id="setLeaveBy"'+(S.leaveBy!==false?' checked':'')+' onchange="saveTravelSettings()"><span class="vbox"></span><span><b>Leave-by reminders</b><br><small>Uses a free routing service; falls back to an estimate if it\u2019s unavailable</small></span></label>'+
     '<div class="field" style="margin-top:6px"><label>Traffic allowance <span style="font-weight:400;color:var(--txt3)">\u2014 routers quote free-flow speeds, which run optimistic in town</span></label>'+
       '<select id="setTrafficPct" onchange="saveTravelSettings()">'+
         [0,10,20,30,40,50].map(n=>'<option value="'+n+'"'+((S.trafficPct!=null?S.trafficPct:20)==n?' selected':'')+'>'+(n===0?'None':'+'+n+'%')+'</option>').join('')+
       '</select></div>'+
-    '<div class="field" style="margin-top:6px"><label>OpenRouteService key <span style="font-weight:400;color:var(--txt3)">\u2014 optional</span></label>'+
-      '<div style="display:flex;gap:6px">'+
-        '<input id="setOrsKey" style="flex:1" value="'+escHtml(S.orsKey||'')+'" placeholder="Paste a free key for proper walking/cycling routes" autocomplete="off">'+
-        '<button type="button" class="btn sm acc" onclick="saveTravelSettings()">Save</button>'+
-      '</div>'+
-      '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Without a key, walking and cycling times are worked out from the road distance \u2014 close, but they ignore footpaths and shortcuts. A free key at <a href="https://openrouteservice.org/dev/#/signup" target="_blank" rel="noopener" style="color:var(--accent)">openrouteservice.org</a> gives real pedestrian and cycle routing.</div>'+
-    '</div>'+
     '<div class="field" style="margin-top:6px"><label>Extra time to spare</label>'+
       '<select id="setLeaveBuffer" onchange="saveTravelSettings()">'+
         [0,5,10,15,20,30].map(n=>'<option value="'+n+'"'+((S.leaveBuffer!=null?S.leaveBuffer:10)==n?' selected':'')+'>'+(n===0?'None':n+' min')+'</option>').join('')+
       '</select></div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-top:-2px">Your starting address and routing key are under <b>Private</b> below.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-bell"></i> Notifications on this device</div>'+
     '<div id="pushStatus" style="font-size:11px;color:var(--txt2);margin-bottom:6px">Checking\u2026</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:4px">'+
@@ -2054,6 +2143,104 @@ function openSettings(){
       '<b>Desktop:</b> look for the install icon in the address bar.'+
     '</div>'+
     '<div id="installHint" style="font-size:10px;color:var(--txt2);margin-top:5px"></div>'+
+    '<div class="slabel priv-head" style="margin-top:18px"><i class="ti ti-lock"></i> Private</div>'+
+    '<div id="privBox" class="priv-box"><div style="font-size:11px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Checking…</div></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  refreshPushStatus(); // fill in whether push is active on this device
+  refreshBiblePlan();
+  refreshVersionInfo();
+  renderPrivBox();
+}
+
+// ─── PRIVATE SETTINGS ─────────────────────────────────────
+// API keys, the home address, backups and the Claude link live behind a
+// password. The server never sends these in /api/data; unlocking returns a
+// 30-minute token that is kept for this session only.
+let _privTok = null, P = {};
+try{ _privTok = sessionStorage.getItem('org:privTok') || null; }catch(e){}
+function setPrivTok(t){
+  _privTok = t || null;
+  try{ if(t) sessionStorage.setItem('org:privTok', t); else sessionStorage.removeItem('org:privTok'); }catch(e){}
+}
+// Every same-origin API call carries the token while unlocked, so the
+// existing backup/restore/connector code needs no changes of its own.
+(function(){
+  const orig = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    try{
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if(_privTok && (url.startsWith('/api/') || url.startsWith(location.origin + '/api/'))){
+        init = { ...(init||{}) };
+        const h = new Headers(init.headers || {});
+        h.set('X-Private-Token', _privTok);
+        init.headers = h;
+      }
+    }catch(e){}
+    return orig(input, init);
+  };
+})();
+
+async function renderPrivBox(msg){
+  const box = document.getElementById('privBox'); if(!box) return;
+  let st = { hasPassword:false, unlocked:false };
+  try{ st = await (await fetch('/api/private/status')).json(); }catch(e){
+    box.innerHTML = '<div style="font-size:11px;color:var(--red)">Couldn’t reach the server.</div>'; return;
+  }
+  if(!st.unlocked && _privTok) setPrivTok(null);       // expired
+  const note = msg ? '<div class="priv-msg">'+msg+'</div>' : '';
+  if(!st.hasPassword){
+    box.innerHTML =
+      '<div class="priv-lead">Set a password to protect your API keys, home address, backups and the Claude connector link.</div>'+
+      '<input id="privPw" type="password" placeholder="New password (at least 6 characters)" autocomplete="new-password">'+
+      '<input id="privPw2" type="password" placeholder="Repeat it" autocomplete="new-password" style="margin-top:6px" onkeydown="if(event.key===\'Enter\')privSetup()">'+
+      '<button class="btn acc" style="width:100%;justify-content:center;margin-top:8px" onclick="privSetup()"><i class="ti ti-lock"></i> Set password</button>'+note;
+    return;
+  }
+  if(!st.unlocked){
+    box.innerHTML =
+      '<div class="priv-lead">Keys, home address, backups and the Claude link are locked.</div>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="privPw" type="password" placeholder="Password" autocomplete="current-password" style="flex:1" onkeydown="if(event.key===\'Enter\')privUnlock()">'+
+        '<button class="btn acc" onclick="privUnlock()"><i class="ti ti-lock-open"></i> Unlock</button>'+
+      '</div>'+note;
+    setTimeout(()=>{ const i=document.getElementById('privPw'); if(i && matchMedia('(pointer:fine)').matches) i.focus(); }, 60);
+    return;
+  }
+  try{ P = await (await fetch('/api/private')).json(); }catch(e){ P = {}; }
+  if(P.locked){ setPrivTok(null); return renderPrivBox(); }
+  const keyRow = (label, id, key, ph, help) =>
+    '<div class="field" style="margin-top:6px"><label>'+label+'</label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="'+id+'" type="password" style="flex:1" value="'+escHtml(P[key]||'')+'" placeholder="'+ph+'" autocomplete="off">'+
+        '<button type="button" class="btn sm" onclick="privToggle(\''+id+'\',this)" aria-label="Show"><i class="ti ti-eye"></i></button>'+
+        '<button type="button" class="btn sm acc" onclick="savePrivKey(\''+key+'\',\''+id+'\')">Save</button>'+
+      '</div>'+(help?'<div style="font-size:10px;color:var(--txt3);margin-top:4px">'+help+'</div>':'')+'</div>';
+  box.innerHTML =
+    '<div class="priv-bar"><span><i class="ti ti-lock-open"></i> Unlocked for 30 minutes</span>'+
+      '<button class="btn sm" onclick="privLock()"><i class="ti ti-lock"></i> Lock now</button></div>'+note+
+    '<div class="slabel" style="margin-top:10px"><i class="ti ti-key"></i> Sport data keys</div>'+
+    keyRow('football-data.org key','fdKIn','footballDataKey','football-data.org key…',
+      'Powers Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League and more. Free key at <a href="https://www.football-data.org/client/register" target="_blank" rel="noopener" style="color:var(--accent)">football-data.org</a>.')+
+    keyRow('Highlightly key','hlKIn','highlightlyKey','Highlightly API key…',
+      'Football &amp; handball teams and national squads, plus handball competitions. Free key (100 requests/day) at <a href="https://highlightly.net/sport-api/" target="_blank" rel="noopener" style="color:var(--accent)">highlightly.net</a>.')+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-home"></i> Starting address &amp; routing</div>'+
+    '<div class="field"><label>Starting address</label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="homeAddr" style="flex:1" placeholder="Str. \u2026, Lugoj" value="'+escHtml(P.homeAddress||'')+'" autocomplete="off">'+
+        '<button type="button" class="btn sm acc" onclick="saveHome()">Save</button>'+
+      '</div>'+
+      '<div id="homeInfo" style="font-size:10px;color:var(--txt3);margin-top:5px">'+
+        (P.homeName ? '\ud83d\udccd '+escHtml(P.homeName) : 'Not set \u2014 journeys start from the middle of <b>'+escHtml(S.wxLocName||'your town')+'</b>, which can be a km or two out.')+
+      '</div>'+
+      '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Give a street and number for door-to-door times, including trips within the same city.</div>'+
+    '</div>'+
+    '<div class="field" style="margin-top:6px"><label>OpenRouteService key <span style="font-weight:400;color:var(--txt3)">\u2014 optional</span></label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<input id="setOrsKey" style="flex:1" type="password" value="'+escHtml(P.orsKey||'')+'" placeholder="Paste a free key for proper walking/cycling routes" autocomplete="off">'+
+        '<button type="button" class="btn sm acc" onclick="savePrivKey(\'orsKey\',\'setOrsKey\')">Save</button>'+
+      '</div>'+
+      '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Without a key, walking and cycling times are worked out from the road distance \u2014 close, but they ignore footpaths and shortcuts. A free key at <a href="https://openrouteservice.org/dev/#/signup" target="_blank" rel="noopener" style="color:var(--accent)">openrouteservice.org</a> gives real pedestrian and cycle routing.</div>'+
+    '</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-database"></i> Backup & restore</div>'+
     '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">A snapshot is saved automatically on the 1st of each month. The last '+6+' are kept here, and you can also save copies to a folder on this PC (below).</div>'+
     '<div style="display:flex;gap:6px;margin-bottom:6px">'+
@@ -2083,13 +2270,61 @@ function openSettings(){
     '</div>'+
     '<div style="font-size:10px;color:var(--yellow);margin-top:5px">Treat this address like a password \u2014 anyone who has it can read and change your data.</div>'+
     '<div style="margin-top:6px"><button class="btn sm red" onclick="rotateMcpUrl()"><i class="ti ti-refresh"></i> Generate a new address</button></div>'+
-    '<div id="mcpStatus" style="font-size:11px;margin-top:5px"></div>',
-    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
-  refreshPushStatus(); // fill in whether push is active on this device
-  refreshBiblePlan();
+    '<div id="mcpStatus" style="font-size:11px;margin-top:5px"></div>' +
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-shield-lock"></i> Change password</div>'+
+    '<input id="privCur" type="password" placeholder="Current password" autocomplete="current-password">'+
+    '<input id="privNew" type="password" placeholder="New password (at least 6 characters)" autocomplete="new-password" style="margin-top:6px">'+
+    '<button class="btn sm" style="width:100%;justify-content:center;margin-top:6px" onclick="privChange()"><i class="ti ti-refresh"></i> Change password</button>';
   refreshFsInfo();
   refreshMcpInfo();
-  refreshVersionInfo();
+}
+function privToggle(id, btn){
+  const i = document.getElementById(id); if(!i) return;
+  const show = i.type === 'password';
+  i.type = show ? 'text' : 'password';
+  btn.innerHTML = '<i class="ti ti-eye'+(show?'-off':'')+'"></i>';
+}
+async function privPost(url, body){
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{}) });
+  let d = {}; try{ d = await r.json(); }catch(e){}
+  if(!r.ok && !d.error) d.error = 'Request failed ('+r.status+')';
+  return d;
+}
+async function privSetup(){
+  const a = (document.getElementById('privPw')||{}).value||'', b = (document.getElementById('privPw2')||{}).value||'';
+  if(a.length < 6) return renderPrivBox('<span style="color:var(--red)">Use at least 6 characters.</span>');
+  if(a !== b) return renderPrivBox('<span style="color:var(--red)">The two passwords don’t match.</span>');
+  const d = await privPost('/api/private/setup', { password:a });
+  if(d.error) return renderPrivBox('<span style="color:var(--red)">'+escHtml(d.error)+'</span>');
+  setPrivTok(d.token);
+  renderPrivBox('<span style="color:var(--green)">✅ Password set. Keep it somewhere safe.</span>');
+}
+async function privUnlock(){
+  const pw = (document.getElementById('privPw')||{}).value||'';
+  if(!pw) return;
+  const d = await privPost('/api/private/unlock', { password:pw });
+  if(d.error) return renderPrivBox('<span style="color:var(--red)">'+escHtml(d.error)+'</span>');
+  setPrivTok(d.token);
+  renderPrivBox();
+}
+async function privLock(){
+  try{ await privPost('/api/private/lock'); }catch(e){}
+  setPrivTok(null); P = {};
+  renderPrivBox();
+}
+async function privChange(){
+  const cur = (document.getElementById('privCur')||{}).value||'', nw = (document.getElementById('privNew')||{}).value||'';
+  const d = await privPost('/api/private/password', { current:cur, password:nw });
+  if(d.error) return renderPrivBox('<span style="color:var(--red)">'+escHtml(d.error)+'</span>');
+  setPrivTok(d.token);
+  renderPrivBox('<span style="color:var(--green)">✅ Password changed.</span>');
+}
+async function savePrivKey(key, inputId){
+  const v = ((document.getElementById(inputId)||{}).value||'').trim();
+  const d = await privPost('/api/private', { [key]: v });
+  if(d.error) return renderPrivBox('<span style="color:var(--red)">'+escHtml(d.error)+'</span>');
+  if(key === 'orsKey') renderAll();
+  renderPrivBox('<span style="color:var(--green)">✅ Saved.</span>');
 }
 function newGroup(){
   _tc=PAL[Math.floor(Math.random()*PAL.length)];
@@ -3467,7 +3702,7 @@ async function saveHome(){
   try{
     const d=await (await fetch('/api/home?q='+encodeURIComponent(q))).json();
     if(d.error){ info.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
-    S.homeAddress=q; S.homeName=d.name;
+    P.homeAddress=q; P.homeName=d.name;
     info.innerHTML='\u2705 \ud83d\udccd '+escHtml(d.name)+(d.precise?'':' <span style="color:var(--yellow)">(town level \u2014 add a street number)</span>');
     await loadFromServer(); renderAll();
   }catch(e){ info.innerHTML='<span style="color:var(--red)">Lookup failed.</span>'; }
@@ -3477,7 +3712,6 @@ function saveTravelSettings(){
   S.leaveBy = document.getElementById('setLeaveBy').checked;
   S.leaveBuffer = parseInt(document.getElementById('setLeaveBuffer').value);
   const tp=document.getElementById('setTrafficPct'); if(tp) S.trafficPct = parseInt(tp.value);
-  const ok=document.getElementById('setOrsKey');     if(ok) S.orsKey = ok.value.trim();
   saveState();
   // Journeys were cached with the old settings, so drop them.
   fetch('/api/travel/clear',{method:'POST'}).catch(()=>{});
@@ -3512,7 +3746,7 @@ async function previewTravel(force){
     const mins=parseInt((document.getElementById('fmins')||{}).value);
     if(!mins){ out.innerHTML='<span style="color:var(--txt3)">Enter how long the journey takes and the leave-by time follows.</span>'; return; }
     const leave=t?leaveTimeFor(t.value,mins):null;
-    out.innerHTML=cfg.emoji+' '+reminderLabelTxt(mins)+' by '+cfg.label.toLowerCase()+(leave?' \u2014 leave by <b>'+leave+'</b>':'');
+    out.innerHTML=cfg.emoji+' '+reminderLabelTxt(mins)+' by '+cfg.label.toLowerCase()+(leave?' \u2014 leave by <b>'+leave+'</b>':'')+mapBtnHtml();
     return;
   }
   out.innerHTML='<i class="ti ti-loader-2"></i> Checking the journey\u2026';
@@ -3528,8 +3762,129 @@ async function previewTravel(force){
       (d.trafficPct?' <span style="color:var(--txt3)">incl. +'+d.trafficPct+'% traffic</span>':'')+
       (d.precise===false||d.fromPrecise===false?' <span style="color:var(--yellow)">(town centre \u2014 add a street for accuracy)</span>':'')+
       (d.fromName&&d.fromPlace?' <span style="color:var(--txt3)">from '+escHtml(d.fromName)+'</span>':'')+
-      (leave?' \u2014 leave by <b>'+leave+'</b>':'');
+      (leave?' \u2014 leave by <b>'+leave+'</b>':'')+mapBtnHtml();
   }catch(e){ out.innerHTML='<span style="color:var(--red)">Could not check travel time.</span>'; }
+}
+// ─── ROUTE MAP ───────────────────────────────────────────
+// A map of the journey behind a "leave by" warning: start, destination and
+// the route the time was worked out from. Leaflet (open-source) loads only
+// the first time a map is opened; tiles are OpenStreetMap data via CARTO.
+let _leafletP = null, _rmap = null;
+function loadLeaflet(){
+  if(window.L) return Promise.resolve();
+  if(_leafletP) return _leafletP;
+  _leafletP = new Promise((resolve, reject) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+    js.onload = () => resolve();
+    js.onerror = () => { _leafletP = null; reject(new Error('The map could not load — check your connection.')); };
+    document.head.appendChild(js);
+  });
+  return _leafletP;
+}
+function mapBtnHtml(){
+  return ' <button type="button" class="btn sm map-inline" onclick="mapFromForm()"><i class="ti ti-map-2"></i> Map</button>';
+}
+function mapFromForm(){
+  const v = id => ((document.getElementById(id)||{}).value||'').trim();
+  openRouteMap({ to:v('floc'), from:v('ffrom'), name:v('fn'), time:v('ft'),
+    mode:(document.querySelector('#fmode input:checked')||{}).value||'drive', mins:parseInt(v('fmins'))||null });
+}
+function openRouteMapFor(id){
+  const ev = (S.tasks||[]).find(t=>t.id===id) || (S.sportEvents||[]).find(e=>e.id===id);
+  if(!ev || !ev.location) return;
+  openRouteMap({ to:ev.location, from:ev.travelFrom||'', name:ev.name, time:ev.time,
+    mode:ev.travelMode||'drive', mins:parseInt(ev.travelMins)||null });
+}
+function closeRouteMap(){
+  const ov = document.getElementById('mapOv');
+  if(_rmap){ try{ _rmap.remove(); }catch(e){} _rmap = null; }
+  if(ov) ov.remove();
+  document.removeEventListener('keydown', _mapEsc, true);
+}
+function _mapEsc(e){ if(e.key === 'Escape'){ e.stopPropagation(); closeRouteMap(); } }
+async function openRouteMap(o){
+  if(!o || !o.to) return;
+  closeRouteMap();
+  const cfg = TRAVEL_MODES[o.mode] || TRAVEL_MODES.drive;
+  const ov = document.createElement('div');
+  ov.id = 'mapOv'; ov.className = 'mbg open map-ov';
+  ov.innerHTML =
+    '<div class="mbox map-box" role="dialog" aria-label="Route map">'+
+      '<div class="map-head"><div><b>'+escHtml(o.name||'Journey')+'</b>'+
+        '<div class="map-sub">'+cfg.emoji+' '+escHtml(cfg.label)+' · to '+escHtml(o.to)+'</div></div>'+
+        '<button class="btn sm ico" onclick="closeRouteMap()" aria-label="Close"><i class="ti ti-x"></i></button></div>'+
+      '<div id="rmap" class="rmap"><div class="rmap-wait"><i class="ti ti-loader-2"></i> Finding the route…</div></div>'+
+      '<div id="rinfo" class="rinfo"></div>'+
+      '<div id="racts" class="racts"></div>'+
+    '</div>';
+  ov.addEventListener('pointerdown', e => { if(e.target === ov) ov._down = true; });
+  ov.addEventListener('click', e => { if(e.target === ov && ov._down) closeRouteMap(); ov._down = false; });
+  document.body.appendChild(ov);
+  document.addEventListener('keydown', _mapEsc, true);
+
+  let d;
+  try{
+    const qs = 'to='+encodeURIComponent(o.to)+'&mode='+encodeURIComponent(o.mode||'drive')+(o.from?'&from='+encodeURIComponent(o.from):'');
+    [d] = await Promise.all([ fetch('/api/travel/map?'+qs).then(r=>r.json()), loadLeaflet() ]);
+  }catch(e){ d = { error: e.message }; }
+  if(!document.getElementById('mapOv')) return;        // closed meanwhile
+  const box = document.getElementById('rmap');
+  if(d.error){
+    box.innerHTML = '<div class="rmap-wait" style="color:var(--red)">'+escHtml(d.error)+'</div>';
+    document.getElementById('racts').innerHTML = '<span class="msp"></span><button class="btn acc" onclick="closeRouteMap()">Close</button>';
+    return;
+  }
+  box.innerHTML = '';
+  const map = _rmap = L.map(box, { zoomControl:true, attributionControl:true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom:19, subdomains:'abcd',
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
+  }).addTo(map);
+  const pts = [];
+  const to = [d.to.lat, d.to.lon]; pts.push(to);
+  const from = d.from && d.from.lat != null ? [d.from.lat, d.from.lon] : null;
+  if(d.line && d.line.length > 1){
+    L.polyline(d.line, { color:'#0b1022', weight:9, opacity:.55 }).addTo(map);
+    L.polyline(d.line, { color:'#8CA8FF', weight:5, opacity:.95 }).addTo(map);
+    d.line.forEach(p => pts.push(p));
+  } else if(from){
+    // No router for this mode: a dashed straight line, honestly labelled.
+    L.polyline([from, to], { color:'#8CA8FF', weight:3, dashArray:'6 8', opacity:.8 }).addTo(map);
+  }
+  if(from){
+    pts.push(from);
+    L.circleMarker(from, { radius:8, color:'#0b1022', weight:3, fillColor:'#34d399', fillOpacity:1 })
+      .addTo(map).bindTooltip('Start'+(d.from.name?': '+escHtml(d.from.name):''));
+  }
+  L.circleMarker(to, { radius:9, color:'#0b1022', weight:3, fillColor:'#F6F1E8', fillOpacity:1 })
+    .addTo(map).bindTooltip(escHtml(d.to.name||o.to), { permanent:false });
+  if(pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding:[28,28], maxZoom:16 });
+  else map.setView(to, 15);
+  setTimeout(() => { try{ map.invalidateSize(); if(pts.length>1) map.fitBounds(L.latLngBounds(pts), { padding:[28,28], maxZoom:16 }); }catch(e){} }, 260);
+
+  const mins = cfg.manual ? o.mins : d.mins;
+  const leave = (o.time && mins) ? leaveTimeFor(o.time, mins) : null;
+  document.getElementById('rinfo').innerHTML =
+    (mins ? '<span class="rstat"><b>'+reminderLabelTxt(mins)+'</b> '+escHtml(cfg.label.toLowerCase())+'</span>' : '')+
+    (d.km ? '<span class="rstat"><b>'+d.km+'</b> km</span>' : '')+
+    (leave ? '<span class="rstat lv">Leave by <b>'+leave+'</b></span>' : '')+
+    '<div class="rnote">'+
+      (from ? 'From '+escHtml(d.from.name||'your start')+' to '+escHtml(d.to.name||o.to)+'.' : 'Destination: '+escHtml(d.to.name||o.to)+'. No starting point set.')+
+      (d.estimated ? ' Route unavailable — times are an estimate.' : '')+
+      (cfg.manual ? ' Bus/train routes aren’t mapped, so the line is a straight guide.' : '')+
+      (d.derived ? ' The road route is shown; footpaths may be shorter.' : '')+
+    '</div>';
+  const gm = { drive:'driving', taxi:'driving', walk:'walking', bike:'bicycling', transit:'transit', custom:'driving' }[o.mode] || 'driving';
+  const gUrl = 'https://www.google.com/maps/dir/?api=1'+(from?'&origin='+from.join(','):'')+'&destination='+to.join(',')+'&travelmode='+gm;
+  const wUrl = 'https://waze.com/ul?ll='+to.join(',')+'&navigate=yes';
+  document.getElementById('racts').innerHTML =
+    '<a class="btn sm" href="'+gUrl+'" target="_blank" rel="noopener"><i class="ti ti-brand-google-maps"></i> Google Maps</a>'+
+    ((o.mode==='drive'||o.mode==='taxi') ? '<a class="btn sm" href="'+wUrl+'" target="_blank" rel="noopener"><i class="ti ti-navigation"></i> Waze</a>' : '')+
+    '<span class="msp"></span><button class="btn acc" onclick="closeRouteMap()">Close</button>';
 }
 function reminderLabelTxt(m){
   m=parseInt(m);
@@ -3811,7 +4166,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-09-ivory-tasks';
+const APP_BUILD='2026-10-12-map-private';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
