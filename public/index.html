@@ -789,6 +789,55 @@ button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vop
    being cut off with "…"; personal titles are a touch smaller to fit. */
 .ec-title{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.25}
 .ecard.task .ec-title{font-size:15.5px;line-height:1.28;text-wrap:pretty}
+
+/* Day heading can be longer now ("14 Oct - Wednesday"): never push the
+   date arrows off the row. */
+.lp-head h2{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:8px}
+
+/* Light OpenStreetMap tiles (no CARTO key): keep the markers readable. */
+.rmap.rmap-light{background:#e9e5dc}
+
+/* ══ Concerts widget ══ */
+.cc-body{font-size:13px}
+.cc-note{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#fbbf24;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.cc-msg{font-size:12px;margin:0 0 10px;color:var(--txt2)}
+.cc-input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit;font-size:14px;outline:none}
+.cc-input:focus{border-color:var(--accent)}
+.cc-results{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.cc-res{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:rgba(255,255,255,.04)}
+.cc-res img,.cc-noimg{width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,.06);display:grid;place-items:center;color:var(--txt3)}
+.cc-res-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.cc-res-main b{font-weight:600}
+.cc-res-main small{font-size:11px;color:var(--txt3)}
+.cc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cc-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 4px;border-radius:99px;background:rgba(244,114,182,.12);border:1px solid rgba(244,114,182,.3);color:#fbcfe8;font-size:12px}
+.cc-chip img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+.cc-chip > .ti{width:22px;text-align:center}
+.cc-chip button{border:none;background:rgba(255,255,255,.08);color:inherit;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:12px}
+.cc-empty{font-size:12px;color:var(--txt3);padding:6px 0}
+.cc-sub{font-weight:400;color:var(--txt3);font-size:11px;margin-left:6px}
+.cc-month{font-size:11px;font-weight:650;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 6px}
+.cc-row{display:flex;gap:12px;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:6px}
+.cc-row.in{border-color:rgba(244,114,182,.4);background:rgba(244,114,182,.07)}
+.cc-date{width:42px;flex-shrink:0;text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:2px}
+.cc-date b{font-size:20px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.cc-date span{font-size:11px;color:var(--txt3);margin-top:3px}
+.cc-main{flex:1;min-width:0}
+.cc-artist{font-weight:650}
+.cc-where{font-size:12px;color:var(--txt2);margin-top:1px}
+.cc-when{font-size:11px;color:var(--txt3);margin-top:1px}
+.cc-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.cc-acts a.btn{text-decoration:none}
+.cc-incal{font-size:11px;color:#f9a8d4;display:inline-flex;align-items:center;gap:3px}
+.cc-foot{font-size:11px;color:var(--txt3);margin-top:12px;line-height:1.5}
+/* Concert events in the calendar: the cream personal card with a music
+   accent, so they're recognisable at a glance. */
+.ecard.task.concert{background:linear-gradient(180deg,#F8EEF2,#F0E3E8)}
+
+/* Longer reminders: "Earlier: [2] [days] + Add" under the reminder chips. */
+.rem-add{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.rem-add-l{font-size:12px;color:var(--txt2)}
+.rem-add select{width:auto;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit}
 </style>
 </head>
 <body>
@@ -840,7 +889,6 @@ button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vop
     <h2 id="lpTitle">Today</h2>
     <div class="day-nav">
       <button class="btn ghost ico sm" onclick="shiftDay(-1)"><i class="ti ti-chevron-left"></i></button>
-      <span class="dl" id="lpLabel"></span>
       <button class="btn ghost ico sm" onclick="shiftDay(1)"><i class="ti ti-chevron-right"></i></button>
     </div>
   </div>
@@ -1402,8 +1450,10 @@ function renderLP(){
   const d=currentDay();
   const ds=fmtD(d);
   const isToday=ds===TODAY;
-  document.getElementById('lpTitle').textContent=isToday?'Today':fmtShort(d);
-  document.getElementById('lpLabel').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  // The heading names the day: "Today - Tuesday", or for any other day its
+  // date in the app's usual short format, e.g. "14 Oct - Wednesday".
+  const wd=d.toLocaleDateString('en-GB',{weekday:'long'});
+  document.getElementById('lpTitle').textContent=(isToday?'Today':fmtShort(d))+' - '+wd;
   const evs=agendaEventsOnDay(ds);
   cacheEvents(evs);
   const el=document.getElementById('lpBody');
@@ -1429,10 +1479,11 @@ function renderCard(ev){
   let acts='';
   acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\',\''+(ev._occDate||ev.date)+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
+  if(ev.ticketUrl) acts+='<a class="ea" href="'+escHtml(ev.ticketUrl)+'" target="_blank" rel="noopener" style="text-decoration:none"><i class="ti ti-ticket"></i>Tickets</a>';
   if(ev.location) acts+='<button class="ea" onclick="openRouteMapFor(\''+ev.id+'\')"><i class="ti ti-map-2"></i>Map</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard task'+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'">'+
+  return '<div class="ecard task'+(ev.concertId?' concert':'')+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
@@ -1754,7 +1805,16 @@ function evForm(ev){
     '</div>'+
     '<div class="field"><label>Remind me before <span style="font-weight:400;color:var(--txt3)">\u2014 pick as many as you like</span></label>'+
       '<div class="rem-chips" id="fremind">'+
-        REMINDER_OPTS.map(m=>'<label class="rem-chip"><input type="checkbox" value="'+m+'"'+(reminders.includes(m)?' checked':'')+'><span>'+(m==='60'?'1 hour':m==='120'?'2 hours':m==='1440'?'1 day':m+' min')+'</span></label>').join('')+
+        [...REMINDER_OPTS, ...reminders.filter(m=>!REMINDER_OPTS.includes(String(m)))]
+          .map(String).sort((a,b)=>parseInt(a)-parseInt(b))
+          .map(m=>remChipHtml(m, reminders.map(String).includes(m))).join('')+
+      '</div>'+
+      '<div class="rem-add">'+
+        '<span class="rem-add-l">Earlier:</span>'+
+        '<select id="remN" aria-label="How many">'+remNumOpts('day')+'</select>'+
+        '<select id="remU" aria-label="Unit" onchange="document.getElementById(\'remN\').innerHTML=remNumOpts(this.value)">'+
+          '<option value="day">days</option><option value="week">weeks</option><option value="month">months</option></select>'+
+        '<button type="button" class="btn sm" onclick="addCustomReminder()"><i class="ti ti-plus"></i> Add</button>'+
       '</div></div>'+
     '<div class="field"><label>Notes</label><textarea id="fno" placeholder="Details, location, reminders…">'+(ev?escHtml(ev.notes||''):'')+'</textarea></div>'+
     '<div id="task-extra" style="display:'+(type==='task'?'block':'none')+'">'+
@@ -1873,7 +1933,7 @@ function scheduleReminder(ev){
       if(Date.now() > evMs) return;
       requestNotifPermission(ok=>{
         if(!ok) return;
-        const label=minBefore>=1440?(minBefore/1440)+' day':minBefore>=60?(minBefore/60)+'h':minBefore+' min';
+        const label=remLabelLong(minBefore);
         new Notification('\u23f0 '+ev.name,{
           body:'Starting in '+label+' \u2014 '+ev.date+' at '+ev.time,
           icon:'/icon-192.png',
@@ -1898,6 +1958,27 @@ setInterval(()=>{ try{ scheduleAllReminders(); }catch(e){} }, 60*60*1000);
 // before). Older events stored a single "reminder" string, so both shapes
 // are read here and everything else goes through this one function.
 const REMINDER_OPTS=['5','10','15','30','60','120','1440'];
+function remChipHtml(m, checked){
+  return '<label class="rem-chip"><input type="checkbox" value="'+m+'"'+(checked?' checked':'')+'><span>'+remLabelLong(m)+'</span></label>';
+}
+const REM_UNIT_MAX={ day:7, week:4, month:12 };
+function remNumOpts(unit){
+  const n=REM_UNIT_MAX[unit]||7;
+  return Array.from({length:n},(_,i)=>'<option value="'+(i+1)+'"'+(i===1&&unit==='day'?' selected':'')+'>'+(i+1)+'</option>').join('');
+}
+// Adds a "3 days / 2 weeks / 1 month before" chip (ticked) to the form.
+function addCustomReminder(){
+  const n=parseInt((document.getElementById('remN')||{}).value)||1;
+  const u=(document.getElementById('remU')||{}).value||'day';
+  const mins=String(n*(u==='month'?REM_MONTH:u==='week'?REM_WEEK:REM_DAY));
+  const box=document.getElementById('fremind'); if(!box) return;
+  const ex=box.querySelector('input[value="'+mins+'"]');
+  if(ex){ ex.checked=true; return; }
+  const chips=[...box.querySelectorAll('input')].map(i=>({m:i.value,c:i.checked}));
+  chips.push({m:mins,c:true});
+  chips.sort((a,b)=>parseInt(a.m)-parseInt(b.m));
+  box.innerHTML=chips.map(x=>remChipHtml(x.m,x.c)).join('');
+}
 function remindersOf(ev){
   let list = Array.isArray(ev && ev.reminders) && ev.reminders.length ? ev.reminders
            : (ev && ev.reminder ? [ev.reminder] : []);
@@ -1916,15 +1997,28 @@ function isPastEvent(ev){
   return Date.now() > d.getTime();
 }
 
+// Reminders are stored in minutes; weeks are 7 days and months 30 days.
+const REM_DAY=1440, REM_WEEK=10080, REM_MONTH=43200;
+function remLabelLong(m){
+  m=parseInt(m);
+  const pl=(n,w)=>n+' '+w+(n===1?'':'s');
+  if(m>=REM_MONTH && m%REM_MONTH===0) return pl(m/REM_MONTH,'month');
+  if(m>=REM_WEEK && m%REM_WEEK===0) return pl(m/REM_WEEK,'week');
+  if(m>=REM_DAY) return pl(Math.round(m/REM_DAY),'day');
+  if(m>=60) return pl(Math.round(m/60),'hour');
+  return m+' min';
+}
 function reminderLabelShort(m){
   m=parseInt(m);
-  return m>=1440?(m/1440)+'d':m>=60?(m/60)+'h':m+'m';
+  if(m>=REM_MONTH && m%REM_MONTH===0) return (m/REM_MONTH)+'mo';
+  if(m>=REM_WEEK && m%REM_WEEK===0) return (m/REM_WEEK)+'w';
+  return m>=REM_DAY?Math.round(m/REM_DAY)+'d':m>=60?Math.round(m/60)+'h':m+'m';
 }
 
 function reminderBadge(reminder){
   if(!reminder)return'';
   const min=parseInt(reminder);
-  const label=min>=1440?'1d before':min>=120?(min/60)+'h before':min===60?'1h before':min+'min before';
+  const label=reminderLabelShort(min)+' before';
   return'<span style="font-size:9px;background:#a78bfa20;color:#a78bfa;border:1px solid #a78bfa40;border-radius:10px;padding:1px 5px;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-bell" style="font-size:9px"></i>'+label+'</span>';
 }
 
@@ -2228,6 +2322,12 @@ async function renderPrivBox(msg){
       'Powers Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions League and more. Free key at <a href="https://www.football-data.org/client/register" target="_blank" rel="noopener" style="color:var(--accent)">football-data.org</a>.')+
     keyRow('Highlightly key','hlKIn','highlightlyKey','Highlightly API key…',
       'Football &amp; handball teams and national squads, plus handball competitions. Free key (100 requests/day) at <a href="https://highlightly.net/sport-api/" target="_blank" rel="noopener" style="color:var(--accent)">highlightly.net</a>.')+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-microphone-2"></i> Concerts</div>'+
+    keyRow('Ticketmaster key','tmIn','ticketmasterKey','Ticketmaster Consumer Key\u2026',
+      'Finds your artists\u2019 concerts in Europe. Free at <a href="https://developer.ticketmaster.com/" target="_blank" rel="noopener" style="color:var(--accent)">developer.ticketmaster.com</a> \u2192 My Apps \u2192 copy the <b>Consumer Key</b>.')+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-map-2"></i> Map</div>'+
+    keyRow('CARTO map key','cartoIn','cartoKey','CARTO basemaps key\u2026',
+      'Gives route maps the dark style that matches the app. Without it the maps use standard OpenStreetMap. Free key (no account) at <a href="https://carto.com/basemaps/apikey/" target="_blank" rel="noopener" style="color:var(--accent)">carto.com/basemaps</a>. This key is sent to the browser to load the map, as map keys always are.')+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-home"></i> Starting address &amp; routing</div>'+
     '<div class="field"><label>Starting address</label>'+
       '<div style="display:flex;gap:6px">'+
@@ -2849,13 +2949,7 @@ function remindersBadge(ev){
     list.map(reminderLabelShort).join(' \u00b7 ')+' before</span>';
 }
 
-function reminderBadgeTxt(r){
-  const m=parseInt(r);
-  if(m>=1440)return'1 day';
-  if(m>=120)return(m/60)+' hours';
-  if(m===60)return'1 hour';
-  return m+' min';
-}
+function reminderBadgeTxt(r){ return remLabelLong(r); }
 
 function buildWeeklyMsg(){
   // 7 days starting from today
@@ -3563,6 +3657,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_bible',name:'Bible reading plan', desc:'Tick off what you\u2019ve read', action:'bible', icon:'ti-book'},
   {id:'w_timer',name:'Life timer', desc:'How long you\u2019ve been here, counting', action:'timer', icon:'ti-hourglass'},
   {id:'w_tithe',name:'Giving', desc:'Income, the share due and what you\u2019ve given', action:'tithe', icon:'ti-heart-handshake'},
+  {id:'w_concerts',name:'Concerts', desc:'Your artists\u2019 dates in Europe', action:'concerts', icon:'ti-microphone-2'},
   {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
   {id:'w_windy',name:'Windy',      desc:'Weather radar and forecast maps', url:'https://www.windy.com/',    icon:'ti-wind'},
   {id:'w_maps', name:'Google Maps',desc:'Maps and live traffic',           url:'https://maps.google.com/',  icon:'ti-map-2'}
@@ -3610,7 +3705,7 @@ document.addEventListener('click', e=>{
 });
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
-const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe() };
+const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts() };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -3770,6 +3865,126 @@ async function previewTravel(force){
       (leave?' \u2014 leave by <b>'+leave+'</b>':'')+mapBtnHtml();
   }catch(e){ out.innerHTML='<span style="color:var(--red)">Could not check travel time.</span>'; }
 }
+// ─── CONCERTS ────────────────────────────────────────────
+// Follow artists; their European dates (Ticketmaster) are listed here and
+// new ones arrive as a notification. Nothing enters the calendar until you
+// tap "Add" — then it becomes a normal event with reminders and leave-by.
+let _cc = null;
+const CC_FLAG = cc => (cc && cc.length===2) ? String.fromCodePoint(...[...cc.toUpperCase()].map(c=>0x1F1E6+c.charCodeAt(0)-65)) : '';
+async function openConcerts(){
+  showModal('Concerts',
+    '<div id="ccBody" class="cc-body"><div style="font-size:12px;color:var(--txt3)"><i class="ti ti-loader-2"></i> Loading…</div></div>',
+    '<button class="btn sm" onclick="ccRefresh(this)"><i class="ti ti-refresh"></i> Check now</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  await ccLoad();
+}
+async function ccLoad(msg){
+  try{ _cc = await (await fetch('/api/concerts')).json(); }catch(e){ _cc = { error:'Couldn’t reach the server.' }; }
+  ccRender(msg);
+}
+function ccAgo(iso){
+  if(!iso) return 'not checked yet';
+  const m = Math.round((Date.now()-new Date(iso))/60000);
+  if(m < 2) return 'checked just now';
+  if(m < 60) return 'checked '+m+' min ago';
+  const h = Math.round(m/60);
+  return h < 24 ? 'checked '+h+' h ago' : 'checked '+new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+function ccRender(msg){
+  const el = document.getElementById('ccBody'); if(!el || !_cc) return;
+  if(_cc.error){ el.innerHTML = '<div style="color:var(--red);font-size:12px">'+escHtml(_cc.error)+'</div>'; return; }
+  const c = _cc;
+  let h = '';
+  if(!c.hasKey){
+    h += '<div class="cc-note"><i class="ti ti-key"></i> Add your free Ticketmaster key in <b>Settings → Private → Concerts</b> to start.</div>';
+  }
+  if(msg) h += '<div class="cc-msg">'+msg+'</div>';
+  // Follow
+  h += '<div class="slabel"><i class="ti ti-user-plus"></i> Follow an artist</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<input id="ccQ" class="cc-input" placeholder="e.g. Chris Tomlin" autocomplete="off" onkeydown="if(event.key===\'Enter\')ccSearch()"'+(c.hasKey?'':' disabled')+'>'+
+      '<button class="btn acc" onclick="ccSearch()"'+(c.hasKey?'':' disabled')+'>Search</button>'+
+    '</div><div id="ccRes"></div>';
+  // Followed
+  h += '<div class="slabel" style="margin-top:14px"><i class="ti ti-heart"></i> Following</div>';
+  h += c.artists.length
+    ? '<div class="cc-chips">'+c.artists.map(a=>'<span class="cc-chip">'+(a.image?'<img src="'+escHtml(a.image)+'" alt="">':'<i class="ti ti-microphone-2"></i>')+
+        escHtml(a.name)+'<button onclick="ccUnfollow(\''+escHtml(a.id)+'\',\''+escHtml(a.name).replace(/'/g,'')+'\')" aria-label="Stop following '+escHtml(a.name)+'"><i class="ti ti-x"></i></button></span>').join('')+'</div>'
+    : '<div class="cc-empty">No artists yet — search above.</div>';
+  // Dates
+  const evs = c.events || [];
+  h += '<div class="slabel" style="margin-top:14px"><i class="ti ti-calendar-event"></i> Upcoming in Europe <span class="cc-sub">'+ccAgo(c.lastSync)+'</span></div>';
+  if(c.lastError) h += '<div class="cc-msg" style="color:var(--yellow)">'+escHtml(c.lastError)+'</div>';
+  if(!evs.length){
+    h += '<div class="cc-empty">'+(c.artists.length ? 'No European dates announced right now. You’ll get a notification when one appears.' : 'Follow an artist to see their dates here.')+'</div>';
+  } else {
+    let lastMonth = '';
+    h += evs.map(e=>{
+      const mk = e.date.slice(0,7);
+      const head = mk!==lastMonth ? '<div class="cc-month">'+new Date(e.date+'T12:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'</div>' : '';
+      lastMonth = mk;
+      const day = new Date(e.date+'T12:00:00');
+      const when = e.timeTbc ? 'time TBC' : (e.localTime||e.time)+' local'+(e.time && e.localTime && e.time!==e.localTime ? ' · '+e.time+' RO' : '');
+      return head+'<div class="cc-row'+(e.inCalendar?' in':'')+'">'+
+        '<div class="cc-date"><b>'+day.getDate()+'</b><span>'+day.toLocaleDateString('en-GB',{weekday:'short'})+'</span></div>'+
+        '<div class="cc-main"><div class="cc-artist">'+escHtml(e.artistName)+'</div>'+
+          '<div class="cc-where">'+CC_FLAG(e.countryCode)+' '+escHtml([e.city, e.venue].filter(Boolean).join(' · '))+'</div>'+
+          '<div class="cc-when">'+escHtml(when)+(e.name && e.name!==e.artistName ? ' · '+escHtml(e.name) : '')+'</div>'+
+          '<div class="cc-acts">'+
+            (e.inCalendar
+              ? '<button class="btn sm" onclick="ccRemove(\''+escHtml(e.id)+'\')"><i class="ti ti-calendar-minus"></i> Remove</button><span class="cc-incal"><i class="ti ti-check"></i> In calendar</span>'
+              : '<button class="btn sm acc" onclick="ccAdd(\''+escHtml(e.id)+'\')"><i class="ti ti-calendar-plus"></i> Add to calendar</button>')+
+            (e.url ? '<a class="btn sm" href="'+escHtml(e.url)+'" target="_blank" rel="noopener"><i class="ti ti-ticket"></i> Tickets</a>' : '')+
+          '</div></div></div>';
+    }).join('');
+  }
+  h += '<div class="cc-foot">Dates from Ticketmaster. Concerts sold only through Romanian ticket sites (iabilet, Eventim.ro) won’t show here — add those as a normal event.</div>';
+  el.innerHTML = h;
+}
+async function ccSearch(){
+  const q = ((document.getElementById('ccQ')||{}).value||'').trim();
+  const out = document.getElementById('ccRes'); if(!q || !out) return;
+  out.innerHTML = '<div class="cc-empty"><i class="ti ti-loader-2"></i> Searching…</div>';
+  let d; try{ d = await (await fetch('/api/concerts/search?q='+encodeURIComponent(q))).json(); }catch(e){ d = { error:'Search failed.' }; }
+  if(d.error){ out.innerHTML = '<div class="cc-msg" style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+  const followed = new Set((_cc&&_cc.artists||[]).map(a=>a.id));
+  out.innerHTML = (d.results||[]).length
+    ? '<div class="cc-results">'+d.results.map(a=>
+        '<div class="cc-res">'+(a.image?'<img src="'+escHtml(a.image)+'" alt="">':'<span class="cc-noimg"><i class="ti ti-microphone-2"></i></span>')+
+        '<div class="cc-res-main"><b>'+escHtml(a.name)+'</b><small>'+escHtml([a.genre, a.upcoming ? a.upcoming+' upcoming worldwide' : 'no dates listed'].filter(Boolean).join(' · '))+'</small></div>'+
+        (followed.has(a.id) ? '<span class="cc-incal"><i class="ti ti-check"></i> Following</span>'
+          : '<button class="btn sm acc" onclick="ccFollow(this,\''+escHtml(a.id)+'\')" data-name="'+escHtml(a.name)+'" data-img="'+escHtml(a.image||'')+'">Follow</button>')+
+        '</div>').join('')+'</div>'
+    : '<div class="cc-empty">No artist found on Ticketmaster for “'+escHtml(q)+'”.</div>';
+}
+async function ccFollow(btn, id){
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>';
+  const r = await fetch('/api/concerts/follow',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ id, name: btn.dataset.name, image: btn.dataset.img })}).then(r=>r.json()).catch(()=>({error:'Failed.'}));
+  await ccLoad(r.error ? '<span style="color:var(--red)">'+escHtml(r.error)+'</span>'
+    : '✅ Following <b>'+escHtml(btn.dataset.name)+'</b>. New European dates will send you a notification.');
+}
+async function ccUnfollow(id, name){
+  await fetch('/api/concerts/follow/'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>{});
+  await ccLoad('Stopped following <b>'+escHtml(name)+'</b>. Concerts already in your calendar stay there.');
+}
+async function ccAdd(id){
+  const r = await fetch('/api/concerts/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).then(r=>r.json()).catch(()=>({error:'Failed.'}));
+  // Reload straight away: a save from this tab must not carry the old task list.
+  await loadFromServer(); renderAll();
+  await ccLoad(r.error ? '<span style="color:var(--red)">'+escHtml(r.error)+'</span>' : '✅ Added to your calendar, with a reminder the day before.');
+}
+async function ccRemove(id){
+  await fetch('/api/concerts/remove',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
+  await loadFromServer(); renderAll();
+  await ccLoad('Removed from your calendar.');
+}
+async function ccRefresh(btn){
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Checking…'; }
+  const r = await fetch('/api/concerts/sync',{method:'POST'}).then(r=>r.json()).catch(()=>({error:'Failed.'}));
+  if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-refresh"></i> Check now'; }
+  await ccLoad(r.error ? '<span style="color:var(--yellow)">'+escHtml(r.error)+'</span>' : (r.newOnes ? '🎉 '+r.newOnes+' new date'+(r.newOnes===1?'':'s')+' found.' : 'Up to date.'));
+}
+
 // ─── ROUTE MAP ───────────────────────────────────────────
 // A map of the journey behind a "leave by" warning: start, destination and
 // the route the time was worked out from. Leaflet (open-source) loads only
@@ -3845,10 +4060,17 @@ async function openRouteMap(o){
   }
   box.innerHTML = '';
   const map = _rmap = L.map(box, { zoomControl:true, attributionControl:true });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom:19, subdomains:'abcd',
-    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
-  }).addTo(map);
+  // With a CARTO key (Settings \u2192 Private): CARTO's dark map, which suits the
+  // app. Without one CARTO stamps a watermark, so plain OpenStreetMap is used.
+  const osmAttr = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+  if(d.tileKey){
+    L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key='+encodeURIComponent(d.tileKey), {
+      maxZoom:19, attribution: osmAttr+' &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
+    }).addTo(map);
+  } else {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution: osmAttr }).addTo(map);
+    box.classList.add('rmap-light');
+  }
   const pts = [];
   const to = [d.to.lat, d.to.lon]; pts.push(to);
   const from = d.from && d.from.lat != null ? [d.from.lat, d.from.lon] : null;
@@ -4171,7 +4393,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-12-full-titles';
+const APP_BUILD='2026-10-13-long-reminders';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -4198,6 +4420,11 @@ function flashEvent(evId){
 function handleOpenParams(){
   try{
     const q=new URLSearchParams(location.search);
+    if(q.get('concerts')){
+      history.replaceState({}, '', location.pathname);
+      setTimeout(()=>openConcerts(), 400);
+      return;
+    }
     const d=q.get('d');
     if(d){
       openOnDate(d, q.get('ev'));
@@ -4210,6 +4437,7 @@ function handleOpenParams(){
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message', e=>{
     if(e.data && e.data.type==='OPEN_DATE' && e.data.date) openOnDate(e.data.date, e.data.id);
+    if(e.data && e.data.type==='OPEN_CONCERTS') openConcerts();
   });
 }
 
