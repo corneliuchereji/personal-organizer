@@ -29,8 +29,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ═══════════════════════════════════════════════════
 const crypto = require('crypto');
 const PRIVATE_SETTING_KEYS = ['footballDataKey','highlightlyKey','apiFootballKey','tsdbKey','orsKey',
-  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass'];
-const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey'];
+  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey'];
+const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey','cartoKey','ticketmasterKey'];
 const PRIV_TTL_MS = 30*60*1000;              // 30 min, renewed while in use
 const _privSessions = new Map();             // token -> expiry
 let _privFails = 0, _privLockUntil = 0;
@@ -133,7 +133,7 @@ app.post('/api/private/password', requirePrivate, (req, res) => {
 });
 app.get('/api/private', requirePrivate, (req, res) => {
   const st = readData().settings || {};
-  res.json({ footballDataKey: st.footballDataKey||'', highlightlyKey: st.highlightlyKey||'', orsKey: st.orsKey||'',
+  res.json({ footballDataKey: st.footballDataKey||'', highlightlyKey: st.highlightlyKey||'', orsKey: st.orsKey||'', cartoKey: st.cartoKey||'', ticketmasterKey: st.ticketmasterKey||'',
              homeAddress: st.homeAddress||'', homeName: st.homeName||'' });
 });
 app.post('/api/private', requirePrivate, (req, res) => {
@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-12-full-titles';
+const BUILD_VERSION = '2026-10-13-long-reminders';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2843,6 +2843,10 @@ const MCP_TOOLS = [
       remindMinutes:{type:'array', items:{type:'number'}, description:'e.g. [60]. Defaults to none'} } } },
   { name:'delete_sport_event', description:'Delete a manually added sport event by name.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, date:{type:'string', description:'YYYY-MM-DD, to pick one if several match'} } } },
+  { name:'follow_artist', description:'Follow a music artist: their concerts in Europe show in the Concerts widget and new dates send a notification.',
+    inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string', description:'Artist or band name'} } } },
+  { name:'concerts_upcoming', description:'Upcoming European concerts of the followed artists, with whether each is in the calendar.',
+    inputSchema:{ type:'object', properties:{} } },
   { name:'complete_task', description:'Mark a task done (or not done) by name.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, done:{type:'boolean'} } } },
   { name:'delete_task', description:'Delete a task by name.',
@@ -2923,6 +2927,25 @@ async function mcpCall(name, args){
       d.sportEvents = d.sportEvents.filter(e => e.id !== hit.id);
       writeData(d);
       return mcpText('Deleted "'+hit.name+'" ('+hit.date+').');
+    }
+    case 'follow_artist': {
+      const key = tmKey(d);
+      if(!key) return mcpText('No Ticketmaster key yet — it goes in Settings → Private in the app.');
+      const j = await tmGet('/attractions.json?keyword='+encodeURIComponent(String(args.name||''))+'&classificationName=music&size=5&sort=relevance,desc', key);
+      const a = ((j._embedded && j._embedded.attractions) || [])[0];
+      if(!a) return mcpText('Ticketmaster has no artist matching "'+args.name+'".');
+      const c = concertsOf(d);
+      if(!c.artists.some(x => x.id === a.id)) c.artists.push({ id:a.id, name:a.name, image: tmBestImage(a.images), since:new Date().toISOString() });
+      writeData(d);
+      const r = await syncConcerts([a.id]);
+      const n = concertsOf(readData()).events.filter(e => e.artistId === a.id).length;
+      return mcpText('Now following '+a.name+'. '+n+' upcoming European date'+(n===1?'':'s')+' found.'+(r.error?' ('+r.error+')':''));
+    }
+    case 'concerts_upcoming': {
+      const c = concertsOf(d);
+      const inCal = new Set((d.tasks||[]).filter(t=>t.concertId).map(t=>t.concertId));
+      const list = c.events.filter(e => e.date >= getToday()).map(e => ({ artist:e.artistName, date:e.date, time:e.time, venue:e.venue, city:e.city, country:e.country, inCalendar: inCal.has(e.id), tickets:e.url }));
+      return mcpText(list.length ? { following: c.artists.map(a=>a.name), concerts: list } : (c.artists.length ? 'No upcoming European dates for '+c.artists.map(a=>a.name).join(', ')+'.' : 'Not following any artists yet.'));
     }
     case 'complete_task': {
       const t = mcpFindTask(d, args.name);
@@ -3019,6 +3042,203 @@ app.post('/api/mcp/rotate', (req, res) => {
   res.json({ url: (APP_URL||'') + '/mcp/' + secret });
 });
 
+
+
+// ═══════════════════════════════════════════════════
+// CONCERTS — follow artists, get told about European dates
+// Data: Ticketmaster Discovery API (free key, 5,000 calls/day), checked twice
+// a day. New European dates send a push notification; nothing goes into the
+// calendar until you add it from the Concerts widget. An added concert is an
+// ordinary task (group "Concerts"), so reminders, leave-by and the map all
+// work on it. Ticketmaster doesn't sell in Romania, so shows ticketed only via
+// iabilet/Eventim.ro won't appear.
+// ═══════════════════════════════════════════════════
+const EUROPE_CC = new Set(['AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','XK',
+  'LV','LI','LT','LU','MT','MD','MC','ME','NL','MK','NO','PL','PT','RO','SM','RS','SK','SI','ES','SE','CH','UA','GB','VA']);
+const TM_BASE = 'https://app.ticketmaster.com/discovery/v2';
+const CONCERT_GROUP = { id:'g_concert', name:'Concerts', color:'#f472b6' };
+
+function concertsOf(d){
+  if(!d.concerts) d.concerts = { artists:[], events:[], seen:{}, lastSync:null, lastError:null };
+  const c = d.concerts;
+  c.artists = c.artists || []; c.events = c.events || []; c.seen = c.seen || {};
+  return c;
+}
+function tmKey(d){ return ((d.settings && d.settings.ticketmasterKey) || '').trim(); }
+async function tmGet(pathAndQuery, key){
+  const url = TM_BASE + pathAndQuery + (pathAndQuery.includes('?') ? '&' : '?') + 'apikey=' + encodeURIComponent(key);
+  const r = await fetch(url, { headers:{ 'Accept':'application/json' } });
+  if(r.status === 401) throw new Error('Ticketmaster rejected the key — check it in Settings → Private.');
+  if(r.status === 429) throw new Error('Ticketmaster rate limit reached — try again later.');
+  if(!r.ok) throw new Error('Ticketmaster HTTP ' + r.status);
+  return r.json();
+}
+function tmBestImage(images){
+  if(!Array.isArray(images) || !images.length) return '';
+  const pick = images.filter(i => i.ratio === '1_1' || i.ratio === '4_3').sort((a,b)=>a.width-b.width).find(i=>i.width>=100);
+  return (pick || images[0]).url || '';
+}
+// "2027-05-14T18:30:00Z" -> date/time in Bucharest (the server runs in that TZ).
+function bucharestDateTime(iso){
+  const dt = new Date(iso);
+  if(isNaN(dt)) return null;
+  const p = n => String(n).padStart(2,'0');
+  return { date: dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate()), time: p(dt.getHours())+':'+p(dt.getMinutes()) };
+}
+function tmEventToConcert(e, artist){
+  const v = (e._embedded && e._embedded.venues && e._embedded.venues[0]) || {};
+  const cc = (v.country && v.country.countryCode) || '';
+  const st = (e.dates && e.dates.start) || {};
+  const local = bucharestDateTime(st.dateTime);
+  return {
+    id: e.id, artistId: artist.id, artistName: artist.name, name: e.name || artist.name,
+    date: local ? local.date : (st.localDate || null),
+    time: local ? local.time : (st.localTime ? st.localTime.slice(0,5) : ''),
+    localDate: st.localDate || null, localTime: st.localTime ? st.localTime.slice(0,5) : '',
+    timeTbc: !!(st.timeTBA || st.noSpecificTime || !st.localTime),
+    venue: v.name || '', city: (v.city && v.city.name) || '', country: (v.country && v.country.name) || '', countryCode: cc,
+    address: (v.address && v.address.line1) || '',
+    lat: v.location ? +v.location.latitude : null, lon: v.location ? +v.location.longitude : null,
+    url: e.url || '', status: (e.dates && e.dates.status && e.dates.status.code) || ''
+  };
+}
+async function fetchArtistEuropeDates(artist, key){
+  const out = [];
+  for(let page = 0; page < 3; page++){
+    const j = await tmGet('/events.json?attractionId='+encodeURIComponent(artist.id)+'&size=100&sort=date,asc&page='+page, key);
+    const evs = (j._embedded && j._embedded.events) || [];
+    for(const e of evs){
+      const c = tmEventToConcert(e, artist);
+      if(EUROPE_CC.has(c.countryCode) && c.date && c.date >= getToday() && c.status !== 'cancelled') out.push(c);
+    }
+    const pg = j.page || {};
+    if(!pg.totalPages || page+1 >= pg.totalPages) break;
+    await new Promise(r=>setTimeout(r, 250));
+  }
+  return out;
+}
+function fmtConcertDay(ds){
+  const d = new Date(ds+'T12:00:00');
+  return d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+}
+// Refreshes every followed artist. `quietFor` = artist ids whose dates must
+// not trigger notifications (just followed: you're looking at the list).
+async function syncConcerts(quietFor){
+  const d0 = readData();
+  const key = tmKey(d0);
+  if(!key) return { error:'No Ticketmaster key yet — add it in Settings → Private.' };
+  const artists = concertsOf(d0).artists.slice();
+  const fresh = []; let err = null;
+  for(const a of artists){
+    try{ fresh.push(...await fetchArtistEuropeDates(a, key)); }
+    catch(e){ err = e.message; console.log('Concert sync failed for', a.name, e.message); }
+    await new Promise(r=>setTimeout(r, 250));
+  }
+  const d = readData();
+  const c = concertsOf(d);
+  const followed = new Set(c.artists.map(a=>a.id));
+  // Keep the previous list for any artist whose fetch failed this time.
+  const fetchedIds = new Set(fresh.map(e=>e.artistId));
+  const kept = err ? c.events.filter(e => followed.has(e.artistId) && !fetchedIds.has(e.artistId) && e.date >= getToday()) : [];
+  const byId = new Map();
+  for(const e of [...fresh, ...kept]) if(followed.has(e.artistId)) byId.set(e.id, e);
+  const events = [...byId.values()].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+  const newOnes = events.filter(e => !c.seen[e.id]);
+  for(const e of events) c.seen[e.id] = c.seen[e.id] || Date.now();
+  c.events = events;
+  c.lastSync = new Date().toISOString();
+  c.lastError = err;
+  writeData(d);
+  const quiet = new Set(quietFor || []);
+  const toTell = newOnes.filter(e => !quiet.has(e.artistId));
+  for(const e of toTell.slice(0, 6)){
+    try{
+      await sendWebPush('🎤 New concert: '+e.artistName,
+        [e.venue, e.city + (e.countryCode ? ' ('+e.countryCode+')' : '')].filter(Boolean).join(', ') + ' · ' + fmtConcertDay(e.date),
+        { concert: e.id, tag: 'concert-'+e.id }, { ttl: 3*24*3600 });
+    }catch(x){ console.log('Concert push failed:', x.message); }
+  }
+  if(toTell.length > 6){
+    try{ await sendWebPush('🎤 '+(toTell.length-6)+' more new concerts', 'Open Concerts to see them all.', { concert: 'list', tag:'concert-more' }, { ttl: 3*24*3600 }); }catch(x){}
+  }
+  return { ok:true, events: events.length, newOnes: newOnes.length, error: err };
+}
+function concertTaskId(eventId){ return 'cc_' + String(eventId).replace(/[^A-Za-z0-9_-]/g,''); }
+function addConcertToCalendar(d, e){
+  d.groups = d.groups || [];
+  if(!d.groups.some(g => g.id === CONCERT_GROUP.id)) d.groups.push({ ...CONCERT_GROUP });
+  d.tasks = d.tasks || [];
+  const id = concertTaskId(e.id);
+  if(d.tasks.some(t => t.id === id || t.concertId === e.id)) return false;
+  const where = [e.venue, e.city].filter(Boolean).join(', ');
+  d.tasks.push({
+    id, concertId: e.id, name: '🎤 ' + e.artistName + ' — ' + (e.city || e.venue || 'concert'),
+    date: e.date, time: e.time || '20:00', freq:'none', priority:'normal', group: CONCERT_GROUP.id,
+    notes: [e.name !== e.artistName ? e.name : '', where + (e.country ? ', ' + e.country : ''),
+            e.localTime && !e.timeTbc ? 'Starts ' + e.localTime + ' local time' + (e.time !== e.localTime ? ' (' + e.time + ' in Bucharest)' : '') : 'Start time to be confirmed',
+           ].filter(Boolean).join('\n'),
+    location: [e.address, e.city, e.country].filter(Boolean).join(', ') || where,
+    ticketUrl: e.url || '', reminders: ['1440'], reminder: '1440', done:false
+  });
+  return true;
+}
+
+app.get('/api/concerts', (req, res) => {
+  const d = readData(); const c = concertsOf(d);
+  const inCal = new Set((d.tasks||[]).filter(t=>t.concertId).map(t=>t.concertId));
+  res.json({ hasKey: !!tmKey(d), artists: c.artists, lastSync: c.lastSync, lastError: c.lastError,
+    events: c.events.filter(e => e.date >= getToday()).map(e => ({ ...e, inCalendar: inCal.has(e.id) })) });
+});
+app.get('/api/concerts/search', async (req, res) => {
+  try{
+    const d = readData(); const key = tmKey(d);
+    if(!key) return res.json({ error:'No Ticketmaster key yet — add it in Settings → Private.' });
+    const q = String(req.query.q||'').trim();
+    if(!q) return res.json({ results:[] });
+    const j = await tmGet('/attractions.json?keyword='+encodeURIComponent(q)+'&classificationName=music&size=12&sort=relevance,desc', key);
+    const list = ((j._embedded && j._embedded.attractions) || []).map(a => ({
+      id: a.id, name: a.name, image: tmBestImage(a.images),
+      genre: (a.classifications && a.classifications[0] && a.classifications[0].genre && a.classifications[0].genre.name) || '',
+      upcoming: (a.upcomingEvents && a.upcomingEvents._total) || 0
+    }));
+    res.json({ results: list });
+  }catch(e){ res.json({ error: e.message }); }
+});
+app.post('/api/concerts/follow', async (req, res) => {
+  const { id, name, image } = req.body || {};
+  if(!id || !name) return res.status(400).json({ error:'Artist id and name are required.' });
+  const d = readData(); const c = concertsOf(d);
+  if(!c.artists.some(a => a.id === id)) c.artists.push({ id: String(id), name: String(name), image: image || '', since: new Date().toISOString() });
+  writeData(d);
+  const r = await syncConcerts([String(id)]).catch(e => ({ error: e.message }));
+  res.json({ ok:true, sync: r });
+});
+app.delete('/api/concerts/follow/:id', (req, res) => {
+  const d = readData(); const c = concertsOf(d);
+  c.artists = c.artists.filter(a => a.id !== req.params.id);
+  c.events = c.events.filter(e => e.artistId !== req.params.id);
+  writeData(d);
+  res.json({ ok:true });
+});
+app.post('/api/concerts/sync', async (req, res) => {
+  res.json(await syncConcerts().catch(e => ({ error: e.message })));
+});
+app.post('/api/concerts/add', (req, res) => {
+  const d = readData(); const c = concertsOf(d);
+  const e = c.events.find(x => x.id === (req.body && req.body.id));
+  if(!e) return res.status(404).json({ error:'That concert is no longer listed — refresh and try again.' });
+  const added = addConcertToCalendar(d, e);
+  writeData(d);
+  res.json({ ok:true, added, date: e.date });
+});
+app.post('/api/concerts/remove', (req, res) => {
+  const id = req.body && req.body.id;
+  const d = readData();
+  const before = (d.tasks||[]).length;
+  d.tasks = (d.tasks||[]).filter(t => t.concertId !== id);
+  writeData(d);
+  res.json({ ok:true, removed: before - d.tasks.length });
+});
 
 // ═══════════════════════════════════════════════════
 // GIVING / TITHE TRACKER
@@ -3143,6 +3363,10 @@ app.get('/api/travel', async (req, res) => {
   }catch(e){ res.status(500).json({ error:e.message }); }
 });
 
+// CARTO's map tiles need a (free) key since Aug 2026, otherwise they carry an
+// "API key required" watermark. Tiles are loaded by the browser, so this key
+// has to reach it — it's a public map key, unlike the private API keys.
+function mapTileKey(data){ return ((data.settings && data.settings.cartoKey) || '').trim(); }
 // GET /api/travel/map?to=…&mode=…&from=…  -> start, end and route shape
 // for the map dialog. Bus/train/other have no router, so those show the two
 // ends only.
@@ -3157,14 +3381,15 @@ app.get('/api/travel/map', async (req, res) => {
       else { const h = homeOf(data); if(h) start = { lat:h.lat, lon:h.lon, name:h.name }; }
       const g = await geocodeAddress(to);
       if(!g) return res.json({ error:'Could not find “'+to+'” on the map.' });
-      return res.json({ mode, manual:true, from: start || null, to:{ lat:g.lat, lon:g.lon, name:g.label }, line:null });
+      return res.json({ mode, manual:true, from: start || null, to:{ lat:g.lat, lon:g.lon, name:g.label }, line:null, tileKey: mapTileKey(data) });
     }
     let e = await travelFor(data, to, false, mode, from);
     // Journeys cached before maps existed have no start point or shape.
     if(e && !e.error && (e.fromLat == null || (!e.line && !e.estimated))) e = await travelFor(readData(), to, true, mode, from);
     if(!e || e.error) return res.json({ error: (e && e.error) || 'No route.' });
     res.json({ mode, mins:e.mins, km:e.km, estimated:!!e.estimated, derived:!!e.derived,
-      from:{ lat:e.fromLat, lon:e.fromLon, name:e.fromName }, to:{ lat:e.lat, lon:e.lon, name:e.toName }, line:e.line || null });
+      from:{ lat:e.fromLat, lon:e.fromLon, name:e.fromName }, to:{ lat:e.lat, lon:e.lon, name:e.toName }, line:e.line || null,
+      tileKey: mapTileKey(data) });
   }catch(err){ res.status(500).json({ error:err.message }); }
 });
 
@@ -3266,6 +3491,14 @@ let _backupCron = cron.schedule('30 3 1 * *', async () => {
   } catch(e) { console.log('Monthly backup error:', e.message); }
 });
 
+// New European concert dates: checked at 07:40 and 19:40.
+let _concertCron = cron.schedule('40 7,19 * * *', async () => {
+  try{
+    const d = readData();
+    if(tmKey(d) && concertsOf(d).artists.length){ const r = await syncConcerts(); console.log('Concert sync:', JSON.stringify(r)); }
+  }catch(e){ console.log('Concert sync error:', e.message); }
+});
+
 let _fixtureSyncCron = cron.schedule('17 */6 * * *', async () => {
   console.log('Running scheduled fixture sync...');
   try { await syncFixtures(); } catch(e){ console.log('Scheduled sync error:', e.message); }
@@ -3307,16 +3540,25 @@ function dueReminders(data, nowMs, windowMs){
     ...(data.tasks||[]).map(t=>({...t,_type:'task'})),
     ...(data.sportEvents||[]).map(e=>({...e,_type:'sport'}))
   ];
-  // Look at today and tomorrow so a late-night event with a long lead time
-  // (e.g. "1 day before") still resolves correctly.
-  const days = [getToday(), addDays(getToday(),1)];
+  // Today and tomorrow cover leave-by warnings and short reminders. Longer
+  // ones (days, weeks, months ahead) only need the day(s) on which an event
+  // would have to start for the reminder to be due right now, so those are
+  // added per reminder rather than scanning months of dates every minute.
+  const baseDays = [getToday(), addDays(getToday(),1)];
+  const dayOfMs = ms => { const t = new Date(ms), p = n => String(n).padStart(2,'0'); return t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate()); };
   for (const ev of candidates) {
     const list = remindersOf(ev);
     // An event may want ONLY a leave-by warning and no ordinary reminder,
     // so don't skip it just because the reminder list is empty.
     const wantsLeave = (data.settings||{}).leaveBy !== false && !!ev.location;
     if (!list.length && !wantsLeave) continue;
-    for (const ds of days) {
+    const daySet = new Set(baseDays);
+    for (const mins of list) {
+      if (mins < 1440) continue;
+      // ±1 h so a daylight-saving change in between can't skip the day.
+      for (const off of [-windowMs-3600000, -windowMs, 0, 3600000]) daySet.add(dayOfMs(nowMs + mins*60000 + off));
+    }
+    for (const ds of daySet) {
       if (!matchesDate(ev, ds)) continue;
       if (ev._type === 'task' && isDoneOn(ev, ds)) continue; // already ticked off for this date
       const startMs = eventStartMs({ ...ev, date: ds });
@@ -3342,7 +3584,10 @@ function dueReminders(data, nowMs, windowMs){
         }
       }
       for (const mins of list) {
-        const fireMs = startMs - mins*60000;
+        // Whole-day reminders ("3 days", "2 weeks", "1 month") keep the
+        // clock time, even across a daylight-saving change.
+        let fireMs = startMs - mins*60000;
+        if (mins % 1440 === 0) { const t = new Date(startMs); t.setDate(t.getDate() - mins/1440); fireMs = t.getTime(); }
         // Each reminder is tracked separately, so "2 hours before" going
         // out doesn't suppress "15 min before" later on.
         const key = ev.id + '|' + ds + '|' + mins;
@@ -3359,9 +3604,14 @@ function dueReminders(data, nowMs, windowMs){
   return due;
 }
 
+// Months count as 30 days and weeks as 7 — reminders are stored in minutes.
 function reminderLabel(mins){
-  if (mins >= 1440) return (mins/1440)+' day'+(mins>=2880?'s':'');
-  if (mins >= 60) return (mins/60)+' hour'+(mins>=120?'s':'');
+  mins = parseInt(mins);
+  const pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  if (mins >= 43200 && mins % 43200 === 0) return pl(mins/43200, 'month');
+  if (mins >= 10080 && mins % 10080 === 0) return pl(mins/10080, 'week');
+  if (mins >= 1440) return pl(Math.round(mins/1440), 'day');
+  if (mins >= 60) return pl(Math.round(mins/60), 'hour');
   return mins+' min';
 }
 
