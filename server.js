@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-14-widgets';
+const BUILD_VERSION = '2026-10-14-shopping-flat';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2847,6 +2847,10 @@ const MCP_TOOLS = [
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string', description:'Artist or band name'} } } },
   { name:'concerts_upcoming', description:'Upcoming European concerts of the followed artists, with whether each is in the calendar.',
     inputSchema:{ type:'object', properties:{} } },
+  { name:'add_to_shopping_list', description:'Add items to the shopping list. Several at once, comma-separated; quantities allowed (e.g. "2 kg roșii, lapte, ouă x10").',
+    inputSchema:{ type:'object', required:['items'], properties:{ items:{type:'string'} } } },
+  { name:'shopping_list', description:'What is on the shopping list, grouped by aisle, with what is already bought.',
+    inputSchema:{ type:'object', properties:{} } },
   { name:'complete_task', description:'Mark a task done (or not done) by name.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, done:{type:'boolean'} } } },
   { name:'delete_task', description:'Delete a task by name.',
@@ -2937,7 +2941,7 @@ async function mcpCall(name, args){
       const c = concertsOf(d);
       if(!c.artists.some(x => x.id === a.id)) c.artists.push({ id:a.id, name:a.name, image: tmBestImage(a.images), since:new Date().toISOString() });
       writeData(d);
-      const r = await syncConcerts([a.id]);
+      const r = await syncConcerts([a.id], [a.id]);
       const n = concertsOf(readData()).events.filter(e => e.artistId === a.id).length;
       return mcpText('Now following '+a.name+'. '+n+' upcoming European date'+(n===1?'':'s')+' found.'+(r.error?' ('+r.error+')':''));
     }
@@ -2946,6 +2950,17 @@ async function mcpCall(name, args){
       const inCal = new Set((d.tasks||[]).filter(t=>t.concertId).map(t=>t.concertId));
       const list = c.events.filter(e => e.date >= getToday()).map(e => ({ artist:e.artistName, date:e.date, time:e.time, venue:e.venue, city:e.city, country:e.country, inCalendar: inCal.has(e.id), tickets:e.url }));
       return mcpText(list.length ? { following: c.artists.map(a=>a.name), concerts: list } : (c.artists.length ? 'No upcoming European dates for '+c.artists.map(a=>a.name).join(', ')+'.' : 'Not following any artists yet.'));
+    }
+    case 'add_to_shopping_list': {
+      const sh = shopOf(d);
+      const added = shopAdd(sh, args.items);
+      shopSyncTrip(d); writeData(d);
+      return mcpText(added.length ? 'Added to the shopping list: '+added.join(', ')+'.' : 'Nothing to add.');
+    }
+    case 'shopping_list': {
+      const v = shopView(d);
+      if(!v.items.length) return mcpText('The shopping list is empty.');
+      return mcpText({ list: v.items.map(i=>(i.done?'[x] ':'[ ] ')+i.name+(i.qty?' ('+i.qty+')':'')), trip: v.trip });
     }
     case 'complete_task': {
       const t = mcpFindTask(d, args.name);
@@ -3121,47 +3136,56 @@ function fmtConcertDay(ds){
   const d = new Date(ds+'T12:00:00');
   return d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
 }
-// Refreshes every followed artist. `quietFor` = artist ids whose dates must
-// not trigger notifications (just followed: you're looking at the list).
-async function syncConcerts(quietFor){
-  const d0 = readData();
-  const key = tmKey(d0);
-  if(!key) return { error:'No Ticketmaster key yet — add it in Settings → Private.' };
-  const artists = concertsOf(d0).artists.slice();
-  const fresh = []; let err = null;
-  for(const a of artists){
-    try{ fresh.push(...await fetchArtistEuropeDates(a, key)); }
-    catch(e){ err = e.message; console.log('Concert sync failed for', a.name, e.message); }
-    await new Promise(r=>setTimeout(r, 250));
-  }
-  const d = readData();
-  const c = concertsOf(d);
-  const followed = new Set(c.artists.map(a=>a.id));
-  // Keep the previous list for any artist whose fetch failed this time.
-  const fetchedIds = new Set(fresh.map(e=>e.artistId));
-  const kept = err ? c.events.filter(e => followed.has(e.artistId) && !fetchedIds.has(e.artistId) && e.date >= getToday()) : [];
-  const byId = new Map();
-  for(const e of [...fresh, ...kept]) if(followed.has(e.artistId)) byId.set(e.id, e);
-  const events = [...byId.values()].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
-  const newOnes = events.filter(e => !c.seen[e.id]);
-  for(const e of events) c.seen[e.id] = c.seen[e.id] || Date.now();
-  c.events = events;
-  c.lastSync = new Date().toISOString();
-  c.lastError = err;
-  writeData(d);
-  const quiet = new Set(quietFor || []);
-  const toTell = newOnes.filter(e => !quiet.has(e.artistId));
-  for(const e of toTell.slice(0, 6)){
-    try{
-      await sendWebPush('🎤 New concert: '+e.artistName,
-        [e.venue, e.city + (e.countryCode ? ' ('+e.countryCode+')' : '')].filter(Boolean).join(', ') + ' · ' + fmtConcertDay(e.date),
-        { concert: e.id, tag: 'concert-'+e.id }, { ttl: 3*24*3600 });
-    }catch(x){ console.log('Concert push failed:', x.message); }
-  }
-  if(toTell.length > 6){
-    try{ await sendWebPush('🎤 '+(toTell.length-6)+' more new concerts', 'Open Concerts to see them all.', { concert: 'list', tag:'concert-more' }, { ttl: 3*24*3600 }); }catch(x){}
-  }
-  return { ok:true, events: events.length, newOnes: newOnes.length, error: err };
+// Refreshes followed artists' European dates. `onlyIds` limits the fetch to
+// those artists (e.g. one just followed) and keeps everyone else's dates as
+// they are; `quietFor` = artist ids whose new dates must not notify (just
+// followed: you're looking at the list). One sync at a time.
+let _ccSyncing = null;
+function syncConcerts(quietFor, onlyIds){
+  if(_ccSyncing && !onlyIds) return _ccSyncing;
+  const run = (async () => {
+    const d0 = readData();
+    const key = tmKey(d0);
+    if(!key) return { error:'No Ticketmaster key yet — add it in Settings → Private.' };
+    const only = onlyIds ? new Set(onlyIds.map(String)) : null;
+    const artists = concertsOf(d0).artists.filter(a => !only || only.has(a.id));
+    const fresh = []; const done = new Set(); let err = null;
+    for(const a of artists){
+      try{ fresh.push(...await fetchArtistEuropeDates(a, key)); done.add(a.id); }
+      catch(e){ err = e.message; console.log('Concert sync failed for', a.name, e.message); }
+      await new Promise(r=>setTimeout(r, 220));   // Ticketmaster allows 5 requests/second
+    }
+    const d = readData();
+    const c = concertsOf(d);
+    const followed = new Set(c.artists.map(a=>a.id));
+    // Anyone not refreshed this time (not in this run, or their fetch failed)
+    // keeps the dates already known.
+    const kept = c.events.filter(e => followed.has(e.artistId) && !done.has(e.artistId) && e.date >= getToday());
+    const byId = new Map();
+    for(const e of [...kept, ...fresh]) if(followed.has(e.artistId)) byId.set(e.id, e);
+    const events = [...byId.values()].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+    const newOnes = events.filter(e => !c.seen[e.id]);
+    for(const e of events) c.seen[e.id] = c.seen[e.id] || Date.now();
+    c.events = events;
+    if(!only){ c.lastSync = new Date().toISOString(); c.lastError = err; }
+    else if(!c.lastSync) c.lastSync = new Date().toISOString();
+    writeData(d);
+    const quiet = new Set(quietFor || []);
+    const toTell = newOnes.filter(e => !quiet.has(e.artistId));
+    for(const e of toTell.slice(0, 6)){
+      try{
+        await sendWebPush('🎤 New concert: '+e.artistName,
+          [e.venue, e.city + (e.countryCode ? ' ('+e.countryCode+')' : '')].filter(Boolean).join(', ') + ' · ' + fmtConcertDay(e.date),
+          { concert: e.id, tag: 'concert-'+e.id }, { ttl: 3*24*3600 });
+      }catch(x){ console.log('Concert push failed:', x.message); }
+    }
+    if(toTell.length > 6){
+      try{ await sendWebPush('🎤 '+(toTell.length-6)+' more new concerts', 'Open Concerts to see them all.', { concert: 'list', tag:'concert-more' }, { ttl: 3*24*3600 }); }catch(x){}
+    }
+    return { ok:true, events: events.length, newOnes: newOnes.length, error: err };
+  })();
+  if(!onlyIds){ _ccSyncing = run; run.finally(() => { _ccSyncing = null; }); }
+  return run;
 }
 function concertTaskId(eventId){ return 'cc_' + String(eventId).replace(/[^A-Za-z0-9_-]/g,''); }
 function addConcertToCalendar(d, e){
@@ -3210,7 +3234,7 @@ app.post('/api/concerts/follow', async (req, res) => {
   const d = readData(); const c = concertsOf(d);
   if(!c.artists.some(a => a.id === id)) c.artists.push({ id: String(id), name: String(name), image: image || '', since: new Date().toISOString() });
   writeData(d);
-  const r = await syncConcerts([String(id)]).catch(e => ({ error: e.message }));
+  const r = await syncConcerts([String(id)], [String(id)]).catch(e => ({ error: e.message }));
   res.json({ ok:true, sync: r });
 });
 app.delete('/api/concerts/follow/:id', (req, res) => {
@@ -3220,8 +3244,12 @@ app.delete('/api/concerts/follow/:id', (req, res) => {
   writeData(d);
   res.json({ ok:true });
 });
-app.post('/api/concerts/sync', async (req, res) => {
-  res.json(await syncConcerts().catch(e => ({ error: e.message })));
+app.post('/api/concerts/sync', (req, res) => {
+  const d = readData();
+  if(!tmKey(d)) return res.json({ error:'No Ticketmaster key yet — add it in Settings → Private.' });
+  const before = concertsOf(d).lastSync;
+  syncConcerts().catch(e => console.log('Concert sync error:', e.message));
+  res.json({ started:true, before, artists: concertsOf(d).artists.length });
 });
 app.post('/api/concerts/add', (req, res) => {
   const d = readData(); const c = concertsOf(d);
@@ -3323,6 +3351,134 @@ app.get('/api/holidays', async (req, res) => {
     if(cc === 'RO'){ const list = romaniaHolidays(y); _holCache.set(ck, { at:Date.now()-6*24*3600*1000, list, source:'local' }); return res.json({ country:cc, year:y, holidays:list, source:'local' }); }
     res.json({ error:'Holidays for '+cc+' could not be loaded right now.', holidays:[] });
   }
+});
+
+
+// ═══════════════════════════════════════════════════
+// SHOPPING LIST (widget)
+// Server-owned, so a phone and a laptop always see the same list. Items are
+// grouped by aisle automatically (Romanian + English keywords), the things
+// you buy most become one-tap suggestions, and "Plan a shopping trip" puts
+// the list in the calendar as a personal event that stays in sync.
+// ═══════════════════════════════════════════════════
+const SHOP_AISLES = [
+  ['produce','Fruit & veg','🥬',['legum','fruct','mere','măr','mar ','pere','banan','portocal','lămâi','lamai','struguri','căpșun','capsun','roșii','rosii','castrave','ardei','ceapă','ceapa','usturoi','cartof','morcov','varză','varza','salat','spanac','dovlec','vinete','ciuperc','avocado','kiwi','lime','apple','banana','orange','lemon','tomato','cucumber','pepper','onion','garlic','potato','carrot','lettuce','spinach','mushroom','grape','berry','pătrunjel','patrunjel','mărar','marar','broccoli','conopid']],
+  ['bakery','Bakery','🥖',['pâine','paine','franzel','baghet','chifl','covrig','cozonac','croissant','lipii','bread','bagel','bun ','toast','tortilla']],
+  ['dairy','Dairy & eggs','🥛',['lapte','iaurt','brânz','branz','cașcaval','cascaval','telemea','smântân','smantan','unt','frișc','frisc','chefir','sana','ouă','oua','ou ','milk','yogurt','cheese','butter','cream','eggs','egg','mozzarella','parmezan']],
+  ['meat','Meat & fish','🍗',['carne','pui','piept','pulp','porc','vită','vita','miel','curcan','mici','cârnați','carnati','salam','șuncă','sunca','parizer','pește','peste','somon','ton ','creveți','creveti','chicken','beef','pork','turkey','ham','sausage','bacon','fish','salmon','tuna','shrimp']],
+  ['frozen','Frozen','🧊',['congelat','înghețat','inghetat','frozen','ice cream','pizza congel']],
+  ['pantry','Pantry','🥫',['orez','paste','spaghet','făină','faina','zahăr','zahar','sare','piper','ulei','oțet','otet','conserv','fasole','linte','năut','naut','mălai','malai','cereal','fulgi','ovăz','ovaz','miere','gem','dulceaț','dulceat','ciocolat','biscuiț','biscuit','cafea','ceai','condiment','sos','ketchup','maionez','muștar','mustar','rice','pasta','flour','sugar','salt','oil','vinegar','beans','cereal','oats','honey','jam','chocolate','cookies','coffee','tea','sauce','spice','nuts','nuci','alune','migdale']],
+  ['drinks','Drinks','🧃',['apă','apa ','suc','bere','vin ','vin,','cola','pepsi','fanta','sprite','limonad','energizant','water','juice','beer','wine','soda']],
+  ['household','Household','🧽',['detergent','balsam rufe','burete','hârtie','hartie','șervețel','servetel','prosop','saci','pungi','folie','bec','baterii','vase','clor','dezinfect','odorizant','sponge','paper towel','toilet paper','trash bag','foil','battery','bulb','dish']],
+  ['care','Personal care','🧴',['șampon','sampon','săpun','sapun','gel de duș','gel dus','pastă de dinți','pasta de dinti','periuț','periut','deodorant','cremă','crema','scutec','absorbant','servețele umede','servetele umede','shampoo','soap','toothpaste','toothbrush','razor','lotion','diaper']],
+  ['other','Other','🛍️',[]]
+];
+function shopAisle(name){
+  const n = ' ' + String(name||'').toLowerCase() + ' ';
+  for(const [id,,,words] of SHOP_AISLES){ if(words.some(w => n.includes(w))) return id; }
+  return 'other';
+}
+// "2 kg roșii", "ouă x10", "pâine 2", "lapte 2l" -> { name, qty }
+function shopParse(raw){
+  let t = String(raw||'').trim().replace(/\s+/g,' ');
+  if(!t) return null;
+  let qty = '';
+  let m = t.match(/^(x\s?\d+|\d+(?:[.,]\d+)?\s*(?:kg|g|gr|l|ml|buc|pcs|bucăți|bucati|x)?)\s+(.+)$/i);
+  if(m){ qty = m[1]; t = m[2]; }
+  else if((m = t.match(/^(.+?)\s+(x\s?\d+|\d+(?:[.,]\d+)?\s*(?:kg|g|gr|l|ml|buc|pcs|x)?)$/i))){ t = m[1]; qty = m[2]; }
+  qty = qty.replace(/\s+/g,'').replace(/^x(\d)/i,'$1').replace(/x$/i,'');
+  const name = t.charAt(0).toUpperCase() + t.slice(1);
+  return { name, qty };
+}
+function shopOf(d){
+  if(!d.shopping) d.shopping = { items:[], history:{}, trip:null };
+  const s = d.shopping; s.items = s.items || []; s.history = s.history || {};
+  return s;
+}
+function shopView(d){
+  const s = shopOf(d);
+  const usual = Object.values(s.history).filter(h => h.count >= 2 || Object.keys(s.history).length < 12)
+    .sort((a,b) => b.count - a.count || (b.last||0) - (a.last||0)).slice(0, 14)
+    .filter(h => !s.items.some(i => i.name.toLowerCase() === h.name.toLowerCase()))
+    .map(h => ({ name:h.name, cat:h.cat }));
+  const trip = s.trip && (d.tasks||[]).find(t => t.id === s.trip) ? (d.tasks||[]).find(t => t.id === s.trip) : null;
+  return { items: s.items, usual, aisles: SHOP_AISLES.map(([id,label,emoji]) => ({ id, label, emoji })),
+           trip: trip ? { id: trip.id, date: trip.date, time: trip.time } : null };
+}
+// Keeps the calendar event's title and notes in step with the list.
+function shopSyncTrip(d){
+  const s = shopOf(d);
+  if(!s.trip) return;
+  const t = (d.tasks||[]).find(x => x.id === s.trip);
+  if(!t){ s.trip = null; return; }
+  const open = s.items.filter(i => !i.done);
+  t.name = '🛒 Shopping' + (open.length ? ' · ' + open.length + ' item' + (open.length === 1 ? '' : 's') : ' · all bought');
+  // Still to buy, in the order added; what's already in the cart goes last.
+  const lines = [];
+  if(open.length) lines.push(open.map(i => i.name + (i.qty ? ' (' + i.qty + ')' : '')).join(', '));
+  const cart = s.items.filter(i => i.done);
+  if(cart.length) lines.push('✓ In the cart: ' + cart.map(i => i.name).join(', '));
+  t.notes = lines.join('\n') || 'List is empty';
+  t.shoppingTrip = true;
+}
+function shopAdd(s, raw){
+  const added = [];
+  for(const part of String(raw||'').split(/[,;\n]+/)){
+    const p = shopParse(part); if(!p) continue;
+    const key = p.name.toLowerCase();
+    const ex = s.items.find(i => i.name.toLowerCase() === key);
+    const cat = (s.history[key] && s.history[key].cat) || shopAisle(p.name);
+    if(ex){ ex.done = false; if(p.qty) ex.qty = p.qty; }
+    else s.items.push({ id: uid(), name: p.name, qty: p.qty, cat, done:false, at: Date.now() });
+    const h = s.history[key] || { name: p.name, count: 0, cat };
+    h.count++; h.last = Date.now(); h.cat = cat; s.history[key] = h;
+    added.push(p.name);
+  }
+  return added;
+}
+app.get('/api/shopping', (req, res) => res.json(shopView(readData())));
+app.post('/api/shopping', (req, res) => {
+  const d = readData(); const s = shopOf(d);
+  const b = req.body || {};
+  const it = b.id ? s.items.find(i => i.id === b.id) : null;
+  switch(b.op){
+    case 'add': shopAdd(s, b.text); break;
+    case 'toggle': if(it){ it.done = !it.done; it.doneAt = it.done ? Date.now() : null; } break;
+    case 'remove': s.items = s.items.filter(i => i.id !== b.id); break;
+    case 'edit':
+      if(it){
+        if(typeof b.name === 'string' && b.name.trim()) it.name = b.name.trim();
+        if(typeof b.qty === 'string') it.qty = b.qty.trim();
+        if(b.cat && SHOP_AISLES.some(a => a[0] === b.cat)){
+          it.cat = b.cat;
+          const k = it.name.toLowerCase(); if(s.history[k]) s.history[k].cat = b.cat;   // remembered next time
+        }
+      }
+      break;
+    case 'clearDone': s.items = s.items.filter(i => !i.done); break;
+    case 'clearAll': s.items = []; break;
+    case 'forget': { const k = String(b.name||'').toLowerCase(); delete s.history[k]; break; }
+    case 'plan': {
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(b.date||'') ? b.date : getToday();
+      const time = /^\d{1,2}:\d{2}$/.test(b.time||'') ? b.time : '18:00';
+      d.tasks = d.tasks || [];
+      let t = s.trip && d.tasks.find(x => x.id === s.trip);
+      if(!t){
+        const grp = (d.groups||[]).find(g => /pers/i.test(g.id) || /personal/i.test(g.name)) || (d.groups||[])[0] || { id:'g_pers' };
+        t = { id: 'shop_' + uid(), freq:'none', priority:'normal', group: grp.id, reminders:['60'], reminder:'60', done:false };
+        if(b.location) t.location = String(b.location).trim();
+        d.tasks.push(t); s.trip = t.id;
+      }
+      t.date = date; t.time = fmtTime(time);
+      if(typeof b.location === 'string') t.location = b.location.trim();
+      break;
+    }
+    case 'unplan': if(s.trip){ d.tasks = (d.tasks||[]).filter(x => x.id !== s.trip); s.trip = null; } break;
+    default: return res.status(400).json({ error:'Unknown action.' });
+  }
+  shopSyncTrip(d);
+  writeData(d);
+  res.json(shopView(d));
 });
 
 // ═══════════════════════════════════════════════════
