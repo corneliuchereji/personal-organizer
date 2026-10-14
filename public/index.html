@@ -838,6 +838,77 @@ button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vop
 .rem-add{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
 .rem-add-l{font-size:12px;color:var(--txt2)}
 .rem-add select{width:auto;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit}
+
+/* ══ Widgets launcher (tile panel) ══ */
+#wdrop{width:min(372px,calc(100vw - 16px));padding:12px;gap:0;max-height:min(80vh,640px);overflow-y:auto;overscroll-behavior:contain}
+@media (prefers-reduced-motion:no-preference){
+  #wdrop.open{animation:wdropIn 200ms var(--ease-out)}
+  @keyframes wdropIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+}
+.wpanel-head{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 10px}
+.wpanel-head b{font-size:16px;font-weight:650;letter-spacing:-.2px}
+.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wtile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:12px;border-radius:16px;cursor:pointer;
+  border:1px solid color-mix(in srgb,var(--wt) 26%,transparent);color:var(--txt);font:inherit;min-height:104px;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--wt) 16%,transparent),rgba(255,255,255,.02) 70%);
+  transition:transform 140ms var(--ease-out),border-color 150ms ease,background-color 150ms ease}
+.wtile:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){ .wtile:hover{border-color:color-mix(in srgb,var(--wt) 50%,transparent)} }
+.wtile:focus-visible{outline:2px solid var(--wt);outline-offset:2px}
+.wtile-ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:18px;
+  background:color-mix(in srgb,var(--wt) 22%,transparent);color:var(--wt)}
+.wtile b{font-size:13px;font-weight:650;line-height:1.25}
+.wtile small{font-size:11px;color:var(--txt2);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.wsec{font-size:11px;font-weight:650;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin:14px 4px 6px}
+.wlinks{display:flex;flex-direction:column;gap:2px}
+.wlink{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px;border:none;border-radius:12px;background:transparent;color:var(--txt);font:inherit;cursor:pointer;
+  transition:background-color 150ms ease,transform 140ms var(--ease-out)}
+.wlink:active{transform:scale(.98)}
+@media (hover:hover) and (pointer:fine){ .wlink:hover{background:var(--bg3)} }
+.wlink-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.06);color:var(--txt2);font-size:15px;flex:none}
+.wlink-t{flex:1;min-width:0}
+.wlink-t b{font-size:13px;font-weight:600;display:block}
+.wlink-t small{font-size:11px;color:var(--txt3)}
+.wlink .wgo{color:var(--txt3);font-size:14px}
+/* ══ World clocks ══ */
+.clk-body{display:flex;flex-direction:column;gap:8px}
+.clk-card{display:grid;grid-template-columns:1fr auto;grid-template-areas:"l t" "w a";gap:4px 10px;align-items:center;padding:12px 14px;border-radius:16px;
+  background:linear-gradient(160deg,rgba(251,191,36,.10),rgba(255,255,255,.02) 70%);border:1px solid rgba(251,191,36,.18)}
+.clk-left{grid-area:l;min-width:0}
+.clk-city{font-weight:650;font-size:15px}
+.clk-sub{font-size:12px;color:var(--txt2);margin-top:2px}
+.clk-time{grid-area:t;font-size:30px;font-weight:650;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
+.clk-wx{grid-area:w;display:flex;align-items:baseline;gap:8px}
+.clk-temp{font-size:15px;font-weight:600}
+.clk-hilo{font-size:12px;color:var(--txt3)}
+.clk-acts{grid-area:a;display:flex;gap:4px;justify-content:flex-end}
+.clk-acts a.btn{text-decoration:none}
+.clk-res{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 10px;border-radius:12px;border:none;background:rgba(255,255,255,.04);color:var(--txt);font:inherit;cursor:pointer}
+.clk-res-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.clk-res-t small{font-size:11px;color:var(--txt3)}
+/* ══ Public holidays ══ */
+.hol-bar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+.hol-years{display:inline-flex;padding:3px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid var(--border)}
+.hol-yr{border:none;background:transparent;color:var(--txt2);font:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer}
+.hol-yr.on{background:var(--accent);color:var(--accent-ink)}
+.hol-bar select{width:auto;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit}
+.hol-body{display:flex;flex-direction:column;gap:6px}
+.hol-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+.hol-row.next{background:linear-gradient(160deg,rgba(251,113,133,.14),rgba(255,255,255,.02) 70%);border-color:rgba(251,113,133,.35)}
+.hol-row.past{opacity:.55}
+.hol-date{width:40px;flex:none;text-align:center;display:flex;flex-direction:column}
+.hol-date b{font-size:19px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.hol-date span{font-size:11px;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+.hol-main{flex:1;min-width:0}
+.hol-name{font-weight:600;font-size:14px}
+.hol-sub{font-size:12px;color:var(--txt2);margin-top:2px}
+.hol-busy{color:#fda4af}
+@media (max-width:420px){ .hol-row .btn{padding:6px 10px} }
+
+@media (max-width:600px){ #wdrop{width:auto} }
+.hol-body .hol-row.past{display:none}
+.hol-body.show-past .hol-row.past{display:flex}
+.hol-more{border:none;background:transparent;color:var(--accent);font:inherit;font-size:12px;font-weight:600;padding:4px 2px 8px;text-align:left;cursor:pointer}
 </style>
 </head>
 <body>
@@ -996,6 +1067,7 @@ function saveState(){
           wxLat: S.wxLat, wxLon: S.wxLon, wxLocName: S.wxLocName,
           leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10,
           trafficPct: S.trafficPct!=null?S.trafficPct:20,
+          worldClocks: Array.isArray(S.worldClocks)?S.worldClocks:[], holCountry: S.holCountry||'RO',
           birthday: S.birthday||'',
           widgets: Array.isArray(S.widgets)?S.widgets:null
         }
@@ -1117,6 +1189,8 @@ async function loadFromServer(){
       homeName: d.settings?.homeName || '',
       leaveBy: d.settings?.leaveBy !== false,
       leaveBuffer: d.settings?.leaveBuffer != null ? d.settings.leaveBuffer : 10,
+      worldClocks: Array.isArray(d.settings?.worldClocks) ? d.settings.worldClocks : [],
+      holCountry: d.settings?.holCountry || 'RO',
       _rev: d._rev,
       weekOffset:keepWeek, dayOffset:keepDay
     };
@@ -3658,6 +3732,8 @@ const WIDGETS_DEFAULT=[
   {id:'w_timer',name:'Life timer', desc:'How long you\u2019ve been here, counting', action:'timer', icon:'ti-hourglass'},
   {id:'w_tithe',name:'Giving', desc:'Income, the share due and what you\u2019ve given', action:'tithe', icon:'ti-heart-handshake'},
   {id:'w_concerts',name:'Concerts', desc:'Your artists\u2019 dates in Europe', action:'concerts', icon:'ti-microphone-2'},
+  {id:'w_clocks',name:'World clocks', desc:'Time and weather in other cities', action:'clocks', icon:'ti-world'},
+  {id:'w_holidays',name:'Public holidays', desc:'National days, Easter, Christmas', action:'holidays', icon:'ti-confetti'},
   {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
   {id:'w_windy',name:'Windy',      desc:'Weather radar and forecast maps', url:'https://www.windy.com/',    icon:'ti-wind'},
   {id:'w_maps', name:'Google Maps',desc:'Maps and live traffic',           url:'https://maps.google.com/',  icon:'ti-map-2'}
@@ -3679,17 +3755,29 @@ function toggleWidgets(e){
   const open=d.classList.contains('open');
   if(open) return closeWidgets();
   const list=getWidgets();
-  d.innerHTML = (list.length
-      ? list.map(w=>'<button class="witem" role="menuitem" onclick="openWidget(\''+w.id+'\')">'+
-          '<i class="ti '+(w.icon||'ti-external-link')+'"></i>'+
-          '<span><b>'+escHtml(w.name)+'</b>'+(w.desc?'<small>'+escHtml(w.desc)+'</small>':'')+'</span>'+
-          '<i class="ti ti-arrow-up-right wgo"></i></button>').join('')
-      : '<div class="wempty">No widgets yet.</div>')
-    + '<button class="witem wmanage" role="menuitem" onclick="manageWidgets()"><i class="ti ti-settings"></i><span>Manage widgets</span></button>';
+  const tools=list.filter(w=>w.action), links=list.filter(w=>!w.action);
+  const tile=w=>{
+    const c=WIDGET_TINT[w.action]||'#8CA8FF';
+    return '<button class="wtile" role="menuitem" style="--wt:'+c+'" onclick="openWidget(\''+w.id+'\')">'+
+      '<span class="wtile-ic"><i class="ti '+(w.icon||'ti-apps')+'"></i></span>'+
+      '<b>'+escHtml(w.name)+'</b><small>'+escHtml(widgetPeek(w)||w.desc||'')+'</small></button>';
+  };
+  const link=w=>'<button class="wlink" role="menuitem" onclick="openWidget(\''+w.id+'\')">'+
+      '<span class="wlink-ic"><i class="ti '+(w.icon||'ti-external-link')+'"></i></span>'+
+      '<span class="wlink-t"><b>'+escHtml(w.name)+'</b>'+(w.desc?'<small>'+escHtml(w.desc)+'</small>':'')+'</span>'+
+      '<i class="ti ti-arrow-up-right wgo"></i></button>';
+  d.innerHTML =
+    '<div class="wpanel-head"><b>Widgets</b><button class="btn sm ghost" onclick="manageWidgets()"><i class="ti ti-adjustments"></i> Manage</button></div>'+
+    (tools.length ? '<div class="wgrid">'+tools.map(tile).join('')+'</div>' : '')+
+    (links.length ? '<div class="wsec">Links</div><div class="wlinks">'+links.map(link).join('')+'</div>' : '')+
+    (!list.length ? '<div class="wempty">No widgets yet.</div>' : '');
   // Anchor it under the toolbar button.
   const b=document.getElementById('widgetsBtn').getBoundingClientRect();
-  d.style.top=(b.bottom+8)+'px';
-  d.style.right=Math.max(8,(window.innerWidth-b.right))+'px';
+  d.style.top=Math.max(8, b.bottom+8)+'px';
+  // On a phone the panel spans the screen (8px gutters); on wider screens it
+  // hangs under the button, kept inside the window.
+  if(window.innerWidth<=600){ d.style.left='8px'; d.style.right='8px'; }
+  else { d.style.left='auto'; d.style.right=Math.max(8, Math.min(window.innerWidth-b.right, window.innerWidth-380))+'px'; }
   d.classList.add('open');
   document.getElementById('widgetsBtn').setAttribute('aria-expanded','true');
 }
@@ -3705,7 +3793,10 @@ document.addEventListener('click', e=>{
 });
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
-const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts() };
+const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays() };
+// Each built-in widget's accent, used for its tile in the launcher.
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -3865,6 +3956,181 @@ async function previewTravel(force){
       (leave?' \u2014 leave by <b>'+leave+'</b>':'')+mapBtnHtml();
   }catch(e){ out.innerHTML='<span style="color:var(--red)">Could not check travel time.</span>'; }
 }
+// A live one-liner under a launcher tile, where there's something worth
+// seeing at a glance; otherwise the tile shows its description.
+function widgetPeek(w){
+  try{
+    if(w.action==='clocks' && (S.worldClocks||[]).length){
+      return S.worldClocks.slice(0,2).map(c=>c.name+' '+clockTime(c.tz)).join(' · ');
+    }
+    if(w.action==='holidays' && _holNext){ return _holNext; }
+  }catch(e){}
+  return '';
+}
+
+// ─── WORLD CLOCKS ────────────────────────────────────────
+// Local time in other cities with the current temperature (Open-Meteo, no
+// key). Windy's own API only returns real data on a paid plan, so each city
+// links straight to its Windy map instead.
+let _clkTimer=null, _clkTemps={};
+function clockTime(tz){
+  try{ return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(e){ return '--:--'; }
+}
+function clockDay(tz){
+  try{ return new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:tz}); }catch(e){ return ''; }
+}
+function tzOffsetMin(tz){
+  // Minutes this zone is ahead of UTC right now.
+  try{
+    const d=new Date(); const parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(d);
+    const g=t=>parseInt(parts.find(p=>p.type===t).value);
+    const asUTC=Date.UTC(g('year'),g('month')-1,g('day'),g('hour'),g('minute'),g('second'));
+    return Math.round((asUTC-d.getTime())/60000);
+  }catch(e){ return 0; }
+}
+function clockDiff(tz){
+  const diff=tzOffsetMin(tz)-tzOffsetMin('Europe/Bucharest');
+  if(!diff) return 'same time';
+  const h=Math.trunc(diff/60), m=Math.abs(diff%60);
+  return (diff>0?'+':'−')+Math.abs(h)+(m?':'+String(m).padStart(2,'0'):'')+' h';
+}
+function wxEmoji(code, day){
+  if(code==null) return '';
+  if(code===0) return day?'☀️':'🌙';
+  if(code<=2) return day?'🌤️':'☁️';
+  if(code===3) return '☁️';
+  if(code===45||code===48) return '🌫️';
+  if(code>=95) return '⛈️';
+  if((code>=71&&code<=77)||code===85||code===86) return '❄️';
+  if(code>=80) return '🌦️';
+  return '🌧️';
+}
+async function openClocks(){
+  showModal('World clocks',
+    '<div id="clkBody" class="clk-body"></div>'+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-plus"></i> Add a city</div>'+
+    '<div style="display:flex;gap:6px"><input id="clkQ" class="cc-input" placeholder="e.g. Calgary" autocomplete="off" onkeydown="if(event.key===\'Enter\')clkSearch()">'+
+    '<button class="btn acc" onclick="clkSearch()">Search</button></div><div id="clkRes"></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  clkRender();
+  clkLoadTemps();
+  clearInterval(_clkTimer);
+  _clkTimer=setInterval(()=>{ if(!document.getElementById('clkBody')){ clearInterval(_clkTimer); return; } clkTick(); }, 15000);
+}
+function clkRender(){
+  const el=document.getElementById('clkBody'); if(!el) return;
+  const list=S.worldClocks||[];
+  if(!list.length){
+    el.innerHTML='<div class="cc-empty">No cities yet. Quick add: '+
+      [['Calgary','America/Edmonton',51.05,-114.07,'CA','Canada'],['Chicago','America/Chicago',41.85,-87.65,'US','United States'],['Milano','Europe/Rome',45.46,9.19,'IT','Italy']]
+        .map(c=>'<button class="btn sm" onclick="clkAdd('+escHtml(JSON.stringify({name:c[0],tz:c[1],lat:c[2],lon:c[3],cc:c[4],country:c[5]}))+')">'+CC_FLAG(c[4])+' '+c[0]+'</button>').join(' ')+'</div>';
+    return;
+  }
+  el.innerHTML=list.map((c,i)=>{
+    const t=_clkTemps[c.lat+','+c.lon];
+    return '<div class="clk-card" data-i="'+i+'">'+
+      '<div class="clk-left"><div class="clk-city">'+CC_FLAG(c.cc)+' '+escHtml(c.name)+'</div>'+
+        '<div class="clk-sub"><span class="clk-day">'+escHtml(clockDay(c.tz))+'</span> · <span class="clk-diff">'+escHtml(clockDiff(c.tz))+'</span></div></div>'+
+      '<div class="clk-time">'+clockTime(c.tz)+'</div>'+
+      '<div class="clk-wx">'+(t?'<span class="clk-temp">'+wxEmoji(t.code,t.day)+' '+Math.round(t.t)+'°</span>'+
+          (t.hi!=null?'<span class="clk-hilo">↑'+Math.round(t.hi)+'° ↓'+Math.round(t.lo)+'°</span>':''):'<span class="clk-hilo">…</span>')+'</div>'+
+      '<div class="clk-acts">'+
+        '<a class="btn sm" href="https://www.windy.com/?'+(+c.lat).toFixed(3)+','+(+c.lon).toFixed(3)+',9" target="_blank" rel="noopener"><i class="ti ti-wind"></i> Windy</a>'+
+        '<button class="btn sm ghost" onclick="clkRemove('+i+')" aria-label="Remove '+escHtml(c.name)+'"><i class="ti ti-x"></i></button>'+
+      '</div></div>';
+  }).join('');
+}
+function clkTick(){
+  document.querySelectorAll('.clk-card').forEach(card=>{
+    const c=(S.worldClocks||[])[+card.dataset.i]; if(!c) return;
+    card.querySelector('.clk-time').textContent=clockTime(c.tz);
+    card.querySelector('.clk-day').textContent=clockDay(c.tz);
+    card.querySelector('.clk-diff').textContent=clockDiff(c.tz);
+  });
+}
+async function clkLoadTemps(){
+  const list=S.worldClocks||[]; if(!list.length) return;
+  try{
+    const d=await (await fetch('/api/clocks/temps?pts='+list.map(c=>c.lat+','+c.lon).join(';'))).json();
+    (d.temps||[]).forEach((t,i)=>{ if(t && list[i]) _clkTemps[list[i].lat+','+list[i].lon]=t; });
+  }catch(e){}
+  clkRender();
+}
+async function clkSearch(){
+  const q=((document.getElementById('clkQ')||{}).value||'').trim(); const out=document.getElementById('clkRes');
+  if(!q||!out) return;
+  out.innerHTML='<div class="cc-empty"><i class="ti ti-loader-2"></i> Searching…</div>';
+  let d; try{ d=await (await fetch('/api/places?q='+encodeURIComponent(q))).json(); }catch(e){ d={error:'Search failed.'}; }
+  if(d.error){ out.innerHTML='<div class="cc-msg" style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+  const r=(d.results||[]).filter(x=>x.tz);
+  out.innerHTML=r.length ? '<div class="cc-results">'+r.map(x=>
+    '<button class="clk-res" onclick="clkAdd('+escHtml(JSON.stringify({name:x.name,tz:x.tz,lat:x.lat,lon:x.lon,cc:x.cc,country:x.country}))+')">'+
+      '<span>'+CC_FLAG(x.cc)+'</span><span class="clk-res-t"><b>'+escHtml(x.name)+'</b><small>'+escHtml([x.region,x.country].filter(Boolean).join(', '))+' · '+escHtml(clockTime(x.tz))+'</small></span>'+
+      '<i class="ti ti-plus"></i></button>').join('')+'</div>'
+    : '<div class="cc-empty">No city found for “'+escHtml(q)+'”.</div>';
+}
+function clkAdd(c){
+  S.worldClocks=(S.worldClocks||[]).filter(x=>!(x.name===c.name && x.tz===c.tz));
+  S.worldClocks.push(c);
+  saveState();
+  const out=document.getElementById('clkRes'); if(out) out.innerHTML='';
+  const q=document.getElementById('clkQ'); if(q) q.value='';
+  clkRender(); clkLoadTemps();
+}
+function clkRemove(i){
+  (S.worldClocks||[]).splice(i,1);
+  saveState(); clkRender();
+}
+
+// ─── PUBLIC HOLIDAYS ─────────────────────────────────────
+// Nager.Date (free, no key) through the server; Romania's legal holidays are
+// also worked out locally, so the list works even if that service is down.
+let _holYear=null, _holNext='';
+const HOL_COUNTRIES=[['RO','Romania'],['HU','Hungary'],['AT','Austria'],['DE','Germany'],['IT','Italy'],['GB','United Kingdom'],['CA','Canada'],['US','United States']];
+async function openHolidays(){
+  _holYear=_holYear||parseInt(TODAY.slice(0,4));
+  const y0=parseInt(TODAY.slice(0,4));
+  showModal('Public holidays',
+    '<div class="hol-bar">'+
+      '<div class="hol-years">'+[y0,y0+1].map(y=>'<button class="hol-yr'+(y===_holYear?' on':'')+'" onclick="_holYear='+y+';openHolidays()">'+y+'</button>').join('')+'</div>'+
+      '<select id="holCc" onchange="S.holCountry=this.value;saveState();openHolidays()">'+
+        HOL_COUNTRIES.map(([c,n])=>'<option value="'+c+'"'+((S.holCountry||'RO')===c?' selected':'')+'>'+CC_FLAG(c)+' '+n+'</option>').join('')+'</select>'+
+    '</div><div id="holBody" class="hol-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  const cc=S.holCountry||'RO';
+  let d; try{ d=await (await fetch('/api/holidays?year='+_holYear+'&country='+cc)).json(); }catch(e){ d={error:'Couldn’t load holidays.'}; }
+  const el=document.getElementById('holBody'); if(!el) return;
+  if(d.error){ el.innerHTML='<div class="cc-msg" style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
+  const list=d.holidays||[];
+  const nextIdx=list.findIndex(h=>h.date>=TODAY);
+  if(nextIdx>=0 && _holYear===y0){
+    const n=list[nextIdx], days=Math.round((parseD(n.date)-parseD(TODAY))/86400000);
+    _holNext=n.name+' · '+(days===0?'today':days===1?'tomorrow':'in '+days+' days');
+  }
+  // This year: what's ahead comes first; the ones already gone fold away.
+  const pastN = (_holYear===y0) ? list.filter(h=>h.date<TODAY).length : 0;
+  el.innerHTML=(pastN ? '<button class="hol-more" onclick="this.parentNode.classList.toggle(\'show-past\');this.textContent=this.parentNode.classList.contains(\'show-past\')?\'Hide earlier holidays\':\'Show '+pastN+' earlier this year\'">Show '+pastN+' earlier this year</button>' : '')+
+  list.map((h,i)=>{
+    const dt=parseD(h.date), days=Math.round((dt-parseD(TODAY))/86400000);
+    const when=days===0?'Today':days===1?'Tomorrow':days>0?'in '+days+' days':Math.abs(days)+' days ago';
+    const evs=agendaEventsOnDay(h.date).length;
+    return '<div class="hol-row'+(days<0?' past':'')+(i===nextIdx?' next':'')+'">'+
+      '<div class="hol-date"><b>'+dt.getDate()+'</b><span>'+dt.toLocaleDateString('en-GB',{month:'short'})+'</span></div>'+
+      '<div class="hol-main"><div class="hol-name">'+escHtml(h.localName||h.name)+'</div>'+
+        '<div class="hol-sub">'+(h.localName&&h.localName!==h.name?escHtml(h.name)+' · ':'')+dt.toLocaleDateString('en-GB',{weekday:'long'})+' · '+when+
+        (evs?' · <span class="hol-busy">'+evs+' scheduled</span>':'')+'</div></div>'+
+      '<button class="btn sm'+(i===nextIdx?' acc':'')+'" onclick="holGo(\''+h.date+'\')"><i class="ti ti-calendar"></i> See calendar</button>'+
+    '</div>';
+  }).join('')+
+  '<div class="cc-foot">'+(d.source==='local'?'Romanian legal holidays, worked out on this server (Orthodox Easter included).':'Source: Nager.Date public holidays.')+'</div>';
+}
+function holGo(ds){
+  closeModal();
+  openOnDate(ds);
+  const lp=document.getElementById('lp');
+  if(lp) lp.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
 // ─── CONCERTS ────────────────────────────────────────────
 // Follow artists; their European dates (Ticketmaster) are listed here and
 // new ones arrive as a notification. Nothing enters the calendar until you
@@ -4393,7 +4659,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-13-long-reminders';
+const APP_BUILD='2026-10-14-widgets';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -4643,7 +4909,11 @@ async function syncAppBadge(){
     if(!Array.isArray(items)) items=[];
     const keep=items.filter(x=>{
       const t=x&&x.id&&S.tasks.find(t=>t.id===x.id);
-      return t && !isDoneOn(t, x.date||t.date);
+      if(!t || isDoneOn(t, x.date||t.date)) return false;
+      // Postponed (+1d) or moved to another day: that reminder is dealt with.
+      if(x.date && (!t.freq || t.freq==='none') && t.date !== x.date) return false;
+      if(x.date && t.freq && t.freq!=='none' && !matchesDate(t, x.date)) return false;
+      return true;
     });
     if(keep.length!==items.length) await c.put('items', new Response(JSON.stringify(keep)));
     // Close the notifications of tasks just marked Done too — on Android
