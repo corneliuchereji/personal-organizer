@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-13-long-reminders';
+const BUILD_VERSION = '2026-10-14-widgets';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3238,6 +3238,91 @@ app.post('/api/concerts/remove', (req, res) => {
   d.tasks = (d.tasks||[]).filter(t => t.concertId !== id);
   writeData(d);
   res.json({ ok:true, removed: before - d.tasks.length });
+});
+
+
+// ═══════════════════════════════════════════════════
+// WORLD CLOCKS & PUBLIC HOLIDAYS (widgets) — no keys needed
+// Places and temperatures come from Open-Meteo (free, no key; Windy's own
+// API only gives real data on a paid plan, so the widget links to Windy for
+// the maps instead). Holidays come from Nager.Date (free, no key), with
+// Romania's legal holidays worked out locally as a fallback.
+// ═══════════════════════════════════════════════════
+app.get('/api/places', async (req, res) => {
+  try{
+    const q = String(req.query.q||'').trim();
+    if(!q) return res.json({ results:[] });
+    const r = await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=6&language=en&format=json');
+    const d = await r.json();
+    res.json({ results: (d.results||[]).map(g => ({ name:g.name, region:g.admin1||'', country:g.country||'', cc:g.country_code||'',
+      lat:g.latitude, lon:g.longitude, tz:g.timezone||'' })) });
+  }catch(e){ res.json({ error:'Place search failed: '+e.message }); }
+});
+const _tempCache = new Map();   // "lat,lon" -> { at, data }
+app.get('/api/clocks/temps', async (req, res) => {
+  try{
+    const pts = String(req.query.pts||'').split(';').map(p=>p.split(',').map(Number)).filter(p=>p.length===2 && p.every(isFinite)).slice(0,12);
+    if(!pts.length) return res.json({ temps:[] });
+    const key = p => p[0].toFixed(2)+','+p[1].toFixed(2);
+    const need = pts.filter(p => { const h=_tempCache.get(key(p)); return !h || Date.now()-h.at > 10*60000; });
+    if(need.length){
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude='+need.map(p=>p[0]).join(',')+'&longitude='+need.map(p=>p[1]).join(',')+
+        '&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto';
+      const r = await fetch(url); const d = await r.json();
+      const arr = Array.isArray(d) ? d : [d];
+      arr.forEach((x,i) => { if(x && x.current) _tempCache.set(key(need[i]), { at:Date.now(), data:{
+        t: x.current.temperature_2m, code: x.current.weather_code, day: !!x.current.is_day,
+        hi: x.daily && x.daily.temperature_2m_max ? x.daily.temperature_2m_max[0] : null,
+        lo: x.daily && x.daily.temperature_2m_min ? x.daily.temperature_2m_min[0] : null } }); });
+    }
+    res.json({ temps: pts.map(p => (_tempCache.get(key(p))||{}).data || null) });
+  }catch(e){ res.json({ error:'Weather lookup failed: '+e.message, temps:[] }); }
+});
+
+// Orthodox Easter (Julian computus + 13 days; valid 1900–2099).
+function orthodoxEaster(y){
+  const a=y%4, b=y%7, c=y%19, d=(19*c+15)%30, e=(2*a+4*b-d+34)%7;
+  const m=Math.floor((d+e+114)/31), day=((d+e+114)%31)+1;
+  const t = new Date(Date.UTC(y, m-1, day)); t.setUTCDate(t.getUTCDate()+13);
+  return t;
+}
+function romaniaHolidays(y){
+  const iso = t => t.toISOString().slice(0,10);
+  const plus = (t,n) => { const x=new Date(t); x.setUTCDate(x.getUTCDate()+n); return x; };
+  const E = orthodoxEaster(y);
+  const L = [
+    [y+'-01-01','Anul Nou','New Year’s Day'], [y+'-01-02','Anul Nou','Day after New Year’s Day'],
+    [y+'-01-06','Boboteaza','Epiphany'], [y+'-01-07','Sf. Ioan Botezătorul','St John the Baptist'],
+    [y+'-01-24','Ziua Unirii Principatelor Române','Union Day'],
+    [iso(plus(E,-2)),'Vinerea Mare','Orthodox Good Friday'], [iso(E),'Paștele','Orthodox Easter'], [iso(plus(E,1)),'A doua zi de Paște','Orthodox Easter Monday'],
+    [y+'-05-01','Ziua Muncii','Labour Day'], [y+'-06-01','Ziua Copilului','Children’s Day'],
+    [iso(plus(E,49)),'Rusaliile','Orthodox Pentecost'], [iso(plus(E,50)),'A doua zi de Rusalii','Orthodox Whit Monday'],
+    [y+'-08-15','Adormirea Maicii Domnului','Assumption Day'], [y+'-11-30','Sfântul Andrei','St Andrew’s Day'],
+    [y+'-12-01','Ziua Națională a României','National Day'],
+    [y+'-12-25','Crăciunul','Christmas Day'], [y+'-12-26','A doua zi de Crăciun','Second day of Christmas']
+  ];
+  return L.map(([date, localName, name]) => ({ date, localName, name })).sort((a,b)=>a.date.localeCompare(b.date));
+}
+const _holCache = new Map();    // "RO-2027" -> { at, list }
+app.get('/api/holidays', async (req, res) => {
+  const y = parseInt(req.query.year) || new Date().getFullYear();
+  const cc = /^[A-Za-z]{2}$/.test(req.query.country||'') ? String(req.query.country).toUpperCase() : 'RO';
+  const ck = cc+'-'+y;
+  const hit = _holCache.get(ck);
+  if(hit && Date.now()-hit.at < 7*24*3600*1000) return res.json({ country:cc, year:y, holidays:hit.list, source:hit.source });
+  try{
+    const r = await fetch('https://date.nager.at/api/v3/PublicHolidays/'+y+'/'+cc, { headers:{ 'Accept':'application/json' } });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    const list = (Array.isArray(d)?d:[]).filter(h => !h.types || h.types.includes('Public'))
+      .map(h => ({ date:h.date, localName:h.localName, name:h.name }));
+    if(!list.length) throw new Error('empty');
+    _holCache.set(ck, { at:Date.now(), list, source:'nager' });
+    res.json({ country:cc, year:y, holidays:list, source:'nager' });
+  }catch(e){
+    if(cc === 'RO'){ const list = romaniaHolidays(y); _holCache.set(ck, { at:Date.now()-6*24*3600*1000, list, source:'local' }); return res.json({ country:cc, year:y, holidays:list, source:'local' }); }
+    res.json({ error:'Holidays for '+cc+' could not be loaded right now.', holidays:[] });
+  }
 });
 
 // ═══════════════════════════════════════════════════
