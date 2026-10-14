@@ -909,6 +909,60 @@ button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vop
 .hol-body .hol-row.past{display:none}
 .hol-body.show-past .hol-row.past{display:flex}
 .hol-more{border:none;background:transparent;color:var(--accent);font:inherit;font-size:12px;font-weight:600;padding:4px 2px 8px;text-align:left;cursor:pointer}
+
+/* ══ Shopping list ══ */
+.sh-add{display:flex;gap:6px;margin-bottom:10px}
+.sh-add .btn{width:46px;justify-content:center;font-size:18px}
+.sh-body{display:flex;flex-direction:column}
+.sh-usual{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;align-items:center}
+.sh-usual::-webkit-scrollbar{display:none}
+.sh-usual-l{font-size:11px;color:var(--txt3);font-weight:650;text-transform:uppercase;letter-spacing:.5px;flex:none;margin-right:2px}
+.sh-chip{flex:none;display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:99px;border:1px solid rgba(74,222,128,.28);background:rgba(74,222,128,.08);color:#bbf7d0;font:inherit;font-size:13px;cursor:pointer;
+  transition:transform 140ms var(--ease-out)}
+.sh-chip:active{transform:scale(.95)}
+.sh-chip i{font-size:12px;opacity:.7}
+.sh-prog{margin:2px 0 10px}
+.sh-prog-t{font-size:13px;color:var(--txt2);margin-bottom:6px}
+.sh-prog-t b{color:var(--txt);font-size:15px}
+.sh-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.sh-bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4ade80,#a3e635);transition:width 300ms var(--ease-out)}
+.sh-trip{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border-radius:14px;border:1px dashed rgba(74,222,128,.35);background:transparent;color:var(--txt);font:inherit;cursor:pointer;margin-bottom:12px}
+.sh-trip > .ti:first-child{font-size:20px;color:#4ade80}
+.sh-trip.on{border-style:solid;background:rgba(74,222,128,.08)}
+.sh-trip-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.sh-trip-t b{font-size:13px;font-weight:650}
+.sh-trip-t small{font-size:11px;color:var(--txt3)}
+.sh-plan{padding:12px;border-radius:14px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.06);margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.sh-plan-days{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sh-plan-days .hol-yr{background:rgba(255,255,255,.06)}
+.sh-plan-days .hol-yr.on{background:#4ade80;color:#052e16}
+.sh-plan input[type=date],.sh-plan input[type=time]{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit;color-scheme:dark}
+.sh-plan-row{display:flex;gap:6px}
+.sh-plan-row .cc-input{flex:1}
+.sh-plan-acts{display:flex;gap:6px;align-items:center}
+.sh-empty{font-size:13px;color:var(--txt2);text-align:center;padding:18px 8px}
+.sh-aisle{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:650;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin:12px 2px 6px}
+.sh-aisle small{font-weight:600;color:var(--txt3);letter-spacing:0}
+.sh-aisle .btn{margin-left:auto;text-transform:none;letter-spacing:0}
+.sh-cart-h{margin-top:18px}
+.sh-row{display:flex;flex-wrap:wrap;align-items:center;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid var(--border);margin-bottom:6px;overflow:hidden}
+.sh-check{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:12px;border:none;background:transparent;color:var(--txt);font:inherit;text-align:left;cursor:pointer;
+  transition:transform 140ms var(--ease-out)}
+.sh-check:active{transform:scale(.985)}
+.sh-box{width:24px;height:24px;flex:none;border-radius:8px;border:2px solid rgba(74,222,128,.55);display:grid;place-items:center;color:#052e16;font-size:15px;
+  transition:background-color 160ms ease,border-color 160ms ease}
+.sh-row.done .sh-box{background:#4ade80;border-color:#4ade80}
+.sh-name{flex:1;min-width:0;font-size:15px;overflow-wrap:anywhere}
+.sh-qty{flex:none;font-size:12px;font-weight:600;color:#bbf7d0;background:rgba(74,222,128,.12);border-radius:99px;padding:2px 8px}
+.sh-row.done{background:transparent;border-style:dashed}
+.sh-row.done .sh-name{text-decoration:line-through;color:var(--txt3)}
+.sh-row.done .sh-qty{opacity:.5}
+.sh-more{flex:none;width:42px;align-self:stretch;border:none;background:transparent;color:var(--txt3);font-size:18px;cursor:pointer}
+.sh-edit{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 12px}
+.sh-edit .cc-input{flex:1 1 120px}
+.sh-edit select{flex:1 1 140px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit}
+.sh-edit-acts{flex-basis:100%;display:flex;justify-content:space-between;gap:6px}
+@media (prefers-reduced-motion:reduce){ .sh-bar span{transition:none} }
 </style>
 </head>
 <body>
@@ -1553,11 +1607,12 @@ function renderCard(ev){
   let acts='';
   acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\',\''+(ev._occDate||ev.date)+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
+  if(ev.shoppingTrip) acts+='<button class="ea" onclick="openShopping()"><i class="ti ti-shopping-cart"></i>List</button>';
   if(ev.ticketUrl) acts+='<a class="ea" href="'+escHtml(ev.ticketUrl)+'" target="_blank" rel="noopener" style="text-decoration:none"><i class="ti ti-ticket"></i>Tickets</a>';
   if(ev.location) acts+='<button class="ea" onclick="openRouteMapFor(\''+ev.id+'\')"><i class="ti ti-map-2"></i>Map</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard task'+(ev.concertId?' concert':'')+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'">'+
+  return '<div class="ecard task'+(ev.concertId?' concert':'')+(ev.shoppingTrip?' shoptrip':'')+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'"'+(ev.shoppingTrip?' onclick="if(!event.target.closest(\'button,a\'))openShopping()" style="cursor:pointer"':'')+'>'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
@@ -3732,6 +3787,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_timer',name:'Life timer', desc:'How long you\u2019ve been here, counting', action:'timer', icon:'ti-hourglass'},
   {id:'w_tithe',name:'Giving', desc:'Income, the share due and what you\u2019ve given', action:'tithe', icon:'ti-heart-handshake'},
   {id:'w_concerts',name:'Concerts', desc:'Your artists\u2019 dates in Europe', action:'concerts', icon:'ti-microphone-2'},
+  {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
   {id:'w_clocks',name:'World clocks', desc:'Time and weather in other cities', action:'clocks', icon:'ti-world'},
   {id:'w_holidays',name:'Public holidays', desc:'National days, Easter, Christmas', action:'holidays', icon:'ti-confetti'},
   {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
@@ -3794,9 +3850,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -3964,8 +4020,143 @@ function widgetPeek(w){
       return S.worldClocks.slice(0,2).map(c=>c.name+' '+clockTime(c.tz)).join(' · ');
     }
     if(w.action==='holidays' && _holNext){ return _holNext; }
+    if(w.action==='shopping' && _shop){ const n=_shop.items.filter(i=>!i.done).length; return n ? n+' to buy'+(_shop.trip?' \u00b7 trip '+shopWhen(_shop.trip):'') : 'List is empty'; }
   }catch(e){}
   return '';
+}
+
+// ─── SHOPPING LIST ───────────────────────────────────────
+// Type several things at once ("lapte, 2 kg roșii, ouă x10"); they're listed
+// in the order you add them, and what you buy often comes back as one-tap
+// suggestions. "Plan a shopping trip" puts the list in the calendar as a
+// personal event that keeps itself up to date.
+let _shop = null, _shopEdit = null, _shopPlan = false;
+function shopWhen(t){
+  if(!t) return '';
+  const d = t.date===TODAY ? 'today' : t.date===fmtD(new Date(parseD(TODAY).getTime()+86400000)) ? 'tomorrow'
+    : parseD(t.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  return d+' '+fmtTime(t.time);
+}
+async function shopFetch(){
+  try{ _shop = await (await fetch('/api/shopping')).json(); }catch(e){ _shop = _shop || { items:[], usual:[], aisles:[], error:'Couldn’t reach the server.' }; }
+}
+async function shopOp(body){
+  let v;
+  try{
+    const r = await fetch('/api/shopping',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    v = await r.json();
+  }catch(e){ v = null; }
+  if(v && !v.error){ const hadTrip = !!(_shop && _shop.trip) || !!v.trip; _shop = v; if(hadTrip){ await loadFromServer(); renderAll(); } }
+  shopRender(v && v.error ? v.error : (!v ? 'No answer from the server — check your connection.' : ''));
+}
+async function openShopping(){
+  closeRouteMap && document.getElementById('mapOv') && closeRouteMap();
+  _shopEdit = null; _shopPlan = false;
+  showModal('Shopping list',
+    '<div class="sh-add"><input id="shIn" class="cc-input" placeholder="Add items — e.g. lapte, 2 kg roșii, ouă x10" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key===\'Enter\'){event.preventDefault();shopAddTyped()}">'+
+      '<button class="btn acc" onclick="shopAddTyped()" aria-label="Add"><i class="ti ti-plus"></i></button></div>'+
+    '<div id="shBody" class="sh-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div></div>',
+    '<button class="btn sm" onclick="shopShare()"><i class="ti ti-share"></i> Share</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  await shopFetch();
+  shopRender();
+  setTimeout(()=>{ const i=document.getElementById('shIn'); if(i && matchMedia('(pointer:fine)').matches) i.focus(); }, 80);
+}
+function shopAddTyped(){
+  const i = document.getElementById('shIn'); if(!i) return;
+  const t = i.value.trim(); if(!t) return;
+  i.value = '';
+  shopOp({ op:'add', text:t });
+  if(matchMedia('(pointer:coarse)').matches) i.blur(); else i.focus();
+}
+function shopToggle(id){
+  const it = _shop && _shop.items.find(x=>x.id===id); if(!it) return;
+  it.done = !it.done; shopRender();              // instant, then confirm with the server
+  shopOp({ op:'toggle', id });
+}
+function shopRender(msg){
+  const el = document.getElementById('shBody'); if(!el || !_shop) return;
+  const S2 = _shop, items = S2.items||[];
+  const open = items.filter(i=>!i.done), cart = items.filter(i=>i.done);
+  let h = msg ? '<div class="cc-msg" style="color:var(--yellow)">'+escHtml(msg)+'</div>' : '';
+  // Usual items
+  if((S2.usual||[]).length){
+    h += '<div class="sh-usual"><span class="sh-usual-l">Usual</span>'+S2.usual.map(u=>
+      '<button class="sh-chip" onclick="shopOp({op:\'add\',text:'+escHtml(JSON.stringify(u.name))+'})"><i class="ti ti-plus"></i>'+escHtml(u.name)+'</button>').join('')+'</div>';
+  }
+  // Progress + trip
+  if(items.length){
+    const pct = Math.round(cart.length/items.length*100);
+    h += '<div class="sh-prog"><div class="sh-prog-t"><b>'+open.length+'</b> to buy'+(cart.length?' · '+cart.length+' in the cart':'')+'</div>'+
+      '<div class="sh-bar"><span style="width:'+pct+'%"></span></div></div>';
+  }
+  h += shopTripHtml();
+  // Open items by aisle
+  if(!open.length){
+    h += '<div class="sh-empty">'+(items.length ? '🎉 Everything’s in the cart.' : 'Nothing on the list yet. Type above — several at once, separated by commas.')+'</div>';
+  }
+  h += open.map(i=>shopRowHtml(i)).join('');
+  if(cart.length){
+    h += '<div class="sh-aisle sh-cart-h"><span>🛒</span>In the cart<small>'+cart.length+'</small>'+
+      '<button class="btn sm ghost" onclick="shopOp({op:\'clearDone\'})">Clear</button></div>'+cart.map(i=>shopRowHtml(i)).join('');
+  }
+  el.innerHTML = h;
+}
+function shopRowHtml(i){
+  const editing = _shopEdit === i.id;
+  return '<div class="sh-row'+(i.done?' done':'')+(editing?' editing':'')+'">'+
+    '<button class="sh-check" onclick="shopToggle(\''+i.id+'\')" aria-label="'+(i.done?'Not bought':'Bought')+': '+escHtml(i.name)+'" aria-pressed="'+(i.done?'true':'false')+'">'+
+      '<span class="sh-box">'+(i.done?'<i class="ti ti-check"></i>':'')+'</span>'+
+      '<span class="sh-name">'+escHtml(i.name)+'</span>'+(i.qty?'<span class="sh-qty">'+escHtml(i.qty)+'</span>':'')+
+    '</button>'+
+    '<button class="sh-more" onclick="_shopEdit=_shopEdit===\''+i.id+'\'?null:\''+i.id+'\';shopRender()" aria-label="Edit '+escHtml(i.name)+'"><i class="ti ti-dots"></i></button>'+
+    (editing ? '<div class="sh-edit">'+
+      '<input id="shQty" class="cc-input" value="'+escHtml(i.qty||'')+'" placeholder="Qty (2, 1 kg…)">'+
+      '<div class="sh-edit-acts"><button class="btn sm red" onclick="_shopEdit=null;shopOp({op:\'remove\',id:\''+i.id+'\'})"><i class="ti ti-trash"></i> Remove</button>'+
+      '<button class="btn sm acc" onclick="_shopEdit=null;shopOp({op:\'edit\',id:\''+i.id+'\',qty:document.getElementById(\'shQty\').value})">Save</button></div>'+
+    '</div>' : '')+
+  '</div>';
+}
+function shopTripHtml(){
+  const t = _shop && _shop.trip;
+  if(t && !_shopPlan){
+    return '<div class="sh-trip on"><i class="ti ti-calendar-check"></i><div class="sh-trip-t"><b>Shopping trip '+escHtml(shopWhen(t))+'</b><small>In your calendar — it updates as the list changes</small></div>'+
+      '<button class="btn sm" onclick="_shopPlan=true;shopRender()">Change</button>'+
+      '<button class="btn sm ghost" onclick="closeModal();openOnDate(\''+t.date+'\',\''+t.id+'\')" aria-label="See in calendar"><i class="ti ti-calendar"></i></button></div>';
+  }
+  if(!_shopPlan){
+    return (_shop.items||[]).some(i=>!i.done)
+      ? '<button class="sh-trip" onclick="_shopPlan=true;shopRender()"><i class="ti ti-calendar-plus"></i><div class="sh-trip-t"><b>Plan a shopping trip</b><small>Put this list in your calendar</small></div><i class="ti ti-chevron-right"></i></button>'
+      : '';
+  }
+  const tomorrow = fmtD(new Date(parseD(TODAY).getTime()+86400000));
+  const cur = t ? t.date : TODAY;
+  return '<div class="sh-plan"><div class="sh-plan-days">'+
+      '<button class="hol-yr'+(cur===TODAY?' on':'')+'" onclick="document.getElementById(\'shDate\').value=\''+TODAY+'\';this.parentNode.querySelectorAll(\'.hol-yr\').forEach(b=>b.classList.remove(\'on\'));this.classList.add(\'on\')">Today</button>'+
+      '<button class="hol-yr'+(cur===tomorrow?' on':'')+'" onclick="document.getElementById(\'shDate\').value=\''+tomorrow+'\';this.parentNode.querySelectorAll(\'.hol-yr\').forEach(b=>b.classList.remove(\'on\'));this.classList.add(\'on\')">Tomorrow</button>'+
+      '<input type="date" id="shDate" value="'+cur+'" onchange="this.parentNode.querySelectorAll(\'.hol-yr\').forEach(b=>b.classList.remove(\'on\'))">'+
+    '</div>'+
+    '<div class="sh-plan-row"><input type="time" id="shTime" value="'+(t?fmtTime(t.time):'18:00')+'" step="300">'+
+      '<input id="shWhere" class="cc-input" placeholder="Store (optional) — e.g. Lidl Lugoj" autocomplete="off"></div>'+
+    '<div class="sh-plan-acts">'+(t?'<button class="btn sm red" onclick="_shopPlan=false;shopOp({op:\'unplan\'})">Remove trip</button>':'')+
+      '<span class="msp"></span><button class="btn sm" onclick="_shopPlan=false;shopRender()">Cancel</button>'+
+      '<button class="btn sm acc" onclick="shopPlanSave()"><i class="ti ti-calendar-plus"></i> '+(t?'Save':'Add to calendar')+'</button></div></div>';
+}
+function shopPlanSave(){
+  const date = (document.getElementById('shDate')||{}).value, time = (document.getElementById('shTime')||{}).value;
+  const where = ((document.getElementById('shWhere')||{}).value||'').trim();
+  _shopPlan = false;
+  const body = { op:'plan', date, time }; if(where) body.location = where;
+  shopOp(body);
+}
+async function shopShare(){
+  if(!_shop) return;
+  const open = _shop.items.filter(i=>!i.done);
+  if(!open.length) return shopRender('Nothing left to buy — nothing to share.');
+  const txt = '\ud83d\uded2 Shopping list\n' + open.map(i=>'\u2022 '+i.name+(i.qty?' ('+i.qty+')':'')).join('\n');
+  try{
+    if(navigator.share){ await navigator.share({ title:'Shopping list', text:txt }); return; }
+    await navigator.clipboard.writeText(txt); shopRender('✅ Copied — paste it in WhatsApp or a message.');
+  }catch(e){ if(e && e.name !== 'AbortError') shopRender('Couldn’t share from this browser.'); }
 }
 
 // ─── WORLD CLOCKS ────────────────────────────────────────
@@ -4222,11 +4413,21 @@ async function ccSearch(){
         '</div>').join('')+'</div>'
     : '<div class="cc-empty">No artist found on Ticketmaster for “'+escHtml(q)+'”.</div>';
 }
+// Network/server problems get a real explanation instead of a bare "Failed."
+async function ccPost(url, body){
+  try{
+    const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+    let d = {}; try{ d = await r.json(); }catch(e){}
+    if(!r.ok && !d.error) d.error = 'The server answered with an error ('+r.status+'). Try again in a moment.';
+    return d;
+  }catch(e){ return { error:'No answer from the server — check your connection and try again.' }; }
+}
 async function ccFollow(btn, id){
   btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>';
-  const r = await fetch('/api/concerts/follow',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ id, name: btn.dataset.name, image: btn.dataset.img })}).then(r=>r.json()).catch(()=>({error:'Failed.'}));
+  const r = await ccPost('/api/concerts/follow', { id, name: btn.dataset.name, image: btn.dataset.img });
+  const sy = r.sync || {};
   await ccLoad(r.error ? '<span style="color:var(--red)">'+escHtml(r.error)+'</span>'
+    : sy.error ? '<span style="color:var(--yellow)">Following <b>'+escHtml(btn.dataset.name)+'</b>, but their dates couldn’t be checked yet: '+escHtml(sy.error)+'</span>'
     : '✅ Following <b>'+escHtml(btn.dataset.name)+'</b>. New European dates will send you a notification.');
 }
 async function ccUnfollow(id, name){
@@ -4234,7 +4435,7 @@ async function ccUnfollow(id, name){
   await ccLoad('Stopped following <b>'+escHtml(name)+'</b>. Concerts already in your calendar stay there.');
 }
 async function ccAdd(id){
-  const r = await fetch('/api/concerts/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).then(r=>r.json()).catch(()=>({error:'Failed.'}));
+  const r = await ccPost('/api/concerts/add', {id});
   // Reload straight away: a save from this tab must not carry the old task list.
   await loadFromServer(); renderAll();
   await ccLoad(r.error ? '<span style="color:var(--red)">'+escHtml(r.error)+'</span>' : '✅ Added to your calendar, with a reminder the day before.');
@@ -4244,11 +4445,29 @@ async function ccRemove(id){
   await loadFromServer(); renderAll();
   await ccLoad('Removed from your calendar.');
 }
+// "Check now" runs on the server in the background (with many artists it
+// takes a little while); the widget waits for the new check to land.
 async function ccRefresh(btn){
+  const reset = () => { if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-refresh"></i> Check now'; } };
   if(btn){ btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Checking…'; }
-  const r = await fetch('/api/concerts/sync',{method:'POST'}).then(r=>r.json()).catch(()=>({error:'Failed.'}));
-  if(btn){ btn.disabled = false; btn.innerHTML = '<i class="ti ti-refresh"></i> Check now'; }
-  await ccLoad(r.error ? '<span style="color:var(--yellow)">'+escHtml(r.error)+'</span>' : (r.newOnes ? '🎉 '+r.newOnes+' new date'+(r.newOnes===1?'':'s')+' found.' : 'Up to date.'));
+  const before = (_cc && _cc.events || []).length;
+  const r = await ccPost('/api/concerts/sync');
+  if(r.error){ reset(); return ccLoad('<span style="color:var(--yellow)">'+escHtml(r.error)+'</span>'); }
+  ccRender('<i class="ti ti-loader-2"></i> Checking '+(r.artists||'all')+' artists on Ticketmaster — about '+Math.max(5, Math.ceil((r.artists||10)*0.5))+' seconds…');
+  const t0 = Date.now();
+  while(Date.now()-t0 < 120000){
+    await new Promise(z=>setTimeout(z, 3000));
+    if(!document.getElementById('ccBody')){ reset(); return; }
+    let d; try{ d = await (await fetch('/api/concerts')).json(); }catch(e){ continue; }
+    if(d.lastSync && d.lastSync !== r.before){
+      _cc = d; reset();
+      const diff = (d.events||[]).length - before;
+      return ccRender(d.lastError ? '<span style="color:var(--yellow)">Checked, with a problem: '+escHtml(d.lastError)+'</span>'
+        : diff > 0 ? '🎉 '+diff+' new date'+(diff===1?'':'s')+' found.' : '✅ Up to date.');
+    }
+  }
+  reset();
+  ccLoad('Still checking in the background — reopen Concerts in a minute.');
 }
 
 // ─── ROUTE MAP ───────────────────────────────────────────
@@ -4659,7 +4878,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-14-widgets';
+const APP_BUILD='2026-10-14-shopping-flat';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
