@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-14-shopping-flat';
+const BUILD_VERSION = '2026-10-15-overdue-live';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2847,10 +2847,12 @@ const MCP_TOOLS = [
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string', description:'Artist or band name'} } } },
   { name:'concerts_upcoming', description:'Upcoming European concerts of the followed artists, with whether each is in the calendar.',
     inputSchema:{ type:'object', properties:{} } },
-  { name:'add_to_shopping_list', description:'Add items to the shopping list. Several at once, comma-separated; quantities allowed (e.g. "2 kg roșii, lapte, ouă x10").',
+  { name:'add_to_shopping_list', description:'Add items to the shopping list (the next planned shopping trip, or the first list). Several at once, comma-separated; quantities allowed (e.g. "2 kg roșii, lapte, ouă x10").',
     inputSchema:{ type:'object', required:['items'], properties:{ items:{type:'string'} } } },
-  { name:'shopping_list', description:'What is on the shopping list, grouped by aisle, with what is already bought.',
+  { name:'shopping_list', description:'All shopping lists with their planned trip (date, time, store) and what is already bought.',
     inputSchema:{ type:'object', properties:{} } },
+  { name:'exchange_rate', description:'Convert between currencies at the official BNR (National Bank of Romania) reference rate of the day.',
+    inputSchema:{ type:'object', required:['from','to'], properties:{ from:{type:'string', description:'ISO code, e.g. EUR'}, to:{type:'string', description:'ISO code, e.g. RON'}, amount:{type:'number', description:'Defaults to 1'} } } },
   { name:'complete_task', description:'Mark a task done (or not done) by name.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, done:{type:'boolean'} } } },
   { name:'delete_task', description:'Delete a task by name.',
@@ -2953,14 +2955,25 @@ async function mcpCall(name, args){
     }
     case 'add_to_shopping_list': {
       const sh = shopOf(d);
-      const added = shopAdd(sh, args.items);
+      const l = shopDefaultList(d);
+      const added = shopAdd(sh, args.items, l);
       shopSyncTrip(d); writeData(d);
-      return mcpText(added.length ? 'Added to the shopping list: '+added.join(', ')+'.' : 'Nothing to add.');
+      const t = shopTripOf(d, l);
+      return mcpText(added.length ? 'Added to the shopping list'+(t?' for '+t.date+(t.location?' ('+t.location+')':''):'')+': '+added.join(', ')+'.' : 'Nothing to add.');
     }
     case 'shopping_list': {
-      const v = shopView(d);
-      if(!v.items.length) return mcpText('The shopping list is empty.');
-      return mcpText({ list: v.items.map(i=>(i.done?'[x] ':'[ ] ')+i.name+(i.qty?' ('+i.qty+')':'')), trip: v.trip });
+      const lists = shopSorted(d).map(l => { const t = shopTripOf(d, l); return {
+        trip: t ? { date:t.date, time:t.time, store:t.location||'' } : null,
+        items: l.items.map(i=>(i.done?'[x] ':'[ ] ')+i.name+(i.qty?' ('+i.qty+')':'')) }; });
+      return mcpText(lists.some(x=>x.items.length) ? { lists } : 'The shopping list is empty.');
+    }
+    case 'exchange_rate': {
+      const fx = await bnrRates();
+      const from = String(args.from||'').toUpperCase(), to = String(args.to||'').toUpperCase();
+      const amt = +args.amount || 1;
+      const v = fxConvert(fx, amt, from, to);
+      if(v == null) return mcpText('BNR has no rate for '+(fx.rates[from]?to:from)+'.');
+      return mcpText(amt+' '+from+' = '+v.toFixed(4)+' '+to+' (BNR reference rate of '+fx.date+')');
     }
     case 'complete_task': {
       const t = mcpFindTask(d, args.name);
@@ -3390,95 +3403,198 @@ function shopParse(raw){
   const name = t.charAt(0).toUpperCase() + t.slice(1);
   return { name, qty };
 }
+// Several lists can exist side by side (e.g. "today · Lidl" and "tomorrow ·
+// Kaufland"); each may be linked to its own calendar event. The "usual"
+// suggestions are shared by all lists.
 function shopOf(d){
-  if(!d.shopping) d.shopping = { items:[], history:{}, trip:null };
-  const s = d.shopping; s.items = s.items || []; s.history = s.history || {};
+  if(!d.shopping) d.shopping = { lists:[], history:{} };
+  const s = d.shopping; s.history = s.history || {};
+  if(!Array.isArray(s.lists)) s.lists = [];
+  // One-off migration from the single-list version.
+  if(Array.isArray(s.items) || s.trip){
+    s.lists.unshift({ id: 'l_' + uid(), items: s.items || [], trip: s.trip || null, at: Date.now() });
+    delete s.items; delete s.trip;
+  }
+  if(!s.lists.length) s.lists.push({ id: 'l_' + uid(), items: [], trip: null, at: Date.now() });
+  for(const l of s.lists){ l.items = l.items || []; }
   return s;
 }
-function shopView(d){
+function shopTripOf(d, l){
+  const t = l.trip && (d.tasks||[]).find(x => x.id === l.trip);
+  if(l.trip && !t) l.trip = null;              // event deleted from the calendar
+  return t || null;
+}
+function shopList(d, id){
   const s = shopOf(d);
+  return s.lists.find(l => l.id === id) || s.lists[0];
+}
+// Lists with a trip come first, soonest first; unscheduled ones after.
+function shopSorted(d){
+  const s = shopOf(d);
+  return s.lists.slice().sort((a,b) => {
+    const ta = shopTripOf(d,a), tb = shopTripOf(d,b);
+    if(ta && tb) return (ta.date+ta.time).localeCompare(tb.date+tb.time);
+    if(ta) return -1; if(tb) return 1;
+    return (a.at||0) - (b.at||0);
+  });
+}
+function shopView(d, listId){
+  const s = shopOf(d);
+  const cur = shopList(d, listId);
   const usual = Object.values(s.history).filter(h => h.count >= 2 || Object.keys(s.history).length < 12)
     .sort((a,b) => b.count - a.count || (b.last||0) - (a.last||0)).slice(0, 14)
-    .filter(h => !s.items.some(i => i.name.toLowerCase() === h.name.toLowerCase()))
-    .map(h => ({ name:h.name, cat:h.cat }));
-  const trip = s.trip && (d.tasks||[]).find(t => t.id === s.trip) ? (d.tasks||[]).find(t => t.id === s.trip) : null;
-  return { items: s.items, usual, aisles: SHOP_AISLES.map(([id,label,emoji]) => ({ id, label, emoji })),
-           trip: trip ? { id: trip.id, date: trip.date, time: trip.time } : null };
+    .filter(h => !cur.items.some(i => i.name.toLowerCase() === h.name.toLowerCase()))
+    .map(h => ({ name:h.name }));
+  const tripView = l => { const t = shopTripOf(d, l); return t ? { id:t.id, date:t.date, time:t.time, location:t.location||'' } : null; };
+  return {
+    current: cur.id,
+    lists: shopSorted(d).map(l => ({ id:l.id, trip: tripView(l), open: l.items.filter(i=>!i.done).length, total: l.items.length })),
+    items: cur.items, usual, trip: tripView(cur)
+  };
 }
-// Keeps the calendar event's title and notes in step with the list.
+// Keeps each list's calendar event title and notes in step with the list.
 function shopSyncTrip(d){
-  const s = shopOf(d);
-  if(!s.trip) return;
-  const t = (d.tasks||[]).find(x => x.id === s.trip);
-  if(!t){ s.trip = null; return; }
-  const open = s.items.filter(i => !i.done);
-  t.name = '🛒 Shopping' + (open.length ? ' · ' + open.length + ' item' + (open.length === 1 ? '' : 's') : ' · all bought');
-  // Still to buy, in the order added; what's already in the cart goes last.
-  const lines = [];
-  if(open.length) lines.push(open.map(i => i.name + (i.qty ? ' (' + i.qty + ')' : '')).join(', '));
-  const cart = s.items.filter(i => i.done);
-  if(cart.length) lines.push('✓ In the cart: ' + cart.map(i => i.name).join(', '));
-  t.notes = lines.join('\n') || 'List is empty';
-  t.shoppingTrip = true;
+  for(const l of shopOf(d).lists){
+    const t = shopTripOf(d, l); if(!t) continue;
+    const open = l.items.filter(i => !i.done);
+    t.name = '🛒 Shopping' + (t.location ? ' · ' + t.location.split(',')[0] : '') +
+      (open.length ? ' · ' + open.length + ' item' + (open.length === 1 ? '' : 's') : ' · all bought');
+    const lines = [];
+    if(open.length) lines.push(open.map(i => i.name + (i.qty ? ' (' + i.qty + ')' : '')).join(', '));
+    const cart = l.items.filter(i => i.done);
+    if(cart.length) lines.push('✓ In the cart: ' + cart.map(i => i.name).join(', '));
+    t.notes = lines.join('\n') || 'List is empty';
+    t.shoppingTrip = true; t.shopListId = l.id;
+  }
 }
-function shopAdd(s, raw){
+function shopAdd(s, raw, list){
   const added = [];
   for(const part of String(raw||'').split(/[,;\n]+/)){
     const p = shopParse(part); if(!p) continue;
     const key = p.name.toLowerCase();
-    const ex = s.items.find(i => i.name.toLowerCase() === key);
+    const ex = list.items.find(i => i.name.toLowerCase() === key);
     const cat = (s.history[key] && s.history[key].cat) || shopAisle(p.name);
     if(ex){ ex.done = false; if(p.qty) ex.qty = p.qty; }
-    else s.items.push({ id: uid(), name: p.name, qty: p.qty, cat, done:false, at: Date.now() });
+    else list.items.push({ id: uid(), name: p.name, qty: p.qty, cat, done:false, at: Date.now() });
     const h = s.history[key] || { name: p.name, count: 0, cat };
     h.count++; h.last = Date.now(); h.cat = cat; s.history[key] = h;
     added.push(p.name);
   }
   return added;
 }
-app.get('/api/shopping', (req, res) => res.json(shopView(readData())));
+// The list Claude adds to when no list is named: the next planned trip,
+// otherwise the first list.
+function shopDefaultList(d){ return shopSorted(d)[0]; }
+app.get('/api/shopping', (req, res) => {
+  const d = readData();
+  const before = JSON.stringify(d.shopping || null);
+  const v = shopView(d, req.query.list);
+  // Migrating old data or creating the first list must be saved straight
+  // away, otherwise the list id would change between requests.
+  if(JSON.stringify(d.shopping) !== before) writeData(d);
+  res.json(v);
+});
 app.post('/api/shopping', (req, res) => {
   const d = readData(); const s = shopOf(d);
   const b = req.body || {};
-  const it = b.id ? s.items.find(i => i.id === b.id) : null;
+  let l = shopList(d, b.list);
+  const it = b.id ? l.items.find(i => i.id === b.id) : null;
   switch(b.op){
-    case 'add': shopAdd(s, b.text); break;
+    case 'add': shopAdd(s, b.text, l); break;
     case 'toggle': if(it){ it.done = !it.done; it.doneAt = it.done ? Date.now() : null; } break;
-    case 'remove': s.items = s.items.filter(i => i.id !== b.id); break;
+    case 'remove': l.items = l.items.filter(i => i.id !== b.id); break;
     case 'edit':
       if(it){
         if(typeof b.name === 'string' && b.name.trim()) it.name = b.name.trim();
         if(typeof b.qty === 'string') it.qty = b.qty.trim();
-        if(b.cat && SHOP_AISLES.some(a => a[0] === b.cat)){
-          it.cat = b.cat;
-          const k = it.name.toLowerCase(); if(s.history[k]) s.history[k].cat = b.cat;   // remembered next time
-        }
       }
       break;
-    case 'clearDone': s.items = s.items.filter(i => !i.done); break;
-    case 'clearAll': s.items = []; break;
-    case 'forget': { const k = String(b.name||'').toLowerCase(); delete s.history[k]; break; }
+    case 'clearDone': l.items = l.items.filter(i => !i.done); break;
+    case 'newList': {
+      l = { id: 'l_' + uid(), items: [], trip: null, at: Date.now() };
+      s.lists.push(l);
+      break;
+    }
+    case 'deleteList': {
+      if(l.trip) d.tasks = (d.tasks||[]).filter(x => x.id !== l.trip);
+      s.lists = s.lists.filter(x => x.id !== l.id);
+      shopOf(d);                                   // keeps at least one (empty) list
+      l = shopSorted(d)[0];
+      break;
+    }
     case 'plan': {
       const date = /^\d{4}-\d{2}-\d{2}$/.test(b.date||'') ? b.date : getToday();
       const time = /^\d{1,2}:\d{2}$/.test(b.time||'') ? b.time : '18:00';
       d.tasks = d.tasks || [];
-      let t = s.trip && d.tasks.find(x => x.id === s.trip);
+      let t = shopTripOf(d, l);
       if(!t){
         const grp = (d.groups||[]).find(g => /pers/i.test(g.id) || /personal/i.test(g.name)) || (d.groups||[])[0] || { id:'g_pers' };
         t = { id: 'shop_' + uid(), freq:'none', priority:'normal', group: grp.id, reminders:['60'], reminder:'60', done:false };
-        if(b.location) t.location = String(b.location).trim();
-        d.tasks.push(t); s.trip = t.id;
+        d.tasks.push(t); l.trip = t.id;
       }
       t.date = date; t.time = fmtTime(time);
-      if(typeof b.location === 'string') t.location = b.location.trim();
+      // The store is always taken from the form, so it's kept on every save
+      // and can be cleared by emptying the field.
+      if(typeof b.location === 'string'){ const loc = b.location.trim(); if(loc) t.location = loc; else delete t.location; }
       break;
     }
-    case 'unplan': if(s.trip){ d.tasks = (d.tasks||[]).filter(x => x.id !== s.trip); s.trip = null; } break;
+    case 'unplan': { const t = shopTripOf(d, l); if(t) d.tasks = (d.tasks||[]).filter(x => x.id !== t.id); l.trip = null; break; }
     default: return res.status(400).json({ error:'Unknown action.' });
   }
   shopSyncTrip(d);
   writeData(d);
-  res.json(shopView(d));
+  res.json(shopView(d, l && l.id));
+});
+
+
+// ═══════════════════════════════════════════════════
+// CURRENCY (widget) — official BNR reference rates
+// BNR publishes the day's rates around 13:00 on banking days as a free XML
+// feed (no key). The 10-day feed gives today's rates plus a short history for
+// the trend. All rates are "RON per unit" (some per 100 units: HUF, JPY…).
+// ═══════════════════════════════════════════════════
+let _fxCache = null;   // { at, data }
+function parseBnrXml(xml){
+  const days = [];
+  const cubeRe = /<Cube\s+date="(\d{4}-\d{2}-\d{2})"\s*>([\s\S]*?)<\/Cube>/g;
+  let m;
+  while((m = cubeRe.exec(xml))){
+    const rates = { RON: 1 };
+    const rateRe = /<Rate\s+currency="([A-Z]{3})"(?:\s+multiplier="(\d+)")?\s*>([\d.]+)<\/Rate>/g;
+    let r;
+    while((r = rateRe.exec(m[2]))){ rates[r[1]] = parseFloat(r[3]) / (r[2] ? parseInt(r[2]) : 1); }
+    days.push({ date: m[1], rates });
+  }
+  return days.sort((a,b) => a.date.localeCompare(b.date));
+}
+async function bnrRates(){
+  if(_fxCache && Date.now() - _fxCache.at < 60*60*1000) return _fxCache.data;
+  let days = [];
+  for(const url of ['https://www.bnr.ro/nbrfxrates10days.xml', 'https://www.bnr.ro/nbrfxrates.xml']){
+    try{
+      const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0', 'Accept':'application/xml,text/xml' } });
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      days = parseBnrXml(await r.text());
+      if(days.length) break;
+    }catch(e){ console.log('BNR feed failed ('+url+'):', e.message); }
+  }
+  if(!days.length){
+    if(_fxCache) return { ..._fxCache.data, stale:true };   // keep showing the last good rates
+    throw new Error('The BNR rates could not be loaded right now.');
+  }
+  const latest = days[days.length-1];
+  const data = { date: latest.date, rates: latest.rates, history: days, source:'BNR' };
+  _fxCache = { at: Date.now(), data };
+  return data;
+}
+function fxConvert(data, amount, from, to){
+  const a = data.rates[from], b = data.rates[to];
+  if(!a || !b) return null;
+  return amount * a / b;
+}
+app.get('/api/fx', async (req, res) => {
+  try{ res.json(await bnrRates()); }
+  catch(e){ res.json({ error: e.message }); }
 });
 
 // ═══════════════════════════════════════════════════
