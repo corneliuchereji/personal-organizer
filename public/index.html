@@ -1022,6 +1022,14 @@ button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vop
 @media (prefers-reduced-motion:reduce){ .fx-swap:active{transform:none} }
 
 .fx-sel{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+/* Dropdown lists: Windows draws the open list with a white background but
+   kept our light text, so options were nearly invisible. Give every list a
+   dark background and clear text; group headings in the accent colour. */
+select{color-scheme:dark}
+select option{background:#1B2350;color:#E8ECF8;font-weight:500}
+select optgroup{background:#121935;color:#7DD3FC;font-weight:700;font-style:normal}
+select option:checked{background:#2E3A78;color:#fff}
+.fx-name{display:none} /* the name is now inside the picker itself */
 .fx-name{font-size:11px;color:var(--txt3);margin-top:-4px;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fx-tip{top:6px;transform:translate(-50%,0)}
 .fx-pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
@@ -4290,6 +4298,9 @@ function fxFmt(v){
   return v.toLocaleString('en-GB',{minimumFractionDigits:Math.min(d,4), maximumFractionDigits:d});
 }
 function fxName(c){ try{ return new Intl.DisplayNames(['en'],{type:'currency'}).of(c); }catch(e){ return c; } }
+// Windows has no flag emoji (it shows two letters, e.g. "EU"), so skip them there.
+const FX_SHOW_FLAGS = !/Windows/i.test(navigator.userAgent);
+const FX_POPULAR = ['RON','EUR','USD','GBP','CHF','HUF','CAD'];
 const FX_FLAG = c => c==='EUR' ? '🇪🇺' : c==='XAU' ? '🥇' : c==='XDR' ? '🌐' : CC_FLAG(c.slice(0,2));
 async function openFx(){
   showModal('Currency',
@@ -4301,7 +4312,9 @@ async function openFx(){
 function fxSel(id, cur){
   const codes = Object.keys(_fx.rates).filter(c=>c!=='XAU' && c!=='XDR').sort((a,b)=> a==='RON'?-1 : b==='RON'?1 : a.localeCompare(b));
   return '<select id="'+id+'" class="fx-sel" onchange="fxChanged()" aria-label="Currency">'+
-    codes.map(c=>'<option value="'+c+'"'+(c===cur?' selected':'')+'>'+FX_FLAG(c)+' '+c+'</option>').join('')+'</select>'+
+    (()=>{ const opt=c=>'<option value="'+c+'"'+(c===cur?' selected':'')+'>'+(FX_SHOW_FLAGS?FX_FLAG(c)+' ':'')+c+' \u2013 '+escHtml(fxName(c))+'</option>';
+      const top=FX_POPULAR.filter(c=>codes.includes(c)), rest=codes.filter(c=>!top.includes(c));
+      return '<optgroup label="Most used">'+top.map(opt).join('')+'</optgroup><optgroup label="All currencies">'+rest.map(opt).join('')+'</optgroup>'; })()+'</select>'+
     '<div class="fx-name" id="'+id+'Name">'+escHtml(fxName(cur))+'</div>';
 }
 function fxRender(full){
@@ -5108,7 +5121,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-15-fx-fix';
+const APP_BUILD='2026-10-15-fx-list';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
