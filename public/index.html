@@ -4306,7 +4306,12 @@ function fxSel(id, cur){
 }
 function fxRender(full){
   const el = document.getElementById('fxBody'); if(!el) return;
-  if(!_fx || _fx.error){ el.innerHTML = '<div class="cc-msg" style="color:var(--red)">'+escHtml((_fx&&_fx.error)||'No rates.')+'</div>'; return; }
+  if(!_fx || _fx.error){
+    const why = (_fx && _fx.feedErrors && _fx.feedErrors.length) ? '<div class="cc-foot" style="text-align:left;word-break:break-word">Details: '+_fx.feedErrors.map(escHtml).join('<br>')+'</div>' : '';
+    el.innerHTML = '<div class="cc-msg" style="color:var(--red)">'+escHtml((_fx&&_fx.error)||'No rates.')+'</div>'+why+
+      '<div style="text-align:center;margin-top:10px"><button class="sh-chip" onclick="openFx()"><i class="ti ti-refresh"></i> Try again</button></div>';
+    return;
+  }
   const from = S.fxFrom||'EUR', to = S.fxTo||'RON', amt = +S.fxAmount||1;
   if(full){
     el.innerHTML =
@@ -4320,8 +4325,8 @@ function fxRender(full){
       '<div class="slabel" style="margin-top:14px"><i class="ti ti-star"></i> Quick pairs</div>'+
       '<div class="fx-pairs">'+FX_PAIRS.filter(p=>_fx.rates[p[0]]&&_fx.rates[p[1]]).map(p=>
         '<button class="sh-chip fx-chip" onclick="fxSet(\''+p[0]+'\',\''+p[1]+'\')"><span>'+p[0]+'\u2009\u2192\u2009'+p[1]+'</span><b>'+fxFmt(fxRate(p[0],p[1]))+'</b></button>').join('')+'</div>'+
-      '<div class="cc-foot">BNR reference rate of <b>'+new Date(_fx.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'})+'</b>'+
-        (_fx.stale?' (couldn’t refresh — last known rates)':'')+'. BNR publishes on banking days around 13:00; banks and exchange offices add their own margin.</div>';
+      '<div class="cc-foot">'+(_fx.source==='ECB'?'<b style="color:#B45309">BNR could not be reached — showing the European Central Bank rate</b> (close to BNR, but not the official RON rate). ECB rate of <b>':'BNR reference rate of <b>')+new Date(_fx.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'})+'</b>'+
+        (_fx.stale?' (couldn’t refresh — last known rates)':'')+'. '+(_fx.source==='ECB'?'ECB publishes on working days around 16:00':'BNR publishes on banking days around 13:00')+'; banks and exchange offices add their own margin.</div>';
   }
   const v = fxRate(from, to);
   const out = document.getElementById('fxOut'); if(out) out.textContent = fxFmt(v*amt);
@@ -4346,7 +4351,7 @@ function fxTrend(from, to){
   const area = d+' L'+x(pts.length-1).toFixed(1)+' '+(H-P)+' L'+x(0).toFixed(1)+' '+(H-P)+' Z';
   const day = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   el.innerHTML =
-    '<div class="fx-trend-h"><span>'+from+' → '+to+', last '+pts.length+' BNR days</span>'+
+    '<div class="fx-trend-h"><span>'+from+' → '+to+', last '+pts.length+' '+(_fx.source||'BNR')+' days</span>'+
       '<span class="fx-ch '+(up?'up':down?'down':'')+'">'+(up?'▲':down?'▼':'●')+' '+Math.abs(ch).toFixed(2)+'% since '+day(prev.date)+'</span></div>'+
     '<div class="fx-chart"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="'+from+' to '+to+' over the last '+pts.length+' BNR days, from '+fxFmt(pts[0].v)+' to '+fxFmt(last.v)+'">'+
       '<path d="'+area+'" fill="rgba(34,211,238,.10)"/>'+
@@ -5103,7 +5108,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-15-overdue-live';
+const APP_BUILD='2026-10-15-fx-fix';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
