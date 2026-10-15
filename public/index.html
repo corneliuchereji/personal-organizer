@@ -963,6 +963,70 @@ button,.btn,.ea,.chat-send,.chip,.month-day,.rem-chip span,.witem,.bib-read,.vop
 .sh-edit select{flex:1 1 140px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit}
 .sh-edit-acts{flex-basis:100%;display:flex;justify-content:space-between;gap:6px}
 @media (prefers-reduced-motion:reduce){ .sh-bar span{transition:none} }
+
+/* ══ Overdue ══ An unfinished task whose time has passed stays at full
+   strength (only Done fades) and says so: a red-ink pill and a warm edge. */
+.ecard.task.overdue{opacity:1;border-color:rgba(220,38,38,.38);
+  box-shadow:0 1px 2px rgba(0,0,0,.18),0 10px 24px -12px rgba(0,0,0,.55),0 0 0 1px rgba(220,38,38,.18) inset}
+.ecard.task.overdue .ec-title{font-weight:650}
+.od-pill{display:inline-flex;align-items:center;gap:3px;font-size:11px!important;font-weight:650;color:#B91C1C;
+  background:rgba(220,38,38,.10);border:1px solid rgba(220,38,38,.28);border-radius:99px;padding:1px 8px}
+.od-pill i{font-size:12px}
+.chip.task.overdue{box-shadow:inset 3px 0 0 #ef4444}
+@media (max-width:600px){ .chip.task.overdue{background:#ef4444!important} }
+
+/* Shopping: one tab per list, store shown on the trip. */
+.sh-tabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin:0 -2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.sh-tabs::-webkit-scrollbar{display:none}
+.sh-tab{flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;border:1px solid var(--border);
+  background:rgba(255,255,255,.04);color:var(--txt2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:transform 140ms var(--ease-out)}
+.sh-tab:active{transform:scale(.96)}
+.sh-tab b{font-size:11px;min-width:18px;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.1);color:var(--txt);text-align:center}
+.sh-tab.on{background:rgba(74,222,128,.14);border-color:rgba(74,222,128,.45);color:#dcfce7}
+.sh-tab.on b{background:#4ade80;color:#052e16}
+.sh-tab-new{border-style:dashed;color:#86efac}
+.sh-store{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#bbf7d0;margin:1px 0}
+.sh-del{margin:16px auto 2px;display:flex;align-items:center;gap:6px;border:none;background:transparent;color:var(--txt3);font:inherit;font-size:12px;cursor:pointer;padding:6px 10px;border-radius:99px}
+.sh-del.sure{color:#fca5a5;background:rgba(248,113,113,.1)}
+
+/* ══ Currency ══ */
+.fx-conv{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:14px;border-radius:18px;
+  background:linear-gradient(160deg,rgba(34,211,238,.12),rgba(255,255,255,.02) 70%);border:1px solid rgba(34,211,238,.25)}
+.fx-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fx-amt,.fx-out{width:100%;font-size:26px;font-weight:650;letter-spacing:-.4px;font-variant-numeric:tabular-nums;color:var(--txt);
+  background:transparent;border:none;border-bottom:1px solid rgba(34,211,238,.35);padding:2px 0 4px;outline:none;font-family:inherit;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-amt:focus{border-bottom-color:#22d3ee}
+.fx-out{color:#a5f3fc}
+.fx-sel{width:100%;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit;font-size:13px}
+.fx-swap{width:42px;height:42px;border-radius:50%;border:1px solid rgba(34,211,238,.4);background:rgba(34,211,238,.12);color:#22d3ee;font-size:20px;
+  display:grid;place-items:center;cursor:pointer;transition:transform 200ms var(--ease-out)}
+.fx-swap:active{transform:scale(.92) rotate(180deg)}
+.fx-line{font-size:13px;color:var(--txt2);margin:10px 2px 0}
+.fx-line b{color:var(--txt);font-variant-numeric:tabular-nums}
+.fx-trend{margin-top:14px}
+.fx-trend-h{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--txt2);margin-bottom:6px;flex-wrap:wrap}
+.fx-ch{font-weight:650;font-variant-numeric:tabular-nums;color:var(--txt2)}
+.fx-ch.up{color:#4ade80}.fx-ch.down{color:#fca5a5}
+.fx-chart{position:relative;height:84px;border-radius:12px;background:rgba(255,255,255,.03);touch-action:pan-y}
+.fx-chart svg{width:100%;height:100%;display:block}
+.fx-tip{position:absolute;top:-6px;transform:translate(-50%,-100%);background:var(--glass-solid);border:1px solid var(--border2);border-radius:10px;
+  padding:4px 8px;font-size:12px;white-space:nowrap;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.fx-tip b{font-variant-numeric:tabular-nums}
+.fx-tip span{color:var(--txt3);margin-left:6px}
+.fx-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);margin-top:4px;font-variant-numeric:tabular-nums}
+.fx-pairs{display:flex;flex-wrap:wrap;gap:6px}
+.fx-chip{border-color:rgba(34,211,238,.28);background:rgba(34,211,238,.07);color:#cffafe}
+.fx-chip b{font-weight:650;margin-left:2px;font-variant-numeric:tabular-nums}
+@media (max-width:420px){ .fx-amt,.fx-out{font-size:22px} }
+@media (prefers-reduced-motion:reduce){ .fx-swap:active{transform:none} }
+
+.fx-sel{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.fx-name{font-size:11px;color:var(--txt3);margin-top:-4px;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-tip{top:6px;transform:translate(-50%,0)}
+.fx-pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+.fx-chip{justify-content:space-between;font-size:12px;padding:7px 10px;white-space:nowrap;min-width:0;gap:6px}
+.fx-chip span{overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -1122,6 +1186,7 @@ function saveState(){
           leaveBy: S.leaveBy!==false, leaveBuffer: S.leaveBuffer!=null?S.leaveBuffer:10,
           trafficPct: S.trafficPct!=null?S.trafficPct:20,
           worldClocks: Array.isArray(S.worldClocks)?S.worldClocks:[], holCountry: S.holCountry||'RO',
+          fxFrom: S.fxFrom||'EUR', fxTo: S.fxTo||'RON', fxAmount: S.fxAmount||1,
           birthday: S.birthday||'',
           widgets: Array.isArray(S.widgets)?S.widgets:null
         }
@@ -1245,6 +1310,7 @@ async function loadFromServer(){
       leaveBuffer: d.settings?.leaveBuffer != null ? d.settings.leaveBuffer : 10,
       worldClocks: Array.isArray(d.settings?.worldClocks) ? d.settings.worldClocks : [],
       holCountry: d.settings?.holCountry || 'RO',
+      fxFrom: d.settings?.fxFrom || 'EUR', fxTo: d.settings?.fxTo || 'RON', fxAmount: d.settings?.fxAmount || 1,
       _rev: d._rev,
       weekOffset:keepWeek, dayOffset:keepDay
     };
@@ -1602,17 +1668,18 @@ function renderCard(ev){
   meta+='<span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
   if(ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
   meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
+  if(!ev.done && isPastEvent(ev)) meta+='<span class="od-pill"><i class="ti ti-alert-circle"></i>Overdue \u00b7 '+overdueFor(ev)+'</span>';
   meta+=remindersBadge(ev);
   meta+=leaveChip(ev);
   let acts='';
   acts+='<button class="ea grn" onclick="markDone(\''+ev.id+'\',\''+(ev._occDate||ev.date)+'\')"><i class="ti ti-check"></i>'+(ev.done?'Undo':'Done')+'</button>';
   acts+='<button class="ea ylw" onclick="postpone(\''+ev.id+'\')"><i class="ti ti-clock-hour-4"></i>+1d</button>';
-  if(ev.shoppingTrip) acts+='<button class="ea" onclick="openShopping()"><i class="ti ti-shopping-cart"></i>List</button>';
+  if(ev.shoppingTrip) acts+='<button class="ea" onclick="openShopping('+(ev.shopListId?'\''+escHtml(ev.shopListId)+'\'':'')+')"><i class="ti ti-shopping-cart"></i>List</button>';
   if(ev.ticketUrl) acts+='<a class="ea" href="'+escHtml(ev.ticketUrl)+'" target="_blank" rel="noopener" style="text-decoration:none"><i class="ti ti-ticket"></i>Tickets</a>';
   if(ev.location) acts+='<button class="ea" onclick="openRouteMapFor(\''+ev.id+'\')"><i class="ti ti-map-2"></i>Map</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard task'+(ev.concertId?' concert':'')+(ev.shoppingTrip?' shoptrip':'')+(ev.done?' done':'')+(isPastEvent(ev)?' past':'')+'" data-ev="'+escHtml(ev.id)+'"'+(ev.shoppingTrip?' onclick="if(!event.target.closest(\'button,a\'))openShopping()" style="cursor:pointer"':'')+'>'+
+  return '<div class="ecard task'+(ev.concertId?' concert':'')+(ev.shoppingTrip?' shoptrip':'')+(ev.done?' done':'')+(isPastEvent(ev)?(ev.done?' past':' overdue'):'')+'" data-ev="'+escHtml(ev.id)+'"'+(ev.shoppingTrip?' onclick="if(!event.target.closest(\'button,a\'))openShopping('+(ev.shopListId?'\''+escHtml(ev.shopListId)+'\'':'')+')" style="cursor:pointer"':'')+'>'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
@@ -1836,8 +1903,11 @@ function renderCal(){
         // stands out at a glance.
         const isPast = ds < TODAY;
         const isDone = ev._type==='task' && ev.done;
-        const cls = 'chip'+(isSport?' sport':' task')+(isPast?' past':'')+(isDone?' done':'');
-        const tip = escHtml(ev.name)+(isDone?' — done':(isPast?' — past':''));
+        // An unfinished task from an earlier day isn't "past" — it's overdue,
+        // so it keeps its colour (with a red edge) instead of fading out.
+        const isOverdue = isPast && ev._type==='task' && !ev.done;
+        const cls = 'chip'+(isSport?' sport':' task')+(isPast&&!isOverdue?' past':'')+(isOverdue?' overdue':'')+(isDone?' done':'');
+        const tip = escHtml(ev.name)+(isDone?' — done':(isOverdue?' — overdue':(isPast?' — past':'')));
         return '<div class="'+cls+'" style="--c:'+col+';background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+tip+'">'+icon+escHtml(ev.name)+'</div>';
       }).join('');
       if(evs.length>maxChips)chips+='<div class="mday-more">+'+(evs.length-maxChips)+' more…</div>';
@@ -2116,6 +2186,15 @@ function remindersOf(ev){
 }
 // True once an event's start time has gone by — used to fade finished
 // items in the day list, including ones earlier today.
+// How long ago an unfinished task was due: "20 min", "3 h", "2 days".
+function overdueFor(ev){
+  const ds=ev._occDate||ev.date; const [h,m]=(ev.time||'23:59').split(':').map(Number);
+  const due=parseD(ds); due.setHours(h||0,m||0,0,0);
+  const mins=Math.max(1,Math.round((Date.now()-due.getTime())/60000));
+  if(mins<60) return mins+' min';
+  if(mins<1440) return Math.round(mins/60)+' h';
+  const d=Math.round(mins/1440); return d+' day'+(d===1?'':'s');
+}
 function isPastEvent(ev){
   const ds = ev._occDate || ev.date;
   if(!ds) return false;
@@ -3788,6 +3867,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_tithe',name:'Giving', desc:'Income, the share due and what you\u2019ve given', action:'tithe', icon:'ti-heart-handshake'},
   {id:'w_concerts',name:'Concerts', desc:'Your artists\u2019 dates in Europe', action:'concerts', icon:'ti-microphone-2'},
   {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
+  {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
   {id:'w_clocks',name:'World clocks', desc:'Time and weather in other cities', action:'clocks', icon:'ti-world'},
   {id:'w_holidays',name:'Public holidays', desc:'National days, Easter, Christmas', action:'holidays', icon:'ti-confetti'},
   {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
@@ -3850,9 +3930,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -4020,16 +4100,20 @@ function widgetPeek(w){
       return S.worldClocks.slice(0,2).map(c=>c.name+' '+clockTime(c.tz)).join(' · ');
     }
     if(w.action==='holidays' && _holNext){ return _holNext; }
-    if(w.action==='shopping' && _shop){ const n=_shop.items.filter(i=>!i.done).length; return n ? n+' to buy'+(_shop.trip?' \u00b7 trip '+shopWhen(_shop.trip):'') : 'List is empty'; }
+    if(w.action==='fx' && _fx && _fx.rates){ const f=S.fxFrom||'EUR', t=S.fxTo||'RON'; const v=fxRate(f,t); if(v) return '1 '+f+' = '+fxFmt(v)+' '+t; }
+    if(w.action==='shopping' && _shop && _shop.lists){
+      const L=_shop.lists, n=L.reduce((a,l)=>a+(l.open||0),0), next=L.find(l=>l.trip);
+      return n ? n+' to buy'+(L.length>1?' on '+L.length+' lists':'')+(next?' \u00b7 next '+shopWhen(next.trip):'') : 'Nothing to buy';
+    }
   }catch(e){}
   return '';
 }
 
 // ─── SHOPPING LIST ───────────────────────────────────────
-// Type several things at once ("lapte, 2 kg roșii, ouă x10"); they're listed
-// in the order you add them, and what you buy often comes back as one-tap
-// suggestions. "Plan a shopping trip" puts the list in the calendar as a
-// personal event that keeps itself up to date.
+// Several lists can live side by side — e.g. "today · Lidl" and "tomorrow ·
+// Kaufland" — each with its own calendar event. Type several things at once
+// ("lapte, 2 kg roșii, ouă x10"); what you buy often comes back as one-tap
+// suggestions.
 let _shop = null, _shopEdit = null, _shopPlan = false;
 function shopWhen(t){
   if(!t) return '';
@@ -4037,29 +4121,45 @@ function shopWhen(t){
     : parseD(t.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   return d+' '+fmtTime(t.time);
 }
-async function shopFetch(){
-  try{ _shop = await (await fetch('/api/shopping')).json(); }catch(e){ _shop = _shop || { items:[], usual:[], aisles:[], error:'Couldn’t reach the server.' }; }
+function shopTabLabel(l){
+  if(!l.trip) return 'Not scheduled';
+  const when = shopWhen(l.trip).replace(/^\w/, c=>c.toUpperCase());
+  return when + (l.trip.location ? ' · '+l.trip.location.split(',')[0] : '');
+}
+async function shopFetch(listId){
+  try{ _shop = await (await fetch('/api/shopping'+(listId?'?list='+encodeURIComponent(listId):''))).json(); }
+  catch(e){ _shop = _shop || { lists:[], items:[], usual:[], error:'Couldn’t reach the server.' }; }
 }
 async function shopOp(body){
+  body = { list: _shop && _shop.current, ...body };
   let v;
   try{
     const r = await fetch('/api/shopping',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     v = await r.json();
   }catch(e){ v = null; }
-  if(v && !v.error){ const hadTrip = !!(_shop && _shop.trip) || !!v.trip; _shop = v; if(hadTrip){ await loadFromServer(); renderAll(); } }
+  if(v && !v.error){
+    const touchesCalendar = (_shop && _shop.lists||[]).some(l=>l.trip) || (v.lists||[]).some(l=>l.trip);
+    _shop = v;
+    if(touchesCalendar){ await loadFromServer(); renderAll(); }
+  }
   shopRender(v && v.error ? v.error : (!v ? 'No answer from the server — check your connection.' : ''));
 }
-async function openShopping(){
-  closeRouteMap && document.getElementById('mapOv') && closeRouteMap();
+async function openShopping(listId){
+  if(document.getElementById('mapOv')) closeRouteMap();
   _shopEdit = null; _shopPlan = false;
   showModal('Shopping list',
+    '<div id="shTabs" class="sh-tabs"></div>'+
     '<div class="sh-add"><input id="shIn" class="cc-input" placeholder="Add items — e.g. lapte, 2 kg roșii, ouă x10" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key===\'Enter\'){event.preventDefault();shopAddTyped()}">'+
       '<button class="btn acc" onclick="shopAddTyped()" aria-label="Add"><i class="ti ti-plus"></i></button></div>'+
     '<div id="shBody" class="sh-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div></div>',
     '<button class="btn sm" onclick="shopShare()"><i class="ti ti-share"></i> Share</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
-  await shopFetch();
+  await shopFetch(listId);
   shopRender();
   setTimeout(()=>{ const i=document.getElementById('shIn'); if(i && matchMedia('(pointer:fine)').matches) i.focus(); }, 80);
+}
+async function shopSwitch(id){
+  _shopEdit = null; _shopPlan = false;
+  await shopFetch(id); shopRender();
 }
 function shopAddTyped(){
   const i = document.getElementById('shIn'); if(!i) return;
@@ -4073,33 +4173,47 @@ function shopToggle(id){
   it.done = !it.done; shopRender();              // instant, then confirm with the server
   shopOp({ op:'toggle', id });
 }
+function shopRenderTabs(){
+  const el = document.getElementById('shTabs'); if(!el || !_shop) return;
+  const lists = _shop.lists||[];
+  el.innerHTML = lists.map(l=>'<button class="sh-tab'+(l.id===_shop.current?' on':'')+'" onclick="shopSwitch(\''+l.id+'\')">'+
+      '<i class="ti '+(l.trip?'ti-calendar-event':'ti-list')+'"></i>'+escHtml(shopTabLabel(l))+(l.open?'<b>'+l.open+'</b>':'')+'</button>').join('')+
+    '<button class="sh-tab sh-tab-new" onclick="_shopPlan=false;shopOp({op:\'newList\'})"><i class="ti ti-plus"></i>New list</button>';
+  const on = el.querySelector('.sh-tab.on'); if(on && on.scrollIntoView) on.scrollIntoView({block:'nearest', inline:'nearest'});
+}
 function shopRender(msg){
+  shopRenderTabs();
   const el = document.getElementById('shBody'); if(!el || !_shop) return;
   const S2 = _shop, items = S2.items||[];
   const open = items.filter(i=>!i.done), cart = items.filter(i=>i.done);
   let h = msg ? '<div class="cc-msg" style="color:var(--yellow)">'+escHtml(msg)+'</div>' : '';
-  // Usual items
   if((S2.usual||[]).length){
     h += '<div class="sh-usual"><span class="sh-usual-l">Usual</span>'+S2.usual.map(u=>
       '<button class="sh-chip" onclick="shopOp({op:\'add\',text:'+escHtml(JSON.stringify(u.name))+'})"><i class="ti ti-plus"></i>'+escHtml(u.name)+'</button>').join('')+'</div>';
   }
-  // Progress + trip
   if(items.length){
     const pct = Math.round(cart.length/items.length*100);
     h += '<div class="sh-prog"><div class="sh-prog-t"><b>'+open.length+'</b> to buy'+(cart.length?' · '+cart.length+' in the cart':'')+'</div>'+
       '<div class="sh-bar"><span style="width:'+pct+'%"></span></div></div>';
   }
   h += shopTripHtml();
-  // Open items by aisle
   if(!open.length){
-    h += '<div class="sh-empty">'+(items.length ? '🎉 Everything’s in the cart.' : 'Nothing on the list yet. Type above — several at once, separated by commas.')+'</div>';
+    h += '<div class="sh-empty">'+(items.length ? '🎉 Everything’s in the cart.' : 'Nothing on this list yet. Type above — several at once, separated by commas.')+'</div>';
   }
   h += open.map(i=>shopRowHtml(i)).join('');
   if(cart.length){
     h += '<div class="sh-aisle sh-cart-h"><span>🛒</span>In the cart<small>'+cart.length+'</small>'+
       '<button class="btn sm ghost" onclick="shopOp({op:\'clearDone\'})">Clear</button></div>'+cart.map(i=>shopRowHtml(i)).join('');
   }
+  if((S2.lists||[]).length > 1 || items.length || S2.trip){
+    h += '<button class="sh-del" onclick="shopDeleteList()"><i class="ti ti-trash"></i> Delete this list'+(S2.trip?' and its calendar event':'')+'</button>';
+  }
   el.innerHTML = h;
+}
+function shopDeleteList(){
+  const el = document.querySelector('.sh-del'); if(!el) return;
+  if(!el.dataset.sure){ el.dataset.sure='1'; el.innerHTML='<i class="ti ti-alert-triangle"></i> Tap again to delete'; el.classList.add('sure'); return; }
+  _shopPlan = false; shopOp({ op:'deleteList' });
 }
 function shopRowHtml(i){
   const editing = _shopEdit === i.id;
@@ -4119,7 +4233,9 @@ function shopRowHtml(i){
 function shopTripHtml(){
   const t = _shop && _shop.trip;
   if(t && !_shopPlan){
-    return '<div class="sh-trip on"><i class="ti ti-calendar-check"></i><div class="sh-trip-t"><b>Shopping trip '+escHtml(shopWhen(t))+'</b><small>In your calendar — it updates as the list changes</small></div>'+
+    return '<div class="sh-trip on"><i class="ti ti-calendar-check"></i><div class="sh-trip-t"><b>Shopping trip '+escHtml(shopWhen(t))+'</b>'+
+        (t.location?'<span class="sh-store"><i class="ti ti-map-pin"></i>'+escHtml(t.location)+'</span>':'')+
+        '<small>In your calendar — it updates as the list changes</small></div>'+
       '<button class="btn sm" onclick="_shopPlan=true;shopRender()">Change</button>'+
       '<button class="btn sm ghost" onclick="closeModal();openOnDate(\''+t.date+'\',\''+t.id+'\')" aria-label="See in calendar"><i class="ti ti-calendar"></i></button></div>';
   }
@@ -4130,13 +4246,14 @@ function shopTripHtml(){
   }
   const tomorrow = fmtD(new Date(parseD(TODAY).getTime()+86400000));
   const cur = t ? t.date : TODAY;
+  const pick = 'document.getElementById(\'shDate\').value=this.dataset.d;this.parentNode.querySelectorAll(\'.hol-yr\').forEach(b=>b.classList.remove(\'on\'));this.classList.add(\'on\')';
   return '<div class="sh-plan"><div class="sh-plan-days">'+
-      '<button class="hol-yr'+(cur===TODAY?' on':'')+'" onclick="document.getElementById(\'shDate\').value=\''+TODAY+'\';this.parentNode.querySelectorAll(\'.hol-yr\').forEach(b=>b.classList.remove(\'on\'));this.classList.add(\'on\')">Today</button>'+
-      '<button class="hol-yr'+(cur===tomorrow?' on':'')+'" onclick="document.getElementById(\'shDate\').value=\''+tomorrow+'\';this.parentNode.querySelectorAll(\'.hol-yr\').forEach(b=>b.classList.remove(\'on\'));this.classList.add(\'on\')">Tomorrow</button>'+
+      '<button class="hol-yr'+(cur===TODAY?' on':'')+'" data-d="'+TODAY+'" onclick="'+pick+'">Today</button>'+
+      '<button class="hol-yr'+(cur===tomorrow?' on':'')+'" data-d="'+tomorrow+'" onclick="'+pick+'">Tomorrow</button>'+
       '<input type="date" id="shDate" value="'+cur+'" onchange="this.parentNode.querySelectorAll(\'.hol-yr\').forEach(b=>b.classList.remove(\'on\'))">'+
     '</div>'+
     '<div class="sh-plan-row"><input type="time" id="shTime" value="'+(t?fmtTime(t.time):'18:00')+'" step="300">'+
-      '<input id="shWhere" class="cc-input" placeholder="Store (optional) — e.g. Lidl Lugoj" autocomplete="off"></div>'+
+      '<input id="shWhere" class="cc-input" value="'+escHtml(t&&t.location||'')+'" placeholder="Store (optional) — e.g. Lidl Lugoj" autocomplete="off"></div>'+
     '<div class="sh-plan-acts">'+(t?'<button class="btn sm red" onclick="_shopPlan=false;shopOp({op:\'unplan\'})">Remove trip</button>':'')+
       '<span class="msp"></span><button class="btn sm" onclick="_shopPlan=false;shopRender()">Cancel</button>'+
       '<button class="btn sm acc" onclick="shopPlanSave()"><i class="ti ti-calendar-plus"></i> '+(t?'Save':'Add to calendar')+'</button></div></div>';
@@ -4145,19 +4262,127 @@ function shopPlanSave(){
   const date = (document.getElementById('shDate')||{}).value, time = (document.getElementById('shTime')||{}).value;
   const where = ((document.getElementById('shWhere')||{}).value||'').trim();
   _shopPlan = false;
-  const body = { op:'plan', date, time }; if(where) body.location = where;
-  shopOp(body);
+  // The store is always sent, so it's kept on every save (and cleared if emptied).
+  shopOp({ op:'plan', date, time, location: where });
 }
 async function shopShare(){
   if(!_shop) return;
-  const open = _shop.items.filter(i=>!i.done);
+  const open = (_shop.items||[]).filter(i=>!i.done);
   if(!open.length) return shopRender('Nothing left to buy — nothing to share.');
-  const txt = '\ud83d\uded2 Shopping list\n' + open.map(i=>'\u2022 '+i.name+(i.qty?' ('+i.qty+')':'')).join('\n');
+  const t = _shop.trip;
+  const txt = '🛒 Shopping list'+(t?' — '+shopWhen(t)+(t.location?', '+t.location:''):'')+'\n' + open.map(i=>'• '+i.name+(i.qty?' ('+i.qty+')':'')).join('\n');
   try{
     if(navigator.share){ await navigator.share({ title:'Shopping list', text:txt }); return; }
     await navigator.clipboard.writeText(txt); shopRender('✅ Copied — paste it in WhatsApp or a message.');
   }catch(e){ if(e && e.name !== 'AbortError') shopRender('Couldn’t share from this browser.'); }
 }
+
+// ─── CURRENCY ────────────────────────────────────────────
+// Converter at the official BNR reference rate of the day (free feed, no key).
+// Any pair works: both currencies are converted through RON, which is how
+// BNR quotes them. A 10-day line shows where the pair has been heading.
+let _fx = null;
+const FX_PAIRS = [['EUR','RON'],['USD','RON'],['GBP','RON'],['CHF','RON'],['CAD','RON'],['EUR','USD'],['HUF','RON']];
+function fxRate(from, to, rates){ rates = rates || (_fx && _fx.rates); if(!rates || !rates[from] || !rates[to]) return null; return rates[from]/rates[to]; }
+function fxFmt(v){
+  if(v==null || !isFinite(v)) return '–';
+  const a=Math.abs(v), d = a>=1000?2 : a>=10?3 : a>=1?4 : a>=0.01?5 : 6;
+  return v.toLocaleString('en-GB',{minimumFractionDigits:Math.min(d,4), maximumFractionDigits:d});
+}
+function fxName(c){ try{ return new Intl.DisplayNames(['en'],{type:'currency'}).of(c); }catch(e){ return c; } }
+const FX_FLAG = c => c==='EUR' ? '🇪🇺' : c==='XAU' ? '🥇' : c==='XDR' ? '🌐' : CC_FLAG(c.slice(0,2));
+async function openFx(){
+  showModal('Currency',
+    '<div id="fxBody" class="fx-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading BNR rates…</div></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  try{ const d = await (await fetch('/api/fx')).json(); _fx = d; }catch(e){ _fx = { error:'Couldn’t reach the server.' }; }
+  fxRender(true);
+}
+function fxSel(id, cur){
+  const codes = Object.keys(_fx.rates).filter(c=>c!=='XAU' && c!=='XDR').sort((a,b)=> a==='RON'?-1 : b==='RON'?1 : a.localeCompare(b));
+  return '<select id="'+id+'" class="fx-sel" onchange="fxChanged()" aria-label="Currency">'+
+    codes.map(c=>'<option value="'+c+'"'+(c===cur?' selected':'')+'>'+FX_FLAG(c)+' '+c+'</option>').join('')+'</select>'+
+    '<div class="fx-name" id="'+id+'Name">'+escHtml(fxName(cur))+'</div>';
+}
+function fxRender(full){
+  const el = document.getElementById('fxBody'); if(!el) return;
+  if(!_fx || _fx.error){ el.innerHTML = '<div class="cc-msg" style="color:var(--red)">'+escHtml((_fx&&_fx.error)||'No rates.')+'</div>'; return; }
+  const from = S.fxFrom||'EUR', to = S.fxTo||'RON', amt = +S.fxAmount||1;
+  if(full){
+    el.innerHTML =
+      '<div class="fx-conv">'+
+        '<div class="fx-side"><input id="fxAmt" class="fx-amt" type="text" inputmode="decimal" value="'+escHtml(String(amt))+'" oninput="fxChanged()" aria-label="Amount">'+fxSel('fxFrom', from)+'</div>'+
+        '<button class="fx-swap" onclick="fxSwap()" aria-label="Swap currencies"><i class="ti ti-arrows-exchange-2"></i></button>'+
+        '<div class="fx-side"><div id="fxOut" class="fx-out"></div>'+fxSel('fxTo', to)+'</div>'+
+      '</div>'+
+      '<div id="fxLine" class="fx-line"></div>'+
+      '<div id="fxTrend" class="fx-trend"></div>'+
+      '<div class="slabel" style="margin-top:14px"><i class="ti ti-star"></i> Quick pairs</div>'+
+      '<div class="fx-pairs">'+FX_PAIRS.filter(p=>_fx.rates[p[0]]&&_fx.rates[p[1]]).map(p=>
+        '<button class="sh-chip fx-chip" onclick="fxSet(\''+p[0]+'\',\''+p[1]+'\')"><span>'+p[0]+'\u2009\u2192\u2009'+p[1]+'</span><b>'+fxFmt(fxRate(p[0],p[1]))+'</b></button>').join('')+'</div>'+
+      '<div class="cc-foot">BNR reference rate of <b>'+new Date(_fx.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'})+'</b>'+
+        (_fx.stale?' (couldn’t refresh — last known rates)':'')+'. BNR publishes on banking days around 13:00; banks and exchange offices add their own margin.</div>';
+  }
+  const v = fxRate(from, to);
+  const out = document.getElementById('fxOut'); if(out) out.textContent = fxFmt(v*amt);
+  const n1=document.getElementById('fxFromName'), n2=document.getElementById('fxToName');
+  if(n1) n1.textContent=fxName(from); if(n2) n2.textContent=fxName(to);
+  const line = document.getElementById('fxLine');
+  if(line) line.innerHTML = '1 '+from+' = <b>'+fxFmt(v)+'</b> '+to+' · 1 '+to+' = '+fxFmt(1/v)+' '+from;
+  fxTrend(from, to);
+}
+// 10-day line for the pair: one series, so the heading names it; tap or hover
+// a day to read its value.
+function fxTrend(from, to){
+  const el = document.getElementById('fxTrend'); if(!el) return;
+  const pts = (_fx.history||[]).map(h=>({ date:h.date, v:fxRate(from,to,h.rates) })).filter(p=>p.v);
+  if(pts.length < 2){ el.innerHTML=''; return; }
+  const last = pts[pts.length-1], prev = pts[pts.length-2];
+  const ch = (last.v/prev.v-1)*100, up = ch>0.0005, down = ch<-0.0005;
+  const W=320, H=84, P=6;
+  const vs = pts.map(p=>p.v), lo=Math.min(...vs), hi=Math.max(...vs), span=(hi-lo)||hi*0.001||1;
+  const x = i => P + i*(W-2*P)/(pts.length-1), y = v => P + (H-2*P)*(1-(v-lo)/span);
+  const d = pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p.v).toFixed(1)).join(' ');
+  const area = d+' L'+x(pts.length-1).toFixed(1)+' '+(H-P)+' L'+x(0).toFixed(1)+' '+(H-P)+' Z';
+  const day = ds => new Date(ds+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  el.innerHTML =
+    '<div class="fx-trend-h"><span>'+from+' → '+to+', last '+pts.length+' BNR days</span>'+
+      '<span class="fx-ch '+(up?'up':down?'down':'')+'">'+(up?'▲':down?'▼':'●')+' '+Math.abs(ch).toFixed(2)+'% since '+day(prev.date)+'</span></div>'+
+    '<div class="fx-chart"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="'+from+' to '+to+' over the last '+pts.length+' BNR days, from '+fxFmt(pts[0].v)+' to '+fxFmt(last.v)+'">'+
+      '<path d="'+area+'" fill="rgba(34,211,238,.10)"/>'+
+      '<path d="'+d+'" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+      '<circle cx="'+x(pts.length-1).toFixed(1)+'" cy="'+y(last.v).toFixed(1)+'" r="4" fill="#22d3ee" stroke="var(--bg1)" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
+      '<g id="fxHov"></g>'+
+      pts.map((p,i)=>'<rect x="'+(x(i)-(W-2*P)/(pts.length-1)/2).toFixed(1)+'" y="0" width="'+((W-2*P)/(pts.length-1)).toFixed(1)+'" height="'+H+'" fill="transparent" data-i="'+i+'"/>').join('')+
+    '</svg><div id="fxTip" class="fx-tip" hidden></div></div>'+
+    '<div class="fx-axis"><span>'+day(pts[0].date)+'</span><span>low '+fxFmt(lo)+' · high '+fxFmt(hi)+'</span><span>'+day(last.date)+'</span></div>';
+  const svg = el.querySelector('svg'), tip = el.querySelector('#fxTip'), hov = el.querySelector('#fxHov');
+  const show = i => {
+    const p = pts[i]; if(!p) return;
+    hov.innerHTML = '<line x1="'+x(i)+'" x2="'+x(i)+'" y1="0" y2="'+H+'" stroke="rgba(255,255,255,.25)" stroke-width="1" vector-effect="non-scaling-stroke"/>'+
+      '<circle cx="'+x(i)+'" cy="'+y(p.v)+'" r="4" fill="#22d3ee" stroke="var(--bg1)" stroke-width="2" vector-effect="non-scaling-stroke"/>';
+    tip.hidden = false; tip.innerHTML = '<b>'+fxFmt(p.v)+'</b> '+to+'<span>'+day(p.date)+'</span>';
+    tip.style.left = Math.min(Math.max(x(i)/W*100, 12), 88)+'%';
+  };
+  const hide = () => { hov.innerHTML=''; tip.hidden = true; };
+  svg.addEventListener('pointermove', e=>{ const r=e.target.closest('rect'); if(r) show(+r.dataset.i); });
+  svg.addEventListener('pointerdown', e=>{ const r=e.target.closest('rect'); if(r) show(+r.dataset.i); });
+  svg.addEventListener('pointerleave', hide);
+}
+function fxChanged(){
+  const a = (document.getElementById('fxAmt')||{}).value||'';
+  const n = parseFloat(a.replace(/\s/g,'').replace(',', '.'));
+  S.fxAmount = isFinite(n) && n>0 ? n : 1;
+  S.fxFrom = (document.getElementById('fxFrom')||{}).value || S.fxFrom;
+  S.fxTo = (document.getElementById('fxTo')||{}).value || S.fxTo;
+  fxRender(false);
+  clearTimeout(fxChanged._t); fxChanged._t = setTimeout(()=>saveState(), 800);
+}
+function fxSwap(){
+  const f = S.fxFrom||'EUR'; S.fxFrom = S.fxTo||'RON'; S.fxTo = f;
+  saveState(); fxRender(true);
+}
+function fxSet(f, t){ S.fxFrom = f; S.fxTo = t; S.fxAmount = S.fxAmount||1; saveState(); fxRender(true); }
 
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
@@ -4878,7 +5103,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-14-shopping-flat';
+const APP_BUILD='2026-10-15-overdue-live';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -5336,6 +5561,27 @@ document.addEventListener('visibilitychange', async ()=>{
     }
   }catch(e){}
 });
+
+// The day list is drawn once, so a task whose time passes while the app
+// stays open (or sits in the background) kept its earlier look until the
+// next redraw. Check every 20 s and on return: redraw when any card on the
+// shown day crosses its time, and reload after midnight so "Today" moves on.
+let _odSig='';
+function overdueSig(){
+  try{ return agendaEventsOnDay(fmtD(currentDay())).map(ev=>(ev.id||'')+(isPastEvent(ev)?'1':'0')).join(','); }catch(e){ return ''; }
+}
+function overdueTick(){
+  if(document.hidden || modalIsOpen()) return;
+  const n=new Date();
+  const today=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  if(today!==TODAY){ location.reload(); return; }
+  const sig=overdueSig();
+  if(_odSig && sig!==_odSig){ renderLP(); renderCal(); syncAppBadge(); }
+  _odSig=sig;
+}
+window.addEventListener('load', ()=>{ _odSig=overdueSig(); });
+setInterval(overdueTick, 20000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ _odSig=_odSig||overdueSig(); overdueTick(); } });
 
 // Keep the push subscription alive whenever the app is opened or brought
 // to the front, and re-check the badge (only tasks still not Done keep it).
