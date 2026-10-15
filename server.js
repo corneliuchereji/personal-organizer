@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-15-overdue-live';
+const BUILD_VERSION = '2026-10-15-fx-fix';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3556,34 +3556,92 @@ app.post('/api/shopping', (req, res) => {
 let _fxCache = null;   // { at, data }
 function parseBnrXml(xml){
   const days = [];
-  const cubeRe = /<Cube\s+date="(\d{4}-\d{2}-\d{2})"\s*>([\s\S]*?)<\/Cube>/g;
+  // Tolerant of attribute order and extra attributes on <Cube> and <Rate>.
+  const cubeRe = /<Cube\b[^>]*\bdate="(\d{4}-\d{2}-\d{2})"[^>]*>([\s\S]*?)<\/Cube>/g;
   let m;
   while((m = cubeRe.exec(xml))){
     const rates = { RON: 1 };
-    const rateRe = /<Rate\s+currency="([A-Z]{3})"(?:\s+multiplier="(\d+)")?\s*>([\d.]+)<\/Rate>/g;
+    const rateRe = /<Rate\b([^>]*)>\s*([\d.]+)\s*<\/Rate>/g;
     let r;
-    while((r = rateRe.exec(m[2]))){ rates[r[1]] = parseFloat(r[3]) / (r[2] ? parseInt(r[2]) : 1); }
-    days.push({ date: m[1], rates });
+    while((r = rateRe.exec(m[2]))){
+      const cur = (r[1].match(/currency="([A-Z]{3})"/)||[])[1];
+      const mul = (r[1].match(/multiplier="(\d+)"/)||[])[1];
+      if(cur) rates[cur] = parseFloat(r[2]) / (mul ? parseInt(mul) : 1);
+    }
+    if(Object.keys(rates).length > 3) days.push({ date: m[1], rates });
   }
   return days.sort((a,b) => a.date.localeCompare(b.date));
 }
-async function bnrRates(){
-  if(_fxCache && Date.now() - _fxCache.at < 60*60*1000) return _fxCache.data;
-  let days = [];
-  for(const url of ['https://www.bnr.ro/nbrfxrates10days.xml', 'https://www.bnr.ro/nbrfxrates.xml']){
+// ECB reference rates (per 1 EUR), turned into "RON per unit" like BNR.
+// Only used when BNR can't be reached; the widget says so.
+function parseEcbXml(xml){
+  const days = [];
+  const dayRe = /<Cube\s+time="(\d{4}-\d{2}-\d{2})"\s*>([\s\S]*?)<\/Cube>\s*(?=<Cube\s+time=|<\/Cube>)/g;
+  let m;
+  while((m = dayRe.exec(xml))){
+    const perEur = { EUR: 1 };
+    const re = /currency="([A-Z]{3})"\s+rate="([\d.]+)"/g; let r;
+    while((r = re.exec(m[2]))) perEur[r[1]] = parseFloat(r[2]);
+    if(!perEur.RON) continue;
+    const rates = {};
+    for(const [c, v] of Object.entries(perEur)) rates[c] = perEur.RON / v;
+    rates.RON = 1;
+    days.push({ date: m[1], rates });
+  }
+  return days.sort((a,b) => a.date.localeCompare(b.date)).slice(-10);
+}
+const BNR_URLS = [
+  'https://curs.bnr.ro/nbrfxrates10days.xml',
+  'https://www.bnr.ro/nbrfxrates10days.xml',
+  'https://curs.bnr.ro/nbrfxrates.xml',
+  'https://www.bnr.ro/nbrfxrates.xml'
+];
+const ECB_URLS = [
+  'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml',
+  'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'
+];
+let _fxLastErrors = [];
+async function fxFetch(url){
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 12000);
+  try{
+    const r = await fetch(url, { redirect:'follow', signal: ctl.signal,
+      headers:{ 'User-Agent':'Mozilla/5.0 (personal-organizer; +exchange-rates)', 'Accept':'application/xml,text/xml,*/*' } });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return await r.text();
+  }catch(e){
+    const why = e.name === 'AbortError' ? 'timed out' : (e.cause && (e.cause.code || e.cause.message)) || e.message;
+    throw new Error(String(why).replace(/^request to \S+ failed, reason: /,''));
+  }finally{ clearTimeout(t); }
+}
+async function bnrRates(force){
+  if(!force && _fxCache && Date.now() - _fxCache.at < 60*60*1000) return _fxCache.data;
+  const errors = [];
+  let days = [], source = 'BNR';
+  for(const url of BNR_URLS){
     try{
-      const r = await fetch(url, { headers:{ 'User-Agent':'personal-organizer/1.0', 'Accept':'application/xml,text/xml' } });
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      days = parseBnrXml(await r.text());
+      const txt = await fxFetch(url);
+      days = parseBnrXml(txt);
       if(days.length) break;
-    }catch(e){ console.log('BNR feed failed ('+url+'):', e.message); }
+      errors.push(url+': not a rates file ('+txt.slice(0,40).replace(/\s+/g,' ')+'…)');
+    }catch(e){ errors.push(url+': '+e.message); }
   }
   if(!days.length){
+    for(const url of ECB_URLS){
+      try{
+        days = parseEcbXml(await fxFetch(url));
+        if(days.length){ source = 'ECB'; break; }
+        errors.push(url+': not a rates file');
+      }catch(e){ errors.push(url+': '+e.message); }
+    }
+  }
+  _fxLastErrors = errors;
+  if(errors.length) console.log('Exchange-rate feeds:', errors.join(' | '));
+  if(!days.length){
     if(_fxCache) return { ..._fxCache.data, stale:true };   // keep showing the last good rates
-    throw new Error('The BNR rates could not be loaded right now.');
+    throw new Error('The exchange rates could not be loaded right now.');
   }
   const latest = days[days.length-1];
-  const data = { date: latest.date, rates: latest.rates, history: days, source:'BNR' };
+  const data = { date: latest.date, rates: latest.rates, history: days, source };
   _fxCache = { at: Date.now(), data };
   return data;
 }
@@ -3593,8 +3651,12 @@ function fxConvert(data, amount, from, to){
   return amount * a / b;
 }
 app.get('/api/fx', async (req, res) => {
-  try{ res.json(await bnrRates()); }
-  catch(e){ res.json({ error: e.message }); }
+  const debug = req.query.debug === '1';
+  try{
+    const data = await bnrRates(debug);
+    res.json(debug ? { ...data, feedErrors: _fxLastErrors } : data);
+  }
+  catch(e){ res.json({ error: e.message, feedErrors: _fxLastErrors }); }
 });
 
 // ═══════════════════════════════════════════════════
