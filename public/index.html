@@ -687,6 +687,13 @@ html{-webkit-tap-highlight-color:transparent}
 /* Pop-ups size to the *visible* screen (keyboard, home indicator), not the
    largest possible viewport. The vh value stays as the fallback. */
 @supports (height:100dvh){ .mbox{max-height:88dvh} }
+/* Dialog layout: the title and the buttons stay in place and only the
+   middle scrolls, so Done is always in reach. The backdrop never scrolls. */
+.mbg{overscroll-behavior:none}
+.mbox{display:flex;flex-direction:column;overflow:hidden}
+.mbox > h2,.mbox > .macts{flex:none}
+#mBody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;touch-action:pan-y;margin:0 -22px;padding:0 22px}
 /* iOS zooms the page into any text box under 16px. Pinch-zoom is allowed
    again, so the boxes are 16px on touch screens instead. */
 @media (pointer:coarse){
@@ -1538,12 +1545,32 @@ function agendaEventsOnDay(ds){
 // ─── MODAL ───────────────────────────────────────────────
 function closeModal(){
   // The life timer ticks once a second; stop it as soon as its dialog goes.
-  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}}
+  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');unlockPageScroll();if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}}
+// While a dialog is open the page behind it is frozen in place. On iPhone a
+// swipe that started on the dim backdrop scrolled the calendar underneath,
+// and the dialog's own list then wouldn't scroll.
+let _lockEl=null, _lockTop=0;
+function lockPageScroll(){
+  if(_lockEl) return;
+  // On phones the page scrolls inside <body>; on wider screens it's the window.
+  const b=document.body, cs=getComputedStyle(b);
+  _lockEl = (/(auto|scroll)/.test(cs.overflowY) && b.scrollHeight>b.clientHeight) ? b : document.documentElement;
+  _lockTop=_lockEl.scrollTop;
+  _lockEl.style.overflow='hidden';
+}
+function unlockPageScroll(){
+  if(!_lockEl) return;
+  const el=_lockEl; _lockEl=null;
+  el.style.overflow='';
+  el.scrollTop=_lockTop;
+}
 function showModal(title,body,acts){
   document.getElementById('mTitle').textContent=title;
-  document.getElementById('mBody').innerHTML=body;
+  const mb=document.getElementById('mBody');
+  mb.innerHTML=body; mb.scrollTop=0;
   document.getElementById('mActs').innerHTML=acts;
   document.getElementById('modal').classList.add('open');
+  lockPageScroll();
 }
 // Close on backdrop click only — and only when the click BEGAN on the
 // backdrop. Without the mousedown check, selecting text inside the dialog
@@ -5121,7 +5148,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-15-fx-list';
+const APP_BUILD='2026-10-16-dialog-scroll';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
