@@ -1037,6 +1037,38 @@ select option{background:#1B2350;color:#E8ECF8;font-weight:500}
 select optgroup{background:#121935;color:#7DD3FC;font-weight:700;font-style:normal}
 select option:checked{background:#2E3A78;color:#fff}
 .fx-name{display:none} /* the name is now inside the picker itself */
+/* Screen remote */
+.rm-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:12px}
+.rm-status b{color:var(--txt)}
+.rm-dot{width:9px;height:9px;border-radius:50%;flex:none;background:#6B78A0}
+.rm-status.on .rm-dot{background:#4ade80;box-shadow:0 0 0 4px rgba(74,222,128,.15)}
+.rm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rm-btn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;border-radius:18px;text-align:left;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--txt);font-family:inherit;min-height:104px;
+  transition:transform 140ms var(--ease-out),background-color 150ms ease,border-color 150ms ease}
+.rm-btn i{font-size:26px;color:#f59e0b;margin-bottom:4px}
+.rm-btn b{font-size:15px;font-weight:650}
+.rm-btn span{font-size:12px;color:var(--txt2)}
+.rm-btn:active:not(:disabled){transform:scale(0.97)}
+@media (hover:hover) and (pointer:fine){ .rm-btn:hover:not(:disabled){background:rgba(255,255,255,.08)} }
+.rm-btn.cur{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.55)}
+.rm-btn.cur span::after{content:' · now';color:#fbbf24;font-weight:600}
+.rm-btn:disabled{opacity:.45;cursor:default}
+.rm-btn.busy{opacity:1}
+.rm-spin{animation:rmSpin 900ms linear infinite}
+@keyframes rmSpin{to{transform:rotate(360deg)}}
+.rm-note{font-size:12px;color:var(--txt2);margin-top:10px;min-height:1px}
+.rm-setup{margin-top:16px;border-top:1px solid var(--border);padding-top:10px}
+.rm-setup summary{cursor:pointer;font-size:13px;font-weight:650;color:var(--txt);padding:4px 0;list-style:none}
+.rm-setup summary::-webkit-details-marker{display:none}
+.rm-setup summary i{color:#f59e0b}
+.rm-setup ol{margin:8px 0 0 18px;padding:0;font-size:12.5px;color:var(--txt2);line-height:1.55}
+.rm-setup ol li{margin-bottom:4px}
+.rm-setup ol b{color:var(--txt)}
+.rm-setup-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.rm-unlock{display:flex;gap:6px}
+.rm-unlock input{flex:1;min-width:0}
+@media (prefers-reduced-motion:reduce){ .rm-spin{animation:none} .rm-btn:active:not(:disabled){transform:none} }
 .fx-name{font-size:11px;color:var(--txt3);margin-top:-4px;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fx-tip{top:6px;transform:translate(-50%,0)}
 .fx-pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
@@ -1545,7 +1577,7 @@ function agendaEventsOnDay(ds){
 // ─── MODAL ───────────────────────────────────────────────
 function closeModal(){
   // The life timer ticks once a second; stop it as soon as its dialog goes.
-  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');unlockPageScroll();if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}}
+  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');unlockPageScroll();if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}if(typeof _rmPoll!=='undefined'&&_rmPoll){clearInterval(_rmPoll);_rmPoll=null;}}
 // While a dialog is open the page behind it is frozen in place. On iPhone a
 // swipe that started on the dim backdrop scrolled the calendar underneath,
 // and the dialog's own list then wouldn't scroll.
@@ -3917,6 +3949,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_concerts',name:'Concerts', desc:'Your artists\u2019 dates in Europe', action:'concerts', icon:'ti-microphone-2'},
   {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
   {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
+  {id:'w_remote',name:'Screen remote', desc:'Mirror the laptop on the TV from your phone', action:'remote', icon:'ti-device-tv'},
   {id:'w_clocks',name:'World clocks', desc:'Time and weather in other cities', action:'clocks', icon:'ti-world'},
   {id:'w_holidays',name:'Public holidays', desc:'National days, Easter, Christmas', action:'holidays', icon:'ti-confetti'},
   {id:'w_r2r',  name:'Rome2Rio',   desc:'Trains, buses, flights, driving', url:'https://www.rome2rio.com/', icon:'ti-route'},
@@ -3979,9 +4012,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -4149,6 +4182,7 @@ function widgetPeek(w){
       return S.worldClocks.slice(0,2).map(c=>c.name+' '+clockTime(c.tz)).join(' · ');
     }
     if(w.action==='holidays' && _holNext){ return _holNext; }
+    if(w.action==='remote' && _rm && !_rm.error){ return !_rm.paired ? 'Not set up' : (_rm.online ? (_rm.host||'Laptop')+' online' : 'Laptop offline'); }
     if(w.action==='fx' && _fx && _fx.rates){ const f=S.fxFrom||'EUR', t=S.fxTo||'RON'; const v=fxRate(f,t); if(v) return '1 '+f+' = '+fxFmt(v)+' '+t; }
     if(w.action==='shopping' && _shop && _shop.lists){
       const L=_shop.lists, n=L.reduce((a,l)=>a+(l.open||0),0), next=L.find(l=>l.trip);
@@ -4442,6 +4476,131 @@ function fxSwap(){
   saveState(); fxRender(true);
 }
 function fxSet(f, t){ S.fxFrom = f; S.fxTo = t; S.fxAmount = S.fxAmount||1; saveState(); fxRender(true); }
+
+// ─── SCREEN REMOTE ───────────────────────────────────────
+// Choose how the laptop uses the TV, from the phone. A small helper on the
+// laptop (downloaded once, from the laptop) picks the command up from the
+// server and runs Windows' own DisplaySwitch. See /api/remote/* in server.js.
+let _rm=null, _rmBusy=null, _rmMsg='', _rmPoll=null;
+const RM_MODES=[
+  {cmd:'internal', name:'Laptop only', icon:'ti-device-laptop', hint:'TV goes dark'},
+  {cmd:'clone',    name:'Mirror both', icon:'ti-copy',          hint:'Same picture on both'},
+  {cmd:'extend',   name:'Extend',      icon:'ti-layout-columns', hint:'One wide screen'},
+  {cmd:'external', name:'TV only',     icon:'ti-device-tv',     hint:'Laptop screen off'}
+];
+async function openRemote(){
+  showModal('Screen remote',
+    '<div id="rmBody" class="rm-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Checking the laptop…</div></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  await rmLoad();
+  clearInterval(_rmPoll);
+  _rmPoll=setInterval(()=>{ if(!document.getElementById('rmBody')){ clearInterval(_rmPoll); _rmPoll=null; return; } if(!_rmBusy) rmLoad(); }, 8000);
+}
+async function rmLoad(){
+  try{ _rm=await (await fetch('/api/remote/status')).json(); }catch(e){ _rm={ error:'Couldn’t reach the server.' }; }
+  rmRender();
+}
+function rmAgo(iso){
+  if(!iso) return '';
+  const s=Math.round((Date.now()-new Date(iso))/1000);
+  if(s<60) return 'just now';
+  const m=Math.round(s/60); if(m<60) return m+' min ago';
+  const h=Math.round(m/60); return h<24 ? h+' h ago' : new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+function rmRender(){
+  const el=document.getElementById('rmBody'); if(!el||!_rm) return;
+  if(_rm.error){ el.innerHTML='<div class="cc-msg" style="color:var(--red)">'+escHtml(_rm.error)+'</div>'; return; }
+  const cur = _rm.last && _rm.last.ok ? _rm.last.cmd : null;
+  const st = !_rm.paired
+    ? '<div class="rm-status off"><span class="rm-dot"></span>Laptop not set up yet — see <b>Laptop setup</b> below.</div>'
+    : _rm.online
+      ? '<div class="rm-status on"><span class="rm-dot"></span><b>'+escHtml(_rm.host||'Laptop')+'</b> is online</div>'
+      : '<div class="rm-status off"><span class="rm-dot"></span>Laptop offline'+(_rm.lastSeen?' · last seen '+rmAgo(_rm.lastSeen):'')+' — is it switched on and connected?</div>';
+  const dis = !_rm.paired || !_rm.online;
+  const grid = '<div class="rm-grid">'+RM_MODES.map(m=>
+    '<button class="rm-btn'+(cur===m.cmd?' cur':'')+(_rmBusy===m.cmd?' busy':'')+'" '+(dis||_rmBusy?'disabled ':'')+'onclick="rmSend(\''+m.cmd+'\')" aria-pressed="'+(cur===m.cmd)+'">'+
+      '<i class="ti '+(_rmBusy===m.cmd?'ti-loader-2 rm-spin':m.icon)+'"></i><b>'+m.name+'</b><span>'+m.hint+'</span></button>').join('')+'</div>';
+  const note = _rmMsg ? '<div class="rm-note">'+_rmMsg+'</div>'
+    : (_rm.last ? '<div class="rm-note">'+(_rm.last.ok?'<i class="ti ti-check" style="color:var(--green)"></i> ':'<i class="ti ti-alert-triangle" style="color:var(--red)"></i> ')+
+        escHtml(RM_MODES.find(m=>m.cmd===_rm.last.cmd)?.name||_rm.last.cmd)+' · '+rmAgo(_rm.last.at)+(_rm.last.msg?' · '+escHtml(_rm.last.msg):'')+'</div>' : '');
+  const setup =
+    '<details class="rm-setup"'+(_rm.paired?'':' open')+'><summary><i class="ti ti-tool"></i> Laptop setup</summary>'+
+      '<ol>'+
+        '<li>On the <b>laptop</b>, open the Organizer in the browser and open this Screen remote.</li>'+
+        '<li>Tap <b>Download helper</b> below. It needs your private-settings password.</li>'+
+        '<li>Open the downloaded <b>Organizer-Screen-Remote.cmd</b>. If Windows warns you, choose <i>More info → Run anyway</i>.</li>'+
+        '<li>That’s it: it starts with Windows by itself and runs hidden. The status above turns green.</li>'+
+      '</ol>'+
+      '<div id="rmSetupMsg" class="rm-note"></div>'+
+      '<div class="rm-setup-acts">'+
+        '<button class="btn acc sm" onclick="rmDownload()"><i class="ti ti-download"></i> Download helper</button>'+
+        (_rm.paired?'<button class="btn sm" onclick="rmUnpair()"><i class="ti ti-unlink"></i> Unpair laptop</button>':'')+
+      '</div>'+
+      '<div class="cc-foot">Works from anywhere, not only at home. Only the four screen modes can be sent — nothing else on the laptop is reachable. Needs Windows 10 or 11.</div>'+
+    '</details>';
+  el.innerHTML = st + grid + note + setup;
+}
+async function rmSend(cmd){
+  if(_rmBusy) return;
+  _rmBusy=cmd; _rmMsg=''; rmRender();
+  const before = _rm.last ? _rm.last.at : null;
+  try{
+    const r=await fetch('/api/remote/cmd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cmd})});
+    const d=await r.json(); if(d.error) throw new Error(d.error);
+  }catch(e){ _rmBusy=null; _rmMsg='<span style="color:var(--red)">'+escHtml(e.message)+'</span>'; rmRender(); return; }
+  // Wait for the laptop to report back (it usually takes a second or two).
+  const t0=Date.now();
+  while(Date.now()-t0 < 20000){
+    await new Promise(r=>setTimeout(r,900));
+    try{ _rm=await (await fetch('/api/remote/status')).json(); }catch(e){}
+    if(_rm.last && _rm.last.at!==before && !_rm.pending) break;
+  }
+  _rmBusy=null;
+  if(!(_rm.last && _rm.last.at!==before)) _rmMsg='<i class="ti ti-clock"></i> The laptop hasn’t answered yet — it may be asleep. It will be skipped if not picked up within a minute.';
+  rmRender();
+}
+async function rmNeedUnlock(){
+  const m=document.getElementById('rmSetupMsg'); if(!m) return false;
+  if(!S.privateSet){ m.innerHTML='<span style="color:var(--red)">Set a private-settings password first (Settings → Private settings).</span>'; return false; }
+  m.innerHTML='<div class="rm-unlock"><input id="rmPw" type="password" class="cc-input" placeholder="Private-settings password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')rmDownload()"><button class="btn acc sm" onclick="rmDownload()">Unlock</button></div>';
+  setTimeout(()=>{ const i=document.getElementById('rmPw'); if(i) i.focus(); },50);
+  return false;
+}
+async function rmDownload(){
+  const m=document.getElementById('rmSetupMsg');
+  const pwEl=document.getElementById('rmPw');
+  if(pwEl && pwEl.value){
+    const d=await privPost('/api/private/unlock',{password:pwEl.value});
+    if(d.error){ if(m) m.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
+    setPrivTok(d.token);
+  }
+  if(/iPhone|iPad|Android/i.test(navigator.userAgent) && m && !m.dataset.warned){
+    m.dataset.warned='1';
+    m.innerHTML='<i class="ti ti-info-circle"></i> The helper must be opened <b>on the laptop</b>. Tap Download helper again to get it here anyway.';
+    return;
+  }
+  let pr=await privPost('/api/remote/pair',{});
+  if(pr.locked || (pr.error && /locked/i.test(pr.error))) return rmNeedUnlock();
+  if(pr.error){ if(m) m.innerHTML='<span style="color:var(--red)">'+escHtml(pr.error)+'</span>'; return; }
+  try{
+    const r=await fetch('/api/remote/helper?origin='+encodeURIComponent(location.origin));
+    if(r.status===401) return rmNeedUnlock();
+    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.error||('HTTP '+r.status)); }
+    const blob=await r.blob();
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Organizer-Screen-Remote.cmd';
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+    if(m) m.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> Downloaded. Open <b>Organizer-Screen-Remote.cmd</b> from your Downloads.';
+    await rmLoad();
+    const m2=document.getElementById('rmSetupMsg'); if(m2) m2.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> Downloaded. Open <b>Organizer-Screen-Remote.cmd</b> from your Downloads.';
+  }catch(e){ if(m) m.innerHTML='<span style="color:var(--red)">'+escHtml(e.message)+'</span>'; }
+}
+async function rmUnpair(){
+  const d=await privPost('/api/remote/unpair',{});
+  if(d.locked || (d.error && /locked/i.test(d.error))) return rmNeedUnlock();
+  if(d.error){ const m=document.getElementById('rmSetupMsg'); if(m) m.innerHTML='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; return; }
+  await rmLoad();
+  const m=document.getElementById('rmSetupMsg'); if(m) m.innerHTML='Unpaired. The old helper can no longer do anything; you can delete it from the laptop’s Startup folder.';
+}
 
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
@@ -5162,7 +5321,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-17-one-reminder';
+const APP_BUILD='2026-10-19-screen-remote';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
