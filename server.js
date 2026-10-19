@@ -29,7 +29,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ═══════════════════════════════════════════════════
 const crypto = require('crypto');
 const PRIVATE_SETTING_KEYS = ['footballDataKey','highlightlyKey','apiFootballKey','tsdbKey','orsKey',
-  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey','remoteKey'];
+  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey','remoteKey','remotePhones'];
 const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey','cartoKey','ticketmasterKey'];
 const PRIV_TTL_MS = 30*60*1000;              // 30 min, renewed while in use
 const _privSessions = new Map();             // token -> expiry
@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-19-screen-remote';
+const BUILD_VERSION = '2026-10-19-touchpad';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3682,20 +3682,26 @@ function remoteKeyOk(req){
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(k));
 }
 function remoteHand(){
-  if(!_rmWaiter || !_rmQueue) return;
+  if(!_rmQueue || _rmQueue.sentAt) return;
   if(Date.now() - _rmQueue.at > REMOTE_CMD_TTL){ _rmQueue = null; return; }
+  if(rmLaptopOpen()){
+    try{ _rmLaptop.send('mode '+_rmQueue.cmd+' '+_rmQueue.id); _rmQueue.sentAt = Date.now(); return; }catch(e){}
+  }
+  if(!_rmWaiter) return;
   const w = _rmWaiter; _rmWaiter = null;
   clearTimeout(w.timer);
   try{ w.res.json({ id:_rmQueue.id, cmd:_rmQueue.cmd }); }catch(e){}
   _rmQueue.sentAt = Date.now();
 }
 function remoteStatus(){
-  const online = Date.now() - _rmSeen < 75*1000;
+  const online = rmLaptopOpen() || Date.now() - _rmSeen < 75*1000;
   return {
     paired: !!remoteKeyOf(readData()), online, host:_rmHost || null,
     lastSeen: _rmSeen ? new Date(_rmSeen).toISOString() : null,
     pending: _rmQueue ? { cmd:_rmQueue.cmd, sent: !!_rmQueue.sentAt } : null,
-    last: _rmLast, modes: REMOTE_MODES
+    last: _rmLast, modes: REMOTE_MODES,
+    touchpad: rmLaptopOpen(),          // the live connection the touchpad needs (new helper)
+    phones: ((readData().settings||{}).remotePhones||[]).length
   };
 }
 app.get('/api/remote/status', (req, res) => res.json(remoteStatus()));
@@ -3737,7 +3743,9 @@ app.post('/api/remote/pair', requirePrivate, (req, res) => {
 });
 app.post('/api/remote/unpair', requirePrivate, (req, res) => {
   const d = readData(); d.settings = d.settings || {};
-  delete d.settings.remoteKey; writeData(d);
+  delete d.settings.remoteKey; delete d.settings.remotePhones; writeData(d);
+  try{ if(_rmLaptop) _rmLaptop.close(4401,'unpaired'); }catch(e){}
+  for(const p of _rmPhones){ try{ p.close(4401,'unpaired'); }catch(e){} }
   _rmQueue = null; _rmSeen = 0; _rmHost = ''; _rmLast = null;
   if(_rmWaiter){ clearTimeout(_rmWaiter.timer); try{ _rmWaiter.res.status(401).json({ error:'Unpaired' }); }catch(e){} _rmWaiter = null; }
   res.json({ ok:true });
@@ -3752,6 +3760,97 @@ app.get('/api/remote/helper', requirePrivate, (req, res) => {
   res.set('Content-Disposition','attachment; filename="Organizer-Screen-Remote.cmd"');
   res.send(remoteHelperScript(origin, key).replace(/\r?\n/g,'\r\n'));
 });
+// ── Live link for the touchpad ──
+// Mouse moves need a connection that stays open; separate requests would
+// make the pointer jump. The laptop helper and the phone each keep a
+// WebSocket here and the server passes the phone's input straight through.
+// The phone must be trusted once with the private-settings password; it
+// then keeps its own token (only a hash is stored).
+let _rmLaptop = null;
+const _rmPhones = new Set();
+function rmLaptopOpen(){ return !!(_rmLaptop && _rmLaptop.readyState === 1); }
+function rmSha(t){ return crypto.createHash('sha256').update(String(t)).digest('hex'); }
+function rmPhoneOk(tok){
+  if(!tok || tok.length < 20) return false;
+  const h = rmSha(tok);
+  return ((readData().settings||{}).remotePhones||[]).some(p => p.hash === h);
+}
+function rmTellPhones(msg){ for(const p of _rmPhones){ try{ if(p.readyState===1) p.send(msg); }catch(e){} } }
+// What a phone may send: relative moves, clicks, scroll, text, a few keys.
+const RM_INPUT_RE = /^(m -?\d{1,4} -?\d{1,4}|s -?\d{1,5} -?\d{1,5}|c [lr]|dbl|d l|u l|k (enter|back|del|esc|tab|space|up|down|left|right|home|end|pgup|pgdn|win|alttab|altf4|f5|f11|volup|voldn|mute|play|next|prev|ctrlc|ctrlv|ctrlz|ctrla|ctrlw|ctrlt|ctrll)|t [\s\S]{1,200})$/;
+app.post('/api/remote/phone-pair', requirePrivate, (req, res) => {
+  const d = readData(); d.settings = d.settings || {};
+  if(!d.settings.remoteKey) return res.status(400).json({ error:'Set up the laptop first.' });
+  const tok = crypto.randomBytes(32).toString('hex');
+  const list = (d.settings.remotePhones||[]).slice(-4);       // keep at most 5 trusted phones
+  list.push({ id: crypto.randomBytes(4).toString('hex'), hash: rmSha(tok), label: String((req.body||{}).label||'Phone').slice(0,40), at: new Date().toISOString() });
+  d.settings.remotePhones = list; writeData(d);
+  res.json({ ok:true, token: tok });
+});
+let _rmWss = null;
+function attachRemoteSockets(httpServer){
+  let WebSocketServer;
+  try{ ({ WebSocketServer } = require('ws')); }
+  catch(e){ console.log('   Touchpad: the "ws" package is missing — add it to package.json.'); return; }
+  _rmWss = new WebSocketServer({ noServer:true, maxPayload: 4096 });
+  httpServer.on('upgrade', (req, socket, head) => {
+    let url; try{ url = new URL(req.url, 'http://x'); }catch(e){ socket.destroy(); return; }
+    const role = url.pathname === '/ws/remote/laptop' ? 'laptop' : url.pathname === '/ws/remote/phone' ? 'phone' : null;
+    if(!role){ socket.destroy(); return; }
+    if(role === 'laptop'){
+      const k = remoteKeyOf(readData()), got = String(req.headers['x-remote-key']||'');
+      if(!k || got.length !== k.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(k))){
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); socket.destroy(); return;
+      }
+    }
+    _rmWss.handleUpgrade(req, socket, head, ws => {
+      ws.isAlive = true; ws.on('pong', () => { ws.isAlive = true; });
+      if(role === 'laptop'){
+        if(_rmLaptop){ try{ _rmLaptop.close(4000,'replaced'); }catch(e){} }
+        _rmLaptop = ws; _rmSeen = Date.now();
+        _rmHost = String(req.headers['x-remote-host']||'').slice(0,60);
+        rmTellPhones('laptop on');
+        remoteHand();
+        ws.on('message', buf => {
+          _rmSeen = Date.now();
+          const m = String(buf).slice(0,400);
+          const p = m.match(/^done (\S+) ([01]) ?([\s\S]*)$/);
+          if(p && _rmQueue && p[1] === _rmQueue.id){
+            _rmLast = { cmd:_rmQueue.cmd, ok: p[2]==='1', msg: p[3].slice(0,300), at: new Date().toISOString() };
+            _rmQueue = null;
+          }
+        });
+        ws.on('close', () => { if(_rmLaptop === ws){ _rmLaptop = null; _rmSeen = Date.now(); rmTellPhones('laptop off'); } });
+      } else {
+        // The phone proves itself with its first message: "auth <token>".
+        let authed = false;
+        const t = setTimeout(() => { if(!authed) try{ ws.close(4401,'no auth'); }catch(e){} }, 8000);
+        ws.on('message', buf => {
+          const m = String(buf);
+          if(!authed){
+            const a = m.match(/^auth (\S+)$/);
+            if(a && rmPhoneOk(a[1])){ authed = true; clearTimeout(t); _rmPhones.add(ws); ws.send(rmLaptopOpen() ? 'laptop on' : 'laptop off'); }
+            else { try{ ws.close(4401,'bad token'); }catch(e){} }
+            return;
+          }
+          if(m === 'ping'){ try{ ws.send('pong'); }catch(e){} return; }
+          if(!RM_INPUT_RE.test(m)) return;
+          if(rmLaptopOpen()){ try{ _rmLaptop.send(m); }catch(e){} }
+        });
+        ws.on('close', () => { clearTimeout(t); _rmPhones.delete(ws); });
+      }
+    });
+  });
+  // Ping both ends so proxies keep idle connections open and dead ones go.
+  setInterval(() => {
+    for(const ws of _rmWss.clients){
+      if(ws.isAlive === false){ try{ ws.terminate(); }catch(e){} continue; }
+      ws.isAlive = false; try{ ws.ping(); }catch(e){}
+    }
+  }, 25000);
+  console.log('   Touchpad: live link ready');
+}
+
 // One file the user double-clicks. The top is a batch stub that runs the
 // PowerShell below the marker; the first run installs itself to start with
 // Windows (hidden), later runs just replace it with the new copy.
@@ -3799,26 +3898,108 @@ if($global:OrgInstall){
 $mutex = New-Object System.Threading.Mutex($false, 'Local\\OrganizerScreenRemote')
 if(-not $mutex.WaitOne(0)){ return }
 $Switch = Join-Path $env:WINDIR 'System32\\DisplaySwitch.exe'
-$Head = @{ 'X-Remote-Key' = $Key; 'X-Remote-Host' = $env:COMPUTERNAME }
-while($true){
-  try{
-    $r = Invoke-RestMethod -Uri ($Server + '/api/remote/poll') -Headers $Head -TimeoutSec 40
-    if($r -and $r.cmd){
-      $ok = $true; $msg = ''
-      try{
-        if(@('internal','clone','extend','external') -notcontains $r.cmd){ throw ('Unknown mode ' + $r.cmd) }
-        Start-Process -FilePath $Switch -ArgumentList ('/' + $r.cmd) -Wait
-        Start-Sleep -Milliseconds 800
-        $n = @(Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams -ErrorAction SilentlyContinue | Where-Object { $_.Active }).Count
-        if($n -eq 1){ $msg = '1 screen on' } elseif($n){ $msg = "$n screens on" }
-      }catch{ $ok = $false; $msg = $_.Exception.Message }
-      $body = @{ id = $r.id; ok = $ok; msg = $msg } | ConvertTo-Json -Compress
-      Invoke-RestMethod -Method Post -Uri ($Server + '/api/remote/done') -Headers $Head -ContentType 'application/json' -Body $body -TimeoutSec 20 | Out-Null
-    }
-  }catch{
-    $code = 0; try{ $code = [int]$_.Exception.Response.StatusCode }catch{}
-    if($code -eq 401){ Start-Sleep -Seconds 300 } else { Start-Sleep -Seconds 10 }
+
+# Mouse and keyboard through Windows' SendInput (the same way a real
+# mouse or keyboard reports to Windows).
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class OrgInput {
+  [StructLayout(LayoutKind.Sequential)] struct MOUSEINPUT { public int dx; public int dy; public uint mouseData; public uint dwFlags; public uint time; public IntPtr extra; }
+  [StructLayout(LayoutKind.Sequential)] struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr extra; }
+  [StructLayout(LayoutKind.Explicit)] struct UNION { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; }
+  [StructLayout(LayoutKind.Sequential)] struct INPUT { public uint type; public UNION u; }
+  [DllImport("user32.dll", SetLastError=true)] static extern uint SendInput(uint n, INPUT[] inputs, int size);
+  static void Send(INPUT[] a){ SendInput((uint)a.Length, a, Marshal.SizeOf(typeof(INPUT))); }
+  static INPUT M(uint flags, int dx, int dy, int data){ INPUT i = new INPUT(); i.type = 0; i.u.mi.dx = dx; i.u.mi.dy = dy; i.u.mi.mouseData = (uint)data; i.u.mi.dwFlags = flags; return i; }
+  static INPUT K(ushort vk, ushort scan, uint flags){ INPUT i = new INPUT(); i.type = 1; i.u.ki.wVk = vk; i.u.ki.wScan = scan; i.u.ki.dwFlags = flags; return i; }
+  public static void Move(int dx, int dy){ Send(new INPUT[]{ M(0x0001, dx, dy, 0) }); }
+  public static void Click(bool right){ uint d = right ? 0x0008u : 0x0002u, u = right ? 0x0010u : 0x0004u; Send(new INPUT[]{ M(d,0,0,0), M(u,0,0,0) }); }
+  public static void Down(){ Send(new INPUT[]{ M(0x0002,0,0,0) }); }
+  public static void Up(){ Send(new INPUT[]{ M(0x0004,0,0,0) }); }
+  public static void Wheel(int dy, int dx){
+    if(dy != 0) Send(new INPUT[]{ M(0x0800,0,0,dy) });
+    if(dx != 0) Send(new INPUT[]{ M(0x1000,0,0,dx) });
   }
+  public static void Text(string s){
+    foreach(char c in s){
+      if(c == '\\n'){ Key(0x0D, false); continue; }
+      Send(new INPUT[]{ K(0, c, 0x0004), K(0, c, 0x0004 | 0x0002) });
+    }
+  }
+  public static void Key(ushort vk, bool ext){ uint e = ext ? 1u : 0u; Send(new INPUT[]{ K(vk,0,e), K(vk,0,e | 2u) }); }
+  public static void Combo(ushort mod, ushort vk, bool ext){ uint e = ext ? 1u : 0u; Send(new INPUT[]{ K(mod,0,0), K(vk,0,e), K(vk,0,e | 2u), K(mod,0,2u) }); }
+}
+'@
+
+# key name -> virtual key, extended flag
+$Keys = @{
+  'enter'=@(0x0D,0); 'back'=@(0x08,0); 'del'=@(0x2E,1); 'esc'=@(0x1B,0); 'tab'=@(0x09,0); 'space'=@(0x20,0)
+  'up'=@(0x26,1); 'down'=@(0x28,1); 'left'=@(0x25,1); 'right'=@(0x27,1); 'home'=@(0x24,1); 'end'=@(0x23,1); 'pgup'=@(0x21,1); 'pgdn'=@(0x22,1)
+  'win'=@(0x5B,1); 'f5'=@(0x74,0); 'f11'=@(0x7A,0)
+  'volup'=@(0xAF,1); 'voldn'=@(0xAE,1); 'mute'=@(0xAD,1); 'play'=@(0xB3,1); 'next'=@(0xB0,1); 'prev'=@(0xB1,1)
+}
+$Combos = @{ 'alttab'=@(0x12,0x09); 'altf4'=@(0x12,0x73); 'ctrlc'=@(0x11,0x43); 'ctrlv'=@(0x11,0x56); 'ctrlz'=@(0x11,0x5A); 'ctrla'=@(0x11,0x41); 'ctrlw'=@(0x11,0x57); 'ctrlt'=@(0x11,0x54); 'ctrll'=@(0x11,0x4C) }
+
+function Send-Text($ws, [string]$text){
+  $bytes = [Text.Encoding]::UTF8.GetBytes($text)
+  $ws.SendAsync([ArraySegment[byte]]::new($bytes), [Net.WebSockets.WebSocketMessageType]::Text, $true, [Threading.CancellationToken]::None).Wait()
+}
+function Run-Mode($ws, $cmd, $id){
+  $ok = 1; $msg = ''
+  try{
+    if(@('internal','clone','extend','external') -notcontains $cmd){ throw ('Unknown mode ' + $cmd) }
+    Start-Process -FilePath $Switch -ArgumentList ('/' + $cmd) -Wait
+    Start-Sleep -Milliseconds 800
+    $n = @(Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams -ErrorAction SilentlyContinue | Where-Object { $_.Active }).Count
+    if($n -eq 1){ $msg = '1 screen on' } elseif($n){ $msg = "$n screens on" }
+  }catch{ $ok = 0; $msg = $_.Exception.Message }
+  Send-Text $ws ('done ' + $id + ' ' + $ok + ' ' + $msg)
+}
+function Handle($ws, [string]$m){
+  $sp = $m.IndexOf(' ')
+  $op = if($sp -lt 0){ $m } else { $m.Substring(0,$sp) }
+  $arg = if($sp -lt 0){ '' } else { $m.Substring($sp+1) }
+  switch($op){
+    'm'    { $p = $arg.Split(' '); [OrgInput]::Move([int]$p[0], [int]$p[1]) }
+    's'    { $p = $arg.Split(' '); [OrgInput]::Wheel([int]$p[0], [int]$p[1]) }
+    'c'    { [OrgInput]::Click($arg -eq 'r') }
+    'dbl'  { [OrgInput]::Click($false); Start-Sleep -Milliseconds 40; [OrgInput]::Click($false) }
+    'd'    { [OrgInput]::Down() }
+    'u'    { [OrgInput]::Up() }
+    't'    { [OrgInput]::Text($arg) }
+    'k'    {
+      if($Keys.ContainsKey($arg)){ $k = $Keys[$arg]; [OrgInput]::Key([uint16]$k[0], [bool]$k[1]) }
+      elseif($Combos.ContainsKey($arg)){ $k = $Combos[$arg]; [OrgInput]::Combo([uint16]$k[0], [uint16]$k[1], $false) }
+    }
+    'mode' { $p = $arg.Split(' '); Run-Mode $ws $p[0] $p[1] }
+  }
+}
+
+$WsUrl = ($Server -replace '^http', 'ws') + '/ws/remote/laptop'
+$buf = New-Object byte[] 8192
+while($true){
+  $ws = $null
+  try{
+    $ws = New-Object System.Net.WebSockets.ClientWebSocket
+    $ws.Options.SetRequestHeader('X-Remote-Key', $Key)
+    $ws.Options.SetRequestHeader('X-Remote-Host', $env:COMPUTERNAME)
+    $ws.Options.KeepAliveInterval = [TimeSpan]::FromSeconds(20)
+    $ws.ConnectAsync([Uri]$WsUrl, [Threading.CancellationToken]::None).Wait()
+    $seg = [ArraySegment[byte]]::new($buf)
+    while($ws.State -eq [Net.WebSockets.WebSocketState]::Open){
+      $sb = New-Object System.Text.StringBuilder
+      do{
+        $r = $ws.ReceiveAsync($seg, [Threading.CancellationToken]::None).GetAwaiter().GetResult()
+        if($r.MessageType -eq [Net.WebSockets.WebSocketMessageType]::Close){ break }
+        [void]$sb.Append([Text.Encoding]::UTF8.GetString($buf, 0, $r.Count))
+      } while(-not $r.EndOfMessage)
+      if($r.MessageType -eq [Net.WebSockets.WebSocketMessageType]::Close){ break }
+      try{ Handle $ws $sb.ToString() }catch{}
+    }
+  }catch{}
+  try{ if($ws){ $ws.Dispose() } }catch{}
+  Start-Sleep -Seconds 5
 }
 `;
 }
@@ -4302,7 +4483,7 @@ try {
 
 const initialData = readData();
 
-app.listen(PORT, async ()=>{
+const httpServer = app.listen(PORT, async ()=>{
   console.log(`✅ Personal Organizer running on port ${PORT}`);
   console.log(`   APP_URL: ${APP_URL||'NOT SET'}`);
 
@@ -4314,5 +4495,7 @@ app.listen(PORT, async ()=>{
 
   console.log('   Notifications: web push');
 });
+attachRemoteSockets(httpServer);
+
 
 })(); // end async bootstrap
