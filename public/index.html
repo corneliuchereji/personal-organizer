@@ -1069,6 +1069,56 @@ select option:checked{background:#2E3A78;color:#fff}
 .rm-unlock{display:flex;gap:6px}
 .rm-unlock input{flex:1;min-width:0}
 @media (prefers-reduced-motion:reduce){ .rm-spin{animation:none} .rm-btn:active:not(:disabled){transform:none} }
+.rm-padbtn{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:18px;text-align:left;cursor:pointer;font-family:inherit;color:var(--txt);
+  background:linear-gradient(135deg,rgba(245,158,11,.20),rgba(245,158,11,.06));border:1px solid rgba(245,158,11,.45);
+  transition:transform 140ms var(--ease-out)}
+.rm-padbtn > i:first-child{font-size:28px;color:#fbbf24}
+.rm-padbtn span{flex:1;display:flex;flex-direction:column;gap:2px}
+.rm-padbtn b{font-size:15px;font-weight:650}
+.rm-padbtn small{font-size:12px;color:var(--txt2)}
+.rm-padbtn > i:last-child{color:var(--txt2)}
+.rm-padbtn:active:not(:disabled){transform:scale(0.98)}
+.rm-padbtn:disabled{opacity:.45}
+/* Full-screen touchpad */
+.pad-wrap{position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;gap:10px;background:#0B1128;color:var(--txt);
+  padding:calc(10px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;animation:mbgIn 160ms ease-out}
+.pad-top{display:flex;align-items:center;gap:8px}
+.pad-x,.pad-ic{flex:none;height:42px;min-width:42px;border-radius:21px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt);
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:18px;font-family:inherit;padding:0 10px;touch-action:manipulation}
+.pad-ic b{font-size:13px}
+.pad-st{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pad-st.on .rm-dot{background:#4ade80;box-shadow:0 0 0 4px rgba(74,222,128,.15)}
+.pad-st.on{color:var(--txt)}
+.pad-keys{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex:none;padding-bottom:2px}
+.pad-keys::-webkit-scrollbar{display:none}
+.pad-keys button{flex:none;height:38px;min-width:46px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);
+  color:var(--txt);font-family:inherit;font-size:13px;font-weight:600;touch-action:manipulation;display:inline-flex;align-items:center;gap:2px}
+.pad-keys button:active{background:rgba(245,158,11,.25);transform:scale(0.96)}
+.pad-main{flex:1;min-height:0;display:flex;gap:8px}
+.pad-area{flex:1;position:relative;border-radius:24px;touch-action:none;
+  background:radial-gradient(120% 80% at 50% 0%,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:background-color 120ms ease,border-color 120ms ease}
+.pad-area.tap{border-color:rgba(245,158,11,.6)}
+.pad-area.dragging{border-color:#f59e0b;background:rgba(245,158,11,.10)}
+.pad-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;line-height:1.7;color:var(--txt3);
+  padding:20px;pointer-events:none;transition:opacity 300ms ease}
+.pad-scroll{flex:none;width:46px;border-radius:23px;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px 0;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--txt3);font-size:18px}
+.pad-scroll.on{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.45);color:#fbbf24}
+.pad-btns{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pad-btns button{height:64px;border-radius:20px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:var(--txt);
+  font-family:inherit;font-size:15px;font-weight:650;touch-action:none}
+.pad-btns button.on{background:rgba(245,158,11,.28);border-color:rgba(245,158,11,.6)}
+.pad-kb{position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0;pointer-events:none}
+.pad-wrap.kb .pad-btns{display:none}
+.pad-lock{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(6,10,28,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.pad-lock[hidden]{display:none}
+.pad-lock-box{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:24px;background:var(--glass-solid,#1B2350);border:1px solid var(--border2)}
+.pad-lock-box > i{font-size:28px;color:#fbbf24}
+.pad-lock-box b{font-size:17px}
+.pad-lock-box p{font-size:13px;color:var(--txt2);line-height:1.5;margin:0}
+.pad-lock-box .btn{align-self:flex-start}
 .fx-name{font-size:11px;color:var(--txt3);margin-top:-4px;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fx-tip{top:6px;transform:translate(-50%,0)}
 .fx-pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
@@ -4538,7 +4588,9 @@ function rmRender(){
       '</div>'+
       '<div class="cc-foot">Works from anywhere, not only at home. Only the four screen modes can be sent — nothing else on the laptop is reachable. Needs Windows 10 or 11.</div>'+
     '</details>';
-  el.innerHTML = st + grid + note + setup;
+  const pad = '<button class="rm-padbtn" '+(dis?'disabled ':'')+'onclick="rmPadOpen()"><i class="ti ti-hand-finger"></i><span><b>Touchpad &amp; keyboard</b><small>'+
+    (dis ? 'Needs the laptop online' : (_rm.touchpad===false ? 'Download the helper again once to enable this' : 'Control the mouse and type from here'))+'</small></span><i class="ti ti-chevron-right"></i></button>';
+  el.innerHTML = st + pad + '<div class="slabel" style="padding-top:14px"><i class="ti ti-device-tv"></i> Screens</div>' + grid + note + setup;
 }
 async function rmSend(cmd){
   if(_rmBusy) return;
@@ -4601,6 +4653,228 @@ async function rmUnpair(){
   await rmLoad();
   const m=document.getElementById('rmSetupMsg'); if(m) m.innerHTML='Unpaired. The old helper can no longer do anything; you can delete it from the laptop’s Startup folder.';
 }
+
+// ─── TOUCHPAD & KEYBOARD (screen remote) ────────────────
+// A full-screen pad. One finger moves the pointer, a tap clicks, two
+// fingers scroll, a two-finger tap right-clicks, press-and-hold drags.
+// Input goes over a live connection (WebSocket) through the server to the
+// laptop helper. The phone is trusted once with the private password and
+// then keeps its own token in this browser.
+const RM_TOK_KEY='org:rmPhoneTok', RM_SENS_KEY='org:rmSens';
+let _pad=null;
+function rmTok(){ try{ return localStorage.getItem(RM_TOK_KEY)||''; }catch(e){ return ''; } }
+function rmSetTok(t){ try{ if(t) localStorage.setItem(RM_TOK_KEY,t); else localStorage.removeItem(RM_TOK_KEY); }catch(e){} }
+function rmSens(){ try{ const v=+localStorage.getItem(RM_SENS_KEY); return v>=1&&v<=5?v:3; }catch(e){ return 3; } }
+const RM_KEYS=[['esc','Esc'],['tab','Tab'],['left','←'],['up','↑'],['down','↓'],['right','→'],['back','⌫'],['enter','Enter'],
+  ['win','<i class="ti ti-brand-windows"></i>'],['alttab','Alt+Tab'],['f11','Full'],['play','<i class="ti ti-player-play"></i>'],['voldn','<i class="ti ti-volume-2"></i>−'],['volup','<i class="ti ti-volume"></i>+'],['mute','<i class="ti ti-volume-off"></i>']];
+function rmPadOpen(){
+  closeModal();
+  if(_pad) rmPadClose();
+  const o=document.createElement('div');
+  o.id='rmPad'; o.className='pad-wrap';
+  o.innerHTML=
+    '<div class="pad-top">'+
+      '<button class="pad-x" onclick="rmPadClose()" aria-label="Close"><i class="ti ti-x"></i></button>'+
+      '<div class="pad-st" id="padSt"><span class="rm-dot"></span><span>Connecting…</span></div>'+
+      '<button class="pad-ic" id="padSensBtn" onclick="rmSensCycle()" aria-label="Pointer speed"><i class="ti ti-gauge"></i><b id="padSens">'+rmSens()+'</b></button>'+
+      '<button class="pad-ic" onclick="rmKbToggle()" aria-label="Keyboard"><i class="ti ti-keyboard"></i></button>'+
+    '</div>'+
+    '<div class="pad-keys" id="padKeys">'+RM_KEYS.map(k=>'<button onclick="rmKey(\''+k[0]+'\')">'+k[1]+'</button>').join('')+'</div>'+
+    '<div class="pad-main">'+
+      '<div class="pad-area" id="padArea"><div class="pad-hint" id="padHint">Move with one finger · tap to click<br>Two fingers: scroll · two-finger tap: right-click<br>Press and hold to drag</div></div>'+
+      '<div class="pad-scroll" id="padScroll" aria-label="Scroll"><i class="ti ti-chevron-up"></i><i class="ti ti-arrows-vertical"></i><i class="ti ti-chevron-down"></i></div>'+
+    '</div>'+
+    '<div class="pad-btns"><button id="padL">Left</button><button id="padR">Right</button></div>'+
+    '<div class="pad-lock" id="padLock" hidden></div>'+
+    '<input id="padKb" class="pad-kb" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Type on the laptop">';
+  document.body.appendChild(o);
+  lockPageScroll();
+  _pad={ ws:null, ax:0, ay:0, sx:0, sy:0, raf:0, alive:true, retry:0, laptop:false };
+  rmPadWire();
+  rmPadConnect();
+}
+function rmPadClose(){
+  if(!_pad) return;
+  _pad.alive=false;
+  try{ if(_pad.drag) rmSend('u l'); }catch(e){}
+  try{ _pad.ws && _pad.ws.close(); }catch(e){}
+  clearInterval(_pad.ping); clearTimeout(_pad.retryT); cancelAnimationFrame(_pad.raf);
+  const o=document.getElementById('rmPad'); if(o) o.remove();
+  _pad=null;
+  unlockPageScroll();
+}
+function rmPadStatus(kind, text){
+  const el=document.getElementById('padSt'); if(!el) return;
+  el.className='pad-st '+kind;
+  el.innerHTML='<span class="rm-dot"></span><span>'+text+'</span>';
+}
+function rmPadConnect(){
+  if(!_pad || !_pad.alive) return;
+  const tok=rmTok();
+  if(!tok){ rmPadAskTrust(); return; }
+  rmPadStatus('', 'Connecting…');
+  let ws;
+  try{ ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/remote/phone'); }
+  catch(e){ rmPadStatus('off','Can’t connect'); return; }
+  _pad.ws=ws;
+  ws.onopen=()=>{ ws.send('auth '+tok); _pad.retry=0; };
+  ws.onmessage=e=>{
+    if(e.data==='laptop on'){ _pad.laptop=true; rmPadStatus('on', escHtml((_rm&&_rm.host)||'Laptop')+' connected'); }
+    else if(e.data==='laptop off'){ _pad.laptop=false; rmPadStatus('off','Laptop offline — is it on?'); }
+  };
+  ws.onclose=e=>{
+    if(!_pad || !_pad.alive) return;
+    if(e.code===4401){ rmSetTok(''); rmPadAskTrust('This phone needs to be trusted again.'); return; }
+    rmPadStatus('off','Reconnecting…');
+    _pad.retryT=setTimeout(rmPadConnect, Math.min(8000, 800*(++_pad.retry)));
+  };
+  clearInterval(_pad.ping);
+  _pad.ping=setInterval(()=>{ try{ if(ws.readyState===1) ws.send('ping'); }catch(e){} }, 20000);
+}
+function rmPadAskTrust(msg){
+  const L=document.getElementById('padLock'); if(!L) return;
+  rmPadStatus('off','Locked');
+  L.hidden=false;
+  L.innerHTML='<div class="pad-lock-box"><i class="ti ti-lock"></i><b>Trust this phone</b>'+
+    '<p>'+(msg?escHtml(msg)+' ':'')+'The touchpad can type on your laptop, so it’s unlocked once with your private-settings password. This phone is then remembered.</p>'+
+    '<input id="padPw" type="password" class="cc-input" placeholder="Private-settings password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')rmPadTrust()">'+
+    '<div id="padPwMsg" class="rm-note"></div>'+
+    '<button class="btn acc" onclick="rmPadTrust()"><i class="ti ti-lock-open"></i> Trust this phone</button></div>';
+  setTimeout(()=>{ const i=document.getElementById('padPw'); if(i) i.focus(); },60);
+}
+async function rmPadTrust(){
+  const pw=(document.getElementById('padPw')||{}).value||''; const m=document.getElementById('padPwMsg');
+  if(!pw) return;
+  const u=await privPost('/api/private/unlock',{password:pw});
+  if(u.error){ if(m) m.innerHTML='<span style="color:var(--red)">'+escHtml(u.error)+'</span>'; return; }
+  setPrivTok(u.token);
+  const label=(navigator.userAgent.match(/(iPhone|iPad|Android|Windows|Macintosh)/)||['Phone'])[0];
+  const r=await privPost('/api/remote/phone-pair',{label});
+  if(r.error){ if(m) m.innerHTML='<span style="color:var(--red)">'+escHtml(r.error)+'</span>'; return; }
+  rmSetTok(r.token);
+  const L=document.getElementById('padLock'); if(L){ L.hidden=true; L.innerHTML=''; }
+  rmPadConnect();
+}
+function rmSend(msg){
+  if(!_pad || !_pad.ws || _pad.ws.readyState!==1) return false;
+  try{ _pad.ws.send(msg); return true; }catch(e){ return false; }
+}
+function rmKey(k){ rmSend('k '+k); if(navigator.vibrate) navigator.vibrate(8); }
+function rmSensCycle(){
+  const v=rmSens()%5+1; try{ localStorage.setItem(RM_SENS_KEY,String(v)); }catch(e){}
+  const b=document.getElementById('padSens'); if(b) b.textContent=v;
+}
+function rmKbToggle(){
+  const i=document.getElementById('padKb'); if(!i) return;
+  if(document.activeElement===i){ i.blur(); return; }
+  i.value='  '; i.focus();
+}
+// Pointer moves are added up and sent once per screen frame, so a fast
+// swipe is a handful of messages rather than hundreds.
+function rmFlush(){
+  if(!_pad) return;
+  _pad.raf=0;
+  const mx=Math.trunc(_pad.ax), my=Math.trunc(_pad.ay);
+  if(mx||my){ _pad.ax-=mx; _pad.ay-=my; rmSend('m '+Math.max(-9999,Math.min(9999,mx))+' '+Math.max(-9999,Math.min(9999,my))); }
+  const sy=Math.trunc(_pad.sy), sx=Math.trunc(_pad.sx);
+  if(sy||sx){ _pad.sy-=sy; _pad.sx-=sx; rmSend('s '+Math.max(-99999,Math.min(99999,sy))+' '+Math.max(-99999,Math.min(99999,sx))); }
+}
+function rmQueue(){ if(_pad && !_pad.raf) _pad.raf=requestAnimationFrame(rmFlush); }
+function rmPadWire(){
+  const A=document.getElementById('padArea'), SC=document.getElementById('padScroll'), hint=document.getElementById('padHint');
+  let t0=0, n=0, maxN=0, moved=0, lx=0, ly=0, lt=0, hold=null;
+  const pt=(e)=>{ let x=0,y=0; const T=e.touches; for(let i=0;i<T.length;i++){ x+=T[i].clientX; y+=T[i].clientY; } return [x/T.length, y/T.length]; };
+  A.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    if(hint) hint.style.opacity='0';
+    n=e.touches.length; maxN=Math.max(maxN,n);
+    if(e.touches.length===e.changedTouches.length){ t0=performance.now(); moved=0; maxN=n; }
+    [lx,ly]=pt(e); lt=performance.now();
+    clearTimeout(hold);
+    if(n===1 && !_pad.drag){
+      hold=setTimeout(()=>{ if(moved<10 && _pad){ _pad.drag=true; rmSend('d l'); A.classList.add('dragging'); if(navigator.vibrate) navigator.vibrate(20); } }, 480);
+    }
+  }, {passive:false});
+  A.addEventListener('touchmove', e=>{
+    e.preventDefault();
+    if(!_pad) return;
+    if(e.touches.length!==n){ n=e.touches.length; [lx,ly]=pt(e); lt=performance.now(); return; }
+    const [x,y]=pt(e), now=performance.now();
+    const dx=x-lx, dy=y-ly, dt=Math.max(1,now-lt);
+    lx=x; ly=y; lt=now;
+    moved+=Math.abs(dx)+Math.abs(dy);
+    if(moved>10) clearTimeout(hold);
+    if(n>=2){
+      // Natural scrolling, like a laptop touchpad.
+      _pad.sy+=dy*6; _pad.sx+=-dx*6;
+    } else {
+      // Faster finger = further pointer, so small moves stay precise.
+      const v=Math.hypot(dx,dy)/dt;
+      const g=(0.6+rmSens()*0.45)*(1+Math.min(v,2.5)*0.9);
+      _pad.ax+=dx*g; _pad.ay+=dy*g;
+    }
+    rmQueue();
+  }, {passive:false});
+  const end=e=>{
+    e.preventDefault();
+    clearTimeout(hold);
+    if(!_pad) return;
+    if(e.touches.length>0){ n=e.touches.length; [lx,ly]=pt(e); lt=performance.now(); return; }
+    const dur=performance.now()-t0;
+    if(_pad.drag){ _pad.drag=false; rmSend('u l'); A.classList.remove('dragging'); }
+    else if(dur<260 && moved<12){
+      rmSend(maxN>=2 ? 'c r' : 'c l');
+      A.classList.add('tap'); setTimeout(()=>A.classList.remove('tap'),120);
+    }
+    n=0; maxN=0;
+  };
+  A.addEventListener('touchend', end, {passive:false});
+  A.addEventListener('touchcancel', end, {passive:false});
+  // Mouse fallback so it also works from a laptop or tablet with a mouse.
+  let md=false;
+  A.addEventListener('mousedown', e=>{ md=true; moved=0; lx=e.clientX; ly=e.clientY; t0=performance.now(); });
+  A.addEventListener('mousemove', e=>{ if(!md) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; moved+=Math.abs(dx)+Math.abs(dy); _pad.ax+=dx*1.5; _pad.ay+=dy*1.5; rmQueue(); });
+  window.addEventListener('mouseup', ()=>{ if(md && moved<6 && performance.now()-t0<300) rmSend('c l'); md=false; });
+  // One-finger scroll strip on the right edge.
+  let sly=0;
+  SC.addEventListener('touchstart', e=>{ e.preventDefault(); sly=e.touches[0].clientY; SC.classList.add('on'); }, {passive:false});
+  SC.addEventListener('touchmove', e=>{ e.preventDefault(); const y=e.touches[0].clientY; _pad.sy+=(y-sly)*8; sly=y; rmQueue(); }, {passive:false});
+  SC.addEventListener('touchend', ()=>SC.classList.remove('on'));
+  // Buttons: Left supports hold-to-drag too.
+  const L=document.getElementById('padL'), R=document.getElementById('padR');
+  const press=(el,down,up)=>{
+    el.addEventListener('touchstart', e=>{ e.preventDefault(); el.classList.add('on'); rmSend(down); if(navigator.vibrate) navigator.vibrate(8); }, {passive:false});
+    el.addEventListener('touchend', e=>{ e.preventDefault(); el.classList.remove('on'); if(up) rmSend(up); }, {passive:false});
+    el.addEventListener('click', ()=>{ if(!('ontouchstart' in window)){ rmSend(down); if(up) rmSend(up); } });
+  };
+  press(L,'d l','u l');
+  press(R,'c r',null);
+  // Keyboard: keep two spaces in the hidden box so Backspace always has
+  // something to delete, and forward every keystroke instead of typing here.
+  const K=document.getElementById('padKb');
+  const keep=()=>{ K.value='  '; try{ K.setSelectionRange(2,2); }catch(e){} };
+  K.addEventListener('beforeinput', e=>{
+    const t=e.inputType;
+    if(t==='insertText' || t==='insertReplacementText' || t==='insertFromPaste'){ const d=e.data || (e.dataTransfer && e.dataTransfer.getData('text')) || ''; if(d) rmSend('t '+d.slice(0,200)); }
+    else if(t==='deleteContentBackward' || t==='deleteWordBackward'){ rmSend('k back'); }
+    else if(t==='insertLineBreak' || t==='insertParagraph'){ rmSend('k enter'); }
+    e.preventDefault(); keep();
+  });
+  K.addEventListener('input', keep);
+  K.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); rmSend('k enter'); }
+    else if(e.key==='Tab'){ e.preventDefault(); rmSend('k tab'); }
+    else if(e.key==='Escape'){ e.preventDefault(); rmSend('k esc'); }
+    else if(e.key.startsWith('Arrow')){ e.preventDefault(); rmSend('k '+e.key.slice(5).toLowerCase()); }
+  });
+  K.addEventListener('focus', ()=>{ document.getElementById('rmPad').classList.add('kb'); keep(); });
+  K.addEventListener('blur', ()=>{ const o=document.getElementById('rmPad'); if(o) o.classList.remove('kb'); });
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(!_pad || document.hidden) return;
+  if(!_pad.ws || _pad.ws.readyState>1){ clearTimeout(_pad.retryT); rmPadConnect(); }
+});
+window.addEventListener('keydown', e=>{ if(e.key==='Escape' && _pad && document.activeElement!==document.getElementById('padKb')) rmPadClose(); });
 
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
@@ -5321,7 +5595,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-19-screen-remote';
+const APP_BUILD='2026-10-19-touchpad';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
