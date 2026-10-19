@@ -29,7 +29,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ═══════════════════════════════════════════════════
 const crypto = require('crypto');
 const PRIVATE_SETTING_KEYS = ['footballDataKey','highlightlyKey','apiFootballKey','tsdbKey','orsKey',
-  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey'];
+  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey','remoteKey'];
 const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey','cartoKey','ticketmasterKey'];
 const PRIV_TTL_MS = 30*60*1000;              // 30 min, renewed while in use
 const _privSessions = new Map();             // token -> expiry
@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-17-one-reminder';
+const BUILD_VERSION = '2026-10-19-screen-remote';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3658,6 +3658,170 @@ app.get('/api/fx', async (req, res) => {
   }
   catch(e){ res.json({ error: e.message, feedErrors: _fxLastErrors }); }
 });
+
+// ═══════════════════════════════════════════════════
+// SCREEN REMOTE
+// The phone picks how the laptop uses the TV (laptop only / mirror /
+// extend / TV only). The Organizer runs in the cloud and can't reach the
+// laptop, so a small helper on the laptop keeps a request open here
+// ("long poll") and runs Windows' own DisplaySwitch when a command arrives.
+// The helper proves itself with settings.remoteKey (private, never sent to
+// browsers). Queue and status live in memory: a command is only useful for
+// a minute or so anyway.
+// ═══════════════════════════════════════════════════
+const REMOTE_MODES = { internal:'Laptop only', clone:'Mirror both screens', extend:'Extend (one wide screen)', external:'TV only' };
+const REMOTE_CMD_TTL = 60*1000;          // a tap older than this is dropped, not run late
+let _rmQueue = null;                      // { id, cmd, at }
+let _rmWaiter = null;                     // the helper's open request
+let _rmSeen = 0, _rmHost = '', _rmLast = null;   // last result {cmd, ok, msg, at}
+function remoteKeyOf(d){ return (d.settings && d.settings.remoteKey) || ''; }
+function remoteKeyOk(req){
+  const k = remoteKeyOf(readData());
+  const got = req.get('X-Remote-Key') || '';
+  if(!k || got.length !== k.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(k));
+}
+function remoteHand(){
+  if(!_rmWaiter || !_rmQueue) return;
+  if(Date.now() - _rmQueue.at > REMOTE_CMD_TTL){ _rmQueue = null; return; }
+  const w = _rmWaiter; _rmWaiter = null;
+  clearTimeout(w.timer);
+  try{ w.res.json({ id:_rmQueue.id, cmd:_rmQueue.cmd }); }catch(e){}
+  _rmQueue.sentAt = Date.now();
+}
+function remoteStatus(){
+  const online = Date.now() - _rmSeen < 75*1000;
+  return {
+    paired: !!remoteKeyOf(readData()), online, host:_rmHost || null,
+    lastSeen: _rmSeen ? new Date(_rmSeen).toISOString() : null,
+    pending: _rmQueue ? { cmd:_rmQueue.cmd, sent: !!_rmQueue.sentAt } : null,
+    last: _rmLast, modes: REMOTE_MODES
+  };
+}
+app.get('/api/remote/status', (req, res) => res.json(remoteStatus()));
+// From the phone. Switching the screen layout is harmless, so it works like
+// the rest of the calendar; pairing the laptop is what needs the password.
+app.post('/api/remote/cmd', (req, res) => {
+  const cmd = String((req.body||{}).cmd||'');
+  if(!REMOTE_MODES[cmd]) return res.status(400).json({ error:'Unknown screen mode.' });
+  if(!remoteKeyOf(readData())) return res.status(400).json({ error:'Set up the laptop first.' });
+  _rmQueue = { id: crypto.randomBytes(6).toString('hex'), cmd, at: Date.now() };
+  remoteHand();
+  res.json({ ok:true, id:_rmQueue.id, ...remoteStatus() });
+});
+// From the laptop helper: wait up to 25 s for a command.
+app.get('/api/remote/poll', (req, res) => {
+  if(!remoteKeyOk(req)) return res.status(401).json({ error:'Wrong or missing remote key — download the helper again.' });
+  _rmSeen = Date.now();
+  _rmHost = String(req.get('X-Remote-Host')||'').slice(0,60);
+  if(_rmWaiter){ clearTimeout(_rmWaiter.timer); try{ _rmWaiter.res.json({}); }catch(e){} }
+  _rmWaiter = { res, timer: setTimeout(() => { if(_rmWaiter && _rmWaiter.res === res){ _rmWaiter = null; _rmSeen = Date.now(); res.json({}); } }, 25000) };
+  req.on('close', () => { if(_rmWaiter && _rmWaiter.res === res){ clearTimeout(_rmWaiter.timer); _rmWaiter = null; } });
+  remoteHand();
+});
+app.post('/api/remote/done', (req, res) => {
+  if(!remoteKeyOk(req)) return res.status(401).json({ error:'Wrong remote key.' });
+  const b = req.body || {};
+  _rmSeen = Date.now();
+  if(_rmQueue && b.id === _rmQueue.id){
+    _rmLast = { cmd:_rmQueue.cmd, ok: !!b.ok, msg: String(b.msg||'').slice(0,300), at: new Date().toISOString() };
+    _rmQueue = null;
+  }
+  res.json({ ok:true });
+});
+// Pairing: make a key and hand out the helper with it built in.
+app.post('/api/remote/pair', requirePrivate, (req, res) => {
+  const d = readData(); d.settings = d.settings || {};
+  if(!d.settings.remoteKey || (req.body||{}).renew){ d.settings.remoteKey = crypto.randomBytes(24).toString('hex'); writeData(d); }
+  res.json({ ok:true });
+});
+app.post('/api/remote/unpair', requirePrivate, (req, res) => {
+  const d = readData(); d.settings = d.settings || {};
+  delete d.settings.remoteKey; writeData(d);
+  _rmQueue = null; _rmSeen = 0; _rmHost = ''; _rmLast = null;
+  if(_rmWaiter){ clearTimeout(_rmWaiter.timer); try{ _rmWaiter.res.status(401).json({ error:'Unpaired' }); }catch(e){} _rmWaiter = null; }
+  res.json({ ok:true });
+});
+app.get('/api/remote/helper', requirePrivate, (req, res) => {
+  const key = remoteKeyOf(readData());
+  if(!key) return res.status(400).json({ error:'Pair first.' });
+  let origin = String(req.query.origin||'');
+  if(!/^https?:\/\/[^\s'"`$]+$/.test(origin)) origin = APP_URL || (req.protocol+'://'+req.get('host'));
+  origin = origin.replace(/\/$/,'');
+  res.set('Content-Type','application/octet-stream');
+  res.set('Content-Disposition','attachment; filename="Organizer-Screen-Remote.cmd"');
+  res.send(remoteHelperScript(origin, key).replace(/\r?\n/g,'\r\n'));
+});
+// One file the user double-clicks. The top is a batch stub that runs the
+// PowerShell below the marker; the first run installs itself to start with
+// Windows (hidden), later runs just replace it with the new copy.
+function remoteHelperScript(origin, key){
+  return `@echo off
+title Organizer screen remote
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=(Get-Content -LiteralPath '%~f0' -Raw -Encoding UTF8) -split ('#'+'PS1'+'#'); $global:OrgInstall=$t[-1]; Invoke-Expression $t[-1]"
+pause
+exit /b
+#PS1#
+$Server = '${origin}'
+$Key    = '${key}'
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$Dir  = Join-Path $env:APPDATA 'OrganizerRemote'
+$Ps1  = Join-Path $Dir 'remote.ps1'
+$Link = Join-Path ([Environment]::GetFolderPath('Startup')) 'Organizer screen remote.lnk'
+
+if($global:OrgInstall){
+  # ---- Install (double-clicked from Downloads) ----
+  Write-Host ''
+  Write-Host '  Organizer screen remote - setup' -ForegroundColor Cyan
+  New-Item -ItemType Directory -Force -Path $Dir | Out-Null
+  Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -like '*OrganizerRemote*remote.ps1*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+  Set-Content -LiteralPath $Ps1 -Value $global:OrgInstall -Encoding UTF8
+  $ws = New-Object -ComObject WScript.Shell
+  $sc = $ws.CreateShortcut($Link)
+  $sc.TargetPath = (Join-Path $env:WINDIR 'System32\\WindowsPowerShell\\v1.0\\powershell.exe')
+  $sc.Arguments  = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $Ps1 + '"'
+  $sc.WindowStyle = 7
+  $sc.Description = 'Lets the Organizer on your phone switch the TV screen mode'
+  $sc.Save()
+  Start-Process -FilePath $sc.TargetPath -ArgumentList $sc.Arguments -WindowStyle Hidden
+  Write-Host '  Installed. It starts by itself with Windows and runs hidden.' -ForegroundColor Green
+  Write-Host '  You can close this window and use the Screen remote on your phone.'
+  Write-Host ''
+  Write-Host '  To remove it: Organizer > Screen remote > Unpair laptop, then delete'
+  Write-Host ('  ' + $Link)
+  Write-Host ''
+  return
+}
+
+# ---- Run (hidden, from Startup) ----
+$mutex = New-Object System.Threading.Mutex($false, 'Local\\OrganizerScreenRemote')
+if(-not $mutex.WaitOne(0)){ return }
+$Switch = Join-Path $env:WINDIR 'System32\\DisplaySwitch.exe'
+$Head = @{ 'X-Remote-Key' = $Key; 'X-Remote-Host' = $env:COMPUTERNAME }
+while($true){
+  try{
+    $r = Invoke-RestMethod -Uri ($Server + '/api/remote/poll') -Headers $Head -TimeoutSec 40
+    if($r -and $r.cmd){
+      $ok = $true; $msg = ''
+      try{
+        if(@('internal','clone','extend','external') -notcontains $r.cmd){ throw ('Unknown mode ' + $r.cmd) }
+        Start-Process -FilePath $Switch -ArgumentList ('/' + $r.cmd) -Wait
+        Start-Sleep -Milliseconds 800
+        $n = @(Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams -ErrorAction SilentlyContinue | Where-Object { $_.Active }).Count
+        if($n -eq 1){ $msg = '1 screen on' } elseif($n){ $msg = "$n screens on" }
+      }catch{ $ok = $false; $msg = $_.Exception.Message }
+      $body = @{ id = $r.id; ok = $ok; msg = $msg } | ConvertTo-Json -Compress
+      Invoke-RestMethod -Method Post -Uri ($Server + '/api/remote/done') -Headers $Head -ContentType 'application/json' -Body $body -TimeoutSec 20 | Out-Null
+    }
+  }catch{
+    $code = 0; try{ $code = [int]$_.Exception.Response.StatusCode }catch{}
+    if($code -eq 401){ Start-Sleep -Seconds 300 } else { Start-Sleep -Seconds 10 }
+  }
+}
+`;
+}
 
 // ═══════════════════════════════════════════════════
 // GIVING / TITHE TRACKER
