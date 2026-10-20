@@ -1037,6 +1037,14 @@ select option{background:#1B2350;color:#E8ECF8;font-weight:500}
 select optgroup{background:#121935;color:#7DD3FC;font-weight:700;font-style:normal}
 select option:checked{background:#2E3A78;color:#fff}
 .fx-name{display:none} /* the name is now inside the picker itself */
+/* Pop-overs that sit on top of the page (7-day forecast, widgets) are solid:
+   where the browser can't blur what's behind (some Android browsers), the
+   see-through glass let the day's events show through the forecast. */
+.wx-drop,#wdrop{background:#182148;-webkit-backdrop-filter:none;backdrop-filter:none}
+/* On phones the forecast fits the screen, so Go and the close button stay visible. */
+@media (max-width:600px){ .wx-drop{left:8px;right:8px;width:auto;max-width:none} }
+.wx-loc-bar input{min-width:0;width:0}
+.wx-loc-bar button{flex:none}
 /* Screen remote */
 .rm-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:12px}
 .rm-status b{color:var(--txt)}
@@ -6025,7 +6033,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-20-worship';
+const APP_BUILD='2026-10-20-solid-forecast';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
