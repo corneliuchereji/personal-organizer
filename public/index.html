@@ -1119,6 +1119,69 @@ select option:checked{background:#2E3A78;color:#fff}
 .pad-lock-box b{font-size:17px}
 .pad-lock-box p{font-size:13px;color:var(--txt2);line-height:1.5;margin:0}
 .pad-lock-box .btn{align-self:flex-start}
+/* Holidays: add to calendar */
+.hol-acts{display:flex;gap:6px;flex:none;align-items:center}
+.hol-see{width:36px;padding:0;justify-content:center}
+.hol-add{color:#fb7185;border-color:rgba(251,113,133,.45)}
+.hol-in{background:rgba(74,222,128,.12);color:#4ade80;border-color:rgba(74,222,128,.4)}
+.hol-all{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;border-radius:14px;
+  background:rgba(251,113,133,.08);border:1px solid rgba(251,113,133,.25);font-size:12.5px;color:var(--txt2)}
+/* Worship schedule */
+.ws-drop{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:28px 18px;border-radius:20px;cursor:pointer;
+  border:1.5px dashed rgba(251,191,36,.55);background:rgba(251,191,36,.07);transition:transform 140ms var(--ease-out)}
+.ws-drop:active{transform:scale(0.98)}
+.ws-drop i{font-size:34px;color:#fbbf24}
+.ws-drop b{font-size:15px}
+.ws-drop span{font-size:12px;color:var(--txt2);max-width:280px}
+.ws-msg{font-size:12.5px;color:var(--txt2);padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);margin-bottom:10px}
+.ws-last{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--txt2);margin-top:10px}
+.ws-opts{margin-top:14px;border-top:1px solid var(--border);padding-top:10px}
+.ws-opts summary{cursor:pointer;font-size:13px;font-weight:650;list-style:none;padding:4px 0}
+.ws-opts summary::-webkit-details-marker{display:none}
+.ws-opts summary i{color:#fbbf24}
+.ws-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:13px}
+.ws-opt label{color:var(--txt2)}
+.ws-opt select,.ws-opt input{max-width:58%;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit;font-size:13px}
+.ws-busy{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.ws-busy img{max-height:180px;object-fit:contain;border-radius:12px;opacity:.8}
+.ws-prog{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
+.ws-prog span{display:block;height:100%;background:#fbbf24;border-radius:3px;transition:width 300ms var(--ease-out)}
+.ws-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ws-head img{width:64px;height:44px;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:zoom-in;flex:none}
+.ws-head img.big{position:fixed;inset:10px;width:auto;height:auto;max-width:calc(100% - 20px);max-height:calc(100% - 20px);margin:auto;object-fit:contain;z-index:600;background:#fff;cursor:zoom-out}
+.ws-head b{display:block;font-size:16px}
+.ws-head span{font-size:12px;color:var(--txt2)}
+.ws-teams{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:12px;color:var(--txt2)}
+.ws-list{display:flex;flex-direction:column;gap:6px}
+.ws-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+.ws-row.off{opacity:.5}
+.ws-row.need{border-color:rgba(245,158,11,.7);background:rgba(245,158,11,.08)}
+.ws-chk{flex:none;position:relative;width:24px;height:24px}
+.ws-chk input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.ws-chk span{position:absolute;inset:0;border-radius:8px;border:1.5px solid var(--txt3);pointer-events:none}
+.ws-chk input:checked + span{background:#fbbf24;border-color:#fbbf24}
+.ws-chk input:checked + span::after{content:'';position:absolute;left:8px;top:4px;width:5px;height:10px;border:solid #1a1a2e;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.ws-when{flex:none;display:flex;flex-direction:column;gap:2px;width:96px}
+.ws-when b{font-size:12.5px}
+.ws-when input{padding:3px 6px;font-variant-numeric:tabular-nums;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit;font-size:13px;color-scheme:dark;width:100%}
+.ws-what{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ws-name{width:100%;padding:4px 8px;border-radius:8px;background:transparent;border:1px solid transparent;color:var(--txt);font-family:inherit;font-size:14px;font-weight:650}
+.ws-name:focus{border-color:var(--border);background:rgba(255,255,255,.06)}
+.ws-tags{display:flex;gap:4px;flex-wrap:wrap;padding-left:8px}
+.ws-k{font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;background:rgba(255,255,255,.06);color:var(--txt2)}
+.ws-k.thu{background:rgba(251,191,36,.14);color:#fbbf24}
+.ws-k.sunam,.ws-k.sunpm,.ws-k.sun{background:rgba(96,165,250,.14);color:#93c5fd}
+.ws-k.special{background:rgba(244,114,182,.14);color:#f9a8d4}
+.ws-k.tag{background:rgba(239,68,68,.14);color:#fca5a5}
+.ws-k.ask{background:rgba(245,158,11,.2);color:#fbbf24}
+.ws-k.have{background:rgba(74,222,128,.12);color:#4ade80}
+.ws-k.upd{background:rgba(96,165,250,.14);color:#93c5fd}
+.ws-acts{display:flex;align-items:center;gap:8px;margin-top:12px}
+.ws-done{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:18px 6px}
+.ws-done > i{font-size:40px;color:#4ade80}
+.ws-done b{font-size:16px}
+.ws-done span{font-size:12.5px;color:var(--txt2)}
+.ws-done .ws-acts{width:100%}
 .fx-name{font-size:11px;color:var(--txt3);margin-top:-4px;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fx-tip{top:6px;transform:translate(-50%,0)}
 .fx-pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
@@ -1284,6 +1347,7 @@ function saveState(){
           trafficPct: S.trafficPct!=null?S.trafficPct:20,
           worldClocks: Array.isArray(S.worldClocks)?S.worldClocks:[], holCountry: S.holCountry||'RO',
           fxFrom: S.fxFrom||'EUR', fxTo: S.fxTo||'RON', fxAmount: S.fxAmount||1,
+          wsOpts: S.wsOpts||null, holGroup: S.holGroup||'',
           birthday: S.birthday||'',
           widgets: Array.isArray(S.widgets)?S.widgets:null
         }
@@ -1408,6 +1472,7 @@ async function loadFromServer(){
       worldClocks: Array.isArray(d.settings?.worldClocks) ? d.settings.worldClocks : [],
       holCountry: d.settings?.holCountry || 'RO',
       fxFrom: d.settings?.fxFrom || 'EUR', fxTo: d.settings?.fxTo || 'RON', fxAmount: d.settings?.fxAmount || 1,
+      wsOpts: d.settings?.wsOpts || null, holGroup: d.settings?.holGroup || '',
       _rev: d._rev,
       weekOffset:keepWeek, dayOffset:keepDay
     };
@@ -1782,10 +1847,10 @@ function renderCard(ev){
   const gName=getGroup(ev.group).name;
   const pri=ev.priority||'normal';
   let meta='<span class="grp-name" style="--gc:'+col+';color:'+col+';font-size:9px">'+gName+'</span>';
-  meta+='<span style="color:var(--txt3)">'+fmtTime(ev.time)+'</span>';
+  meta+='<span style="color:var(--txt3)">'+(ev.time?fmtTime(ev.time):'All day')+'</span>';
   if(ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
   meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
-  if(!ev.done && isPastEvent(ev)) meta+='<span class="od-pill"><i class="ti ti-alert-circle"></i>Overdue \u00b7 '+overdueFor(ev)+'</span>';
+  if(!ev.done && isPastEvent(ev) && !noOverdue(ev)) meta+='<span class="od-pill"><i class="ti ti-alert-circle"></i>Overdue \u00b7 '+overdueFor(ev)+'</span>';
   meta+=remindersBadge(ev);
   meta+=leaveChip(ev);
   let acts='';
@@ -1796,7 +1861,7 @@ function renderCard(ev){
   if(ev.location) acts+='<button class="ea" onclick="openRouteMapFor(\''+ev.id+'\')"><i class="ti ti-map-2"></i>Map</button>';
   acts+='<button class="ea" onclick="editTask(\''+ev.id+'\')"><i class="ti ti-edit"></i>Edit</button>';
   acts+='<button class="ea red" onclick="delTask(\''+ev.id+'\')"><i class="ti ti-trash"></i>Delete</button>';
-  return '<div class="ecard task'+(ev.concertId?' concert':'')+(ev.shoppingTrip?' shoptrip':'')+(ev.done?' done':'')+(isPastEvent(ev)?(ev.done?' past':' overdue'):'')+'" data-ev="'+escHtml(ev.id)+'"'+(ev.shoppingTrip?' onclick="if(!event.target.closest(\'button,a\'))openShopping('+(ev.shopListId?'\''+escHtml(ev.shopListId)+'\'':'')+')" style="cursor:pointer"':'')+'>'+
+  return '<div class="ecard task'+(ev.concertId?' concert':'')+(ev.shoppingTrip?' shoptrip':'')+(ev.done?' done':'')+(isPastEvent(ev)?((ev.done||noOverdue(ev))?' past':' overdue'):'')+'" data-ev="'+escHtml(ev.id)+'"'+(ev.shoppingTrip?' onclick="if(!event.target.closest(\'button,a\'))openShopping('+(ev.shopListId?'\''+escHtml(ev.shopListId)+'\'':'')+')" style="cursor:pointer"':'')+'>'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div>'+
     '<div class="ec-body"><div class="ec-title">'+escHtml(ev.name)+'</div>'+
     '<div class="ec-meta">'+meta+'</div>'+
@@ -2022,7 +2087,7 @@ function renderCal(){
         const isDone = ev._type==='task' && ev.done;
         // An unfinished task from an earlier day isn't "past" — it's overdue,
         // so it keeps its colour (with a red edge) instead of fading out.
-        const isOverdue = isPast && ev._type==='task' && !ev.done;
+        const isOverdue = isPast && ev._type==='task' && !ev.done && !noOverdue(ev);
         const cls = 'chip'+(isSport?' sport':' task')+(isPast&&!isOverdue?' past':'')+(isOverdue?' overdue':'')+(isDone?' done':'');
         const tip = escHtml(ev.name)+(isDone?' — done':(isOverdue?' — overdue':(isPast?' — past':'')));
         return '<div class="'+cls+'" style="--c:'+col+';background:'+col+'28;color:'+col+';border-color:'+col+'50" title="'+tip+'">'+icon+escHtml(ev.name)+'</div>';
@@ -2326,6 +2391,8 @@ function overdueFor(ev){
   if(mins<1440) return Math.round(mins/60)+' h';
   const d=Math.round(mins/1440); return d+' day'+(d===1?'':'s');
 }
+// A public holiday in the calendar is a marker, not a to-do: it never turns "overdue".
+function noOverdue(ev){ return !!ev && ev.src==='holiday'; }
 function isPastEvent(ev){
   const ds = ev._occDate || ev.date;
   if(!ds) return false;
@@ -3999,6 +4066,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_concerts',name:'Concerts', desc:'Your artists\u2019 dates in Europe', action:'concerts', icon:'ti-microphone-2'},
   {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
   {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
+  {id:'w_worship',name:'Worship schedule', desc:'Read the monthly team plan into the calendar', action:'worship', icon:'ti-music'},
   {id:'w_remote',name:'Screen remote', desc:'Mirror the laptop on the TV from your phone', action:'remote', icon:'ti-device-tv'},
   {id:'w_clocks',name:'World clocks', desc:'Time and weather in other cities', action:'clocks', icon:'ti-world'},
   {id:'w_holidays',name:'Public holidays', desc:'National days, Easter, Christmas', action:'holidays', icon:'ti-confetti'},
@@ -4062,9 +4130,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -4876,6 +4944,321 @@ document.addEventListener('visibilitychange', ()=>{
 });
 window.addEventListener('keydown', e=>{ if(e.key==='Escape' && _pad && document.activeElement!==document.getElementById('padKb')) rmPadClose(); });
 
+// ─── WORSHIP SCHEDULE ────────────────────────────────────
+// Upload the monthly worship-team image; it is read on this device (text
+// recognition in the browser, nothing uploaded), turned into a list to
+// check, then added to the calendar. Rules:
+//   dd.mm without am/pm = Thursday, 19:00
+//   dd.mm am = Sunday morning: 09:00 on the month's first Sunday, else 10:00
+//   dd.mm pm = Sunday evening, 18:00
+//   any other weekday (or a time that can't be worked out) asks for the time
+// Coloured team names are matched to the legend's colours (red = Cină).
+const WS_CDN = {
+  lib:    'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+  worker: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+  core:   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+  lang:   'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int'
+};
+const RO_MONTHS=['ianuarie','februarie','martie','aprilie','mai','iunie','iulie','august','septembrie','octombrie','noiembrie','decembrie'];
+const RO_FIX={ cina:'Cină', duminica:'Duminică', ziuam:'Ziua M' };
+let _ws=null, _wsLib=null, _wsLast=null;
+function wsOpts(){ return Object.assign({ group:'', prefix:'Worship', rem:'' }, S.wsOpts||{}); }
+function wsNorm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,''); }
+function wsFixRo(t){ const k=wsNorm(t); return RO_FIX[k] || t; }
+function wsLoadLib(){
+  if(window.Tesseract) return Promise.resolve();
+  if(_wsLib) return _wsLib;
+  _wsLib=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src=WS_CDN.lib; sc.onload=()=>res(); sc.onerror=()=>{ _wsLib=null; rej(new Error('Couldn’t load the text reader — check the internet connection.')); }; document.head.appendChild(sc); });
+  return _wsLib;
+}
+// ── Pure parsing (no DOM) ──
+// words: [{t,x0,y0,x1,y1}]; colorOf(box) -> [r,g,b] average ink colour or null
+function wsParse(words, colorOf, now){
+  now = now || new Date();
+  const W = words.map(w=>({ ...w, t:String(w.t||'').trim(), h:Math.max(1,w.y1-w.y0), yc:(w.y0+w.y1)/2 })).filter(w=>w.t);
+  // A dropped dot ("410 am") is fixed when am/pm follows.
+  const isAmPm = t => /^(a|p)\.?m\.?$/i.test(t);
+  // Lines by vertical position.
+  W.sort((a,b)=>a.yc-b.yc);
+  const lines=[];
+  for(const w of W){
+    const L=lines.find(l=>Math.abs(l.yc-w.yc) < Math.max(l.h,w.h)*0.6);
+    if(L){ L.w.push(w); L.yc=(L.yc*(L.w.length-1)+w.yc)/L.w.length; L.h=Math.max(L.h,w.h); } else lines.push({ yc:w.yc, h:w.h, w:[w] });
+  }
+  lines.forEach(l=>l.w.sort((a,b)=>a.x0-b.x0));
+  let month=null;
+  for(const w of W){ const i=RO_MONTHS.indexOf(wsNorm(w.t)); if(i>=0){ month=i+1; w.used=true; break; } }
+  const DATE_RE=/^(\d{1,2})[.,](\d{1,2})[.,]?$/;
+  const entries=[];
+  for(const l of lines){
+    const ws=l.w;
+    for(let i=0;i<ws.length;i++){
+      let t=ws[i].t;
+      if(/^\d{3,4}$/.test(t) && ws[i+1] && isAmPm(ws[i+1].t)) t=t.slice(0,-2)+'.'+t.slice(-2);
+      const m=t.match(DATE_RE); if(!m) continue;
+      const e={ d:+m[1], m:+m[2], ampm:'', time:'', words:[], box:null };
+      ws[i].used=true;
+      let j=i+1, prev=ws[i];
+      if(ws[j] && isAmPm(ws[j].t)){ e.ampm=ws[j].t[0].toLowerCase()==='a'?'am':'pm'; ws[j].used=true; prev=ws[j]; j++; }
+      if(ws[j] && /^\d{1,2}:\d{2}$/.test(ws[j].t)){ e.time=ws[j].t.padStart(5,'0'); ws[j].used=true; prev=ws[j]; j++; }
+      while(ws[j] && !DATE_RE.test(ws[j].t) && (ws[j].x0-prev.x1) < Math.max(prev.h,ws[j].h)*1.6){
+        if(!e.time && /^\d{1,2}:\d{2}$/.test(ws[j].t)) e.time=ws[j].t.padStart(5,'0'); else e.words.push(ws[j]);
+        ws[j].used=true; prev=ws[j]; j++;
+      }
+      i=j-1;
+      if(e.words.length){ const b=e.words; e.box={x0:Math.min(...b.map(x=>x.x0)),y0:Math.min(...b.map(x=>x.y0)),x1:Math.max(...b.map(x=>x.x1)),y1:Math.max(...b.map(x=>x.y1))}; }
+      e.name=wsFixRo(e.words.map(x=>x.t).join(' ').replace(/[|_~]+/g,'').trim());
+      entries.push(e);
+    }
+  }
+  // Legend: coloured phrases that aren't part of a schedule row.
+  const sat = c => c && (Math.max(...c)-Math.min(...c)) > 50;
+  const legend=[];
+  for(const l of lines){
+    let run=[];
+    const flush=()=>{ if(!run.length) return; const txt=run.map(x=>x.t).join(' ');
+      if(/[a-z]/i.test(txt) && !/^week$/i.test(txt)){ const box={x0:Math.min(...run.map(x=>x.x0)),y0:Math.min(...run.map(x=>x.y0)),x1:Math.max(...run.map(x=>x.x1)),y1:Math.max(...run.map(x=>x.y1))};
+        const c=colorOf?colorOf(box):null; if(sat(c)) legend.push({ label:wsFixRo(txt), c }); }
+      run=[]; };
+    for(const w of l.w){ if(w.used || /^\d+$/.test(w.t) || /^week$/i.test(w.t)){ flush(); continue; } run.push(w); }
+    flush();
+  }
+  const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+  for(const e of entries){
+    const c = e.box && colorOf ? colorOf(e.box) : null;
+    e.tag='';
+    if(sat(c)){
+      let best=null; for(const g of legend){ const dd=dist(c,g.c); if(dd<75 && (!best||dd<best.d)) best={d:dd,g}; }
+      if(best && wsNorm(best.g.label)!==wsNorm(e.name)) e.tag=best.g.label;
+    }
+  }
+  // Year: this year, or the next one when the plan is for early next year.
+  const cy=now.getFullYear(), cm=now.getMonth()+1;
+  const yearFor = m => (m < cm - 6) ? cy+1 : cy;
+  const out=[];
+  for(const e of entries){
+    if(e.m<1||e.m>12||e.d<1) continue;
+    const y=yearFor(e.m);
+    const dt=new Date(y, e.m-1, e.d);
+    if(dt.getMonth()!==e.m-1) continue;                 // 31.11 and the like
+    const wd=dt.getDay();
+    let kind='special', time=e.time, ask=false;
+    if(!time){
+      if(wd===4 && !e.ampm){ kind='thu'; time='19:00'; }
+      else if(wd===0 && e.ampm==='am'){ kind='sunam'; time = e.d<=7 ? '09:00' : '10:00'; }
+      else if(wd===0 && e.ampm==='pm'){ kind='sunpm'; time='18:00'; }
+      else ask=true;
+    } else { kind = wd===4?'thu':(wd===0?(e.ampm==='pm'?'sunpm':'sunam'):'special'); }
+    if(ask) kind = wd===0 ? 'sun' : 'special';
+    out.push({ ds: y+'-'+String(e.m).padStart(2,'0')+'-'+String(e.d).padStart(2,'0'), wd, ampm:e.ampm, name:e.name||'', tag:e.tag, kind, time:time||'', ask });
+  }
+  out.sort((a,b)=>(a.ds+(a.time||'99')).localeCompare(b.ds+(b.time||'99')));
+  // Same date + same service twice (OCR echo) → keep one.
+  const seen=new Set(); const uniq=out.filter(x=>{ const k=x.ds+'|'+x.ampm+'|'+wsNorm(x.name); if(seen.has(k)) return false; seen.add(k); return true; });
+  const mm = month || (uniq.length ? +uniq[0].ds.slice(5,7) : null);
+  return { month:mm, year: mm ? yearFor(mm) : cy, entries:uniq, legend };
+}
+const WS_KIND = { thu:'Thursday', sunam:'Sunday morning', sunpm:'Sunday evening', sun:'Sunday', special:'Special' };
+
+// ── Image → words ──
+function wsLoadImg(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const im=new Image(); im.onload=()=>res({ im, url:fr.result }); im.onerror=()=>rej(new Error('That file doesn’t look like an image.')); im.src=fr.result; };
+    fr.onerror=()=>rej(new Error('Couldn’t read the file.'));
+    fr.readAsDataURL(file);
+  });
+}
+async function wsRecognize(im, onProgress){
+  // Scale small screenshots up so the text is big enough to read well.
+  const scale=Math.max(1, Math.min(4, 1900/im.naturalWidth));
+  const w=Math.round(im.naturalWidth*scale), h=Math.round(im.naturalHeight*scale);
+  const src=document.createElement('canvas'); src.width=w; src.height=h;
+  const sx=src.getContext('2d',{willReadFrequently:true}); sx.drawImage(im,0,0,w,h);
+  const orig=sx.getImageData(0,0,w,h);
+  // Black text on white: light cell colours (yellow, blue, grey) drop out.
+  const bin=document.createElement('canvas'); bin.width=w; bin.height=h;
+  const bx=bin.getContext('2d'); const out=bx.createImageData(w,h);
+  for(let i=0;i<orig.data.length;i+=4){
+    const l=0.299*orig.data[i]+0.587*orig.data[i+1]+0.114*orig.data[i+2];
+    const v=l<185?0:255; out.data[i]=out.data[i+1]=out.data[i+2]=v; out.data[i+3]=255;
+  }
+  bx.putImageData(out,0,0);
+  const colorOf=box=>{
+    let r=0,g=0,b=0,n=0;
+    const x0=Math.max(0,Math.floor(box.x0)), x1=Math.min(w,Math.ceil(box.x1)), y0=Math.max(0,Math.floor(box.y0)), y1=Math.min(h,Math.ceil(box.y1));
+    for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){ const i=(y*w+x)*4, R=orig.data[i],G=orig.data[i+1],B=orig.data[i+2];
+      if(0.299*R+0.587*G+0.114*B < 170){ r+=R; g+=G; b+=B; n++; } }
+    return n>20 ? [r/n,g/n,b/n] : null;
+  };
+  await wsLoadLib();
+  const worker = await Tesseract.createWorker('eng', 1, {
+    workerPath: WS_CDN.worker, corePath: WS_CDN.core, langPath: WS_CDN.lang,
+    logger: m => { if(onProgress) onProgress(m); }
+  });
+  try{
+    await worker.setParameters({ tessedit_pageseg_mode: '6' });
+    const { data } = await worker.recognize(bin, {}, { blocks:true, text:true });
+    const words=[];
+    (data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>(l.words||[]).forEach(x=>
+      words.push({ t:x.text, x0:x.bbox.x0, y0:x.bbox.y0, x1:x.bbox.x1, y1:x.bbox.y1, conf:x.confidence })))));
+    return { words, colorOf };
+  } finally { try{ await worker.terminate(); }catch(e){} }
+}
+
+// ── Widget ──
+function openWorship(){
+  showModal('Worship schedule','<div id="wsBody" class="ws-body"></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  wsRender();
+}
+function wsGroupOpts(sel){
+  const has = S.groups.some(g=>g.id==='g_worship');
+  return S.groups.map(g=>'<option value="'+g.id+'"'+(g.id===sel?' selected':'')+'>'+escHtml(g.name)+'</option>').join('')+
+    (has?'':'<option value="__new"'+(!sel||sel==='__new'?' selected':'')+'>➕ New group “Worship”</option>');
+}
+function wsOptsHtml(){
+  const o=wsOpts(), sel=o.group || (S.groups.some(g=>g.id==='g_worship')?'g_worship':'__new');
+  return '<details class="ws-opts"><summary><i class="ti ti-adjustments"></i> Options</summary>'+
+    '<div class="ws-opt"><label>Group</label><select id="wsGroup" onchange="wsSaveOpts()">'+wsGroupOpts(sel)+'</select></div>'+
+    '<div class="ws-opt"><label>Title starts with</label><input id="wsPrefix" class="cc-input" value="'+escHtml(o.prefix)+'" oninput="wsSaveOpts()"></div>'+
+    '<div class="ws-opt"><label>Reminder</label><select id="wsRem" onchange="wsSaveOpts()">'+
+      [['','None'],['60','1 hour before'],['120','2 hours before'],['1440','1 day before']].map(([v,n])=>'<option value="'+v+'"'+(o.rem===v?' selected':'')+'>'+n+'</option>').join('')+'</select></div>'+
+    '<div class="cc-foot">Thursday 19:00 · Sunday morning 09:00 (first Sunday of the month) or 10:00 · Sunday evening 18:00 · other days ask for the time.</div>'+
+  '</details>';
+}
+let _wsOptT=null;
+function wsSaveOpts(){
+  S.wsOpts={ group:(document.getElementById('wsGroup')||{}).value||'', prefix:((document.getElementById('wsPrefix')||{}).value||'').trim()||'Worship', rem:(document.getElementById('wsRem')||{}).value||'' };
+  clearTimeout(_wsOptT); _wsOptT=setTimeout(saveState,600);
+  if(_ws && _ws.entries) wsRenderList();
+}
+function wsRender(msg){
+  const el=document.getElementById('wsBody'); if(!el) return;
+  if(_ws && _ws.busy){
+    el.innerHTML='<div class="ws-busy">'+(_ws.url?'<img src="'+_ws.url+'" alt="">':'')+'<div class="ws-prog"><span id="wsBar" style="width:'+Math.round((_ws.p||0)*100)+'%"></span></div><div id="wsStep" class="rm-note">'+escHtml(_ws.step||'Starting…')+'</div></div>';
+    return;
+  }
+  if(_ws && _ws.entries){ wsRenderReview(msg); return; }
+  el.innerHTML=
+    (msg?'<div class="ws-msg">'+msg+'</div>':'')+
+    '<label class="ws-drop"><input type="file" accept="image/*" onchange="wsPick(this)" hidden>'+
+      '<i class="ti ti-photo-up"></i><b>Choose the schedule image</b><span>From Photos, Files or a screenshot. It’s read on this phone — nothing is uploaded.</span></label>'+
+    (_wsLast?'<div class="ws-last"><i class="ti ti-history"></i> Last added: '+escHtml(_wsLast.label)+' · '+_wsLast.n+' events '+
+      '<button class="btn sm" onclick="wsUndo()"><i class="ti ti-arrow-back-up"></i> Undo</button></div>':'')+
+    wsOptsHtml();
+}
+async function wsPick(inp){
+  const f=inp.files && inp.files[0]; if(!f) return;
+  try{
+    const { im, url } = await wsLoadImg(f);
+    _ws={ busy:true, url, p:0, step:'Loading the text reader (first time only)…' };
+    wsRender();
+    const step=(t,p)=>{ _ws.step=t; if(p!=null) _ws.p=p; const b=document.getElementById('wsBar'), s=document.getElementById('wsStep'); if(b) b.style.width=Math.round(_ws.p*100)+'%'; if(s) s.textContent=t; };
+    const { words, colorOf } = await wsRecognize(im, m=>{
+      if(m.status==='recognizing text') step('Reading the schedule… '+Math.round(m.progress*100)+'%', 0.3+0.7*m.progress);
+      else if(/load/i.test(m.status||'')) step('Loading the text reader (first time only)…', 0.3*(m.progress||0));
+    });
+    const r=wsParse(words, colorOf, new Date());
+    if(!r.entries.length){ _ws=null; wsRender('<i class="ti ti-alert-triangle"></i> I couldn’t find any dates like <b>4.10</b> in that image. Try a sharper screenshot of the whole table.'); return; }
+    _ws={ url, month:r.month, year:r.year, entries:r.entries.map(e=>({ ...e, on:true })) };
+    wsMarkExisting();
+    wsRender();
+  }catch(e){ _ws=null; wsRender('<span style="color:var(--red)">'+escHtml(e.message||String(e))+'</span>'); }
+}
+function wsTitle(e){ const o=wsOpts(); return (o.prefix||'Worship')+' · '+(e.name||'?')+(e.tag?' · '+e.tag:''); }
+function wsMarkExisting(){
+  for(const e of _ws.entries){
+    e.state='new'; e.replaces=null;
+    const same=S.tasks.filter(t=>t.date===e.ds && (t.time||'')===(e.time||'') && e.time);
+    if(same.some(t=>t.name===wsTitle(e))){ e.state='have'; e.on=false; continue; }
+    const old=same.find(t=>t.src==='worship');
+    if(old){ e.state='update'; e.replaces=old.id; }
+  }
+}
+function wsRenderReview(msg){
+  const el=document.getElementById('wsBody'); if(!el) return;
+  const mName = _ws.month ? RO_MONTHS[_ws.month-1] : '';
+  const teams=_ws.teams=[...new Set(_ws.entries.map(e=>e.name).filter(Boolean))];
+  el.innerHTML=
+    '<div class="ws-head">'+(_ws.url?'<img src="'+_ws.url+'" alt="" onclick="this.classList.toggle(\'big\')">':'')+
+      '<div><b>'+escHtml(mName?mName[0].toUpperCase()+mName.slice(1):'Schedule')+' '+_ws.year+'</b><span>'+_ws.entries.length+' services found · check them, then add</span></div></div>'+
+    (msg?'<div class="ws-msg">'+msg+'</div>':'')+
+    (teams.length>1?'<div class="ws-teams"><span>Only:</span>'+teams.map((t,k)=>'<button class="sh-chip" onclick="wsOnly('+k+')">'+escHtml(t)+'</button>').join('')+'<button class="sh-chip" onclick="wsOnly(null)">All</button></div>':'')+
+    '<div id="wsList" class="ws-list"></div>'+
+    '<div class="ws-acts"><button class="btn" onclick="_ws=null;wsRender()"><i class="ti ti-photo"></i> Other image</button><span class="msp"></span><button id="wsAdd" class="btn acc" onclick="wsAdd()"></button></div>'+
+    wsOptsHtml();
+  wsRenderList();
+}
+function wsRenderList(){
+  const L=document.getElementById('wsList'); if(!L||!_ws) return;
+  L.innerHTML=_ws.entries.map((e,i)=>{
+    const dt=parseD(e.ds);
+    const day=dt.toLocaleDateString('en-GB',{weekday:'short'})+' '+dt.getDate()+' '+dt.toLocaleDateString('en-GB',{month:'short'});
+    const need = e.on && !e.time;
+    return '<div class="ws-row'+(e.on?'':' off')+(need?' need':'')+'">'+
+      '<label class="ws-chk"><input type="checkbox"'+(e.on?' checked':'')+' onchange="wsTog('+i+',this.checked)"><span></span></label>'+
+      '<div class="ws-when"><b>'+day+'</b><input type="text" inputmode="numeric" maxlength="5" placeholder="hh:mm" value="'+escHtml(e.time)+'" onchange="wsTime('+i+',this)" aria-label="Time (24-hour)"></div>'+
+      '<div class="ws-what"><input class="ws-name" value="'+escHtml(e.name)+'" onchange="wsName('+i+',this.value)" aria-label="Team">'+
+        '<div class="ws-tags"><span class="ws-k '+e.kind+'">'+WS_KIND[e.kind]+'</span>'+
+          (e.tag?'<span class="ws-k tag">'+escHtml(e.tag)+'</span>':'')+
+          (need?'<span class="ws-k ask">Set the time</span>':'')+
+          (e.state==='have'?'<span class="ws-k have">Already in calendar</span>':'')+
+          (e.state==='update'?'<span class="ws-k upd">Replaces the old one</span>':'')+
+        '</div></div>'+
+    '</div>';
+  }).join('');
+  const n=_ws.entries.filter(e=>e.on).length, miss=_ws.entries.filter(e=>e.on&&!e.time).length;
+  const b=document.getElementById('wsAdd');
+  const all=_ws.entries.every(e=>e.state==='have');
+  if(b){ b.disabled=!n||!!miss; b.innerHTML= miss ? '<i class="ti ti-clock"></i> Set '+miss+' time'+(miss>1?'s':'')
+    : (!n && all) ? '<i class="ti ti-circle-check"></i> All already in calendar' : '<i class="ti ti-calendar-plus"></i> Add '+n+' to calendar'; }
+}
+function wsTog(i,v){ _ws.entries[i].on=v; wsRenderList(); }
+// Times are typed as 24-hour text ("19", "1930", "19.30" or "19:30").
+function wsTime(i,inp){
+  const raw=String(inp.value||'').trim().replace(/[.,h ]/g,':');
+  let m=raw.match(/^(\d{1,2})(?::?(\d{2}))?$/), v='';
+  if(m && +m[1]<24 && (m[2]===undefined || +m[2]<60)) v=String(m[1]).padStart(2,'0')+':'+(m[2]||'00');
+  _ws.entries[i].time=v; wsMarkOne(i); wsRenderList();
+}
+function wsName(i,v){ _ws.entries[i].name=v.trim(); wsMarkOne(i); wsRenderList(); }
+function wsMarkOne(i){ const keep=_ws.entries.map(e=>e.on); wsMarkExisting(); _ws.entries.forEach((e,k)=>{ if(e.state!=='have') e.on=keep[k]; }); }
+function wsOnly(k){ const team = k===null ? null : (_ws.teams||[])[k]; _ws.entries.forEach(e=>{ e.on = e.state!=='have' && (team===null || e.name===team); }); wsRenderList(); }
+function wsAdd(){
+  const o=wsOpts(); let group=o.group;
+  if(!group || group==='__new' || !S.groups.some(g=>g.id===group)){
+    if(!S.groups.some(g=>g.id==='g_worship')) S.groups.push({ id:'g_worship', name:'Worship', color:'#fbbf24' });
+    group='g_worship'; S.wsOpts={ ...o, group };
+  }
+  const added=[], replaced=[];
+  for(const e of _ws.entries){
+    if(!e.on || !e.time) continue;
+    if(e.replaces){ const old=S.tasks.find(t=>t.id===e.replaces); if(old){ replaced.push(old); S.tasks=S.tasks.filter(t=>t.id!==old.id); } }
+    const t={ id:uid(), name:wsTitle(e), date:e.ds, time:e.time, freq:'none', priority:'normal', group,
+      notes:WS_KIND[e.kind]+' service'+(e.tag?' · '+e.tag:'')+(_ws.month?' — from the '+RO_MONTHS[_ws.month-1][0].toUpperCase()+RO_MONTHS[_ws.month-1].slice(1)+' schedule':''),
+      done:false, reminders:o.rem?[o.rem]:[], reminder:o.rem||'', src:'worship' };
+    S.tasks.push(t); added.push(t.id);
+    try{ scheduleReminder(t); }catch(err){}
+  }
+  if(!added.length) return;
+  const mName=_ws.month?RO_MONTHS[_ws.month-1]:'schedule';
+  _wsLast={ ids:added, replaced, n:added.length, label:mName[0].toUpperCase()+mName.slice(1)+' '+_ws.year, first:_ws.entries.find(e=>e.on).ds };
+  saveState(); renderAll();
+  _ws=null;
+  const el=document.getElementById('wsBody');
+  if(el) el.innerHTML='<div class="ws-done"><i class="ti ti-circle-check"></i><b>'+added.length+' services added</b><span>'+escHtml(_wsLast.label)+(replaced.length?' · '+replaced.length+' updated':'')+'</span>'+
+    '<div class="ws-acts"><button class="btn" onclick="wsUndo()"><i class="ti ti-arrow-back-up"></i> Undo</button><span class="msp"></span><button class="btn acc" onclick="holGo(\''+_wsLast.first+'\')"><i class="ti ti-calendar"></i> See calendar</button></div></div>';
+}
+function wsUndo(){
+  if(!_wsLast) return;
+  S.tasks=S.tasks.filter(t=>!_wsLast.ids.includes(t.id));
+  for(const t of _wsLast.replaced||[]) S.tasks.push(t);
+  const n=_wsLast.n; _wsLast=null;
+  saveState(); renderAll();
+  _ws=null; wsRender('<i class="ti ti-arrow-back-up"></i> Removed the '+n+' services again.');
+}
+
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
 // key). Windy's own API only returns real data on a paid plan, so each city
@@ -5010,6 +5393,7 @@ async function openHolidays(){
   const el=document.getElementById('holBody'); if(!el) return;
   if(d.error){ el.innerHTML='<div class="cc-msg" style="color:var(--red)">'+escHtml(d.error)+'</div>'; return; }
   const list=d.holidays||[];
+  _holList={ list, cc, year:_holYear };
   const nextIdx=list.findIndex(h=>h.date>=TODAY);
   if(nextIdx>=0 && _holYear===y0){
     const n=list[nextIdx], days=Math.round((parseD(n.date)-parseD(TODAY))/86400000);
@@ -5017,7 +5401,7 @@ async function openHolidays(){
   }
   // This year: what's ahead comes first; the ones already gone fold away.
   const pastN = (_holYear===y0) ? list.filter(h=>h.date<TODAY).length : 0;
-  el.innerHTML=(pastN ? '<button class="hol-more" onclick="this.parentNode.classList.toggle(\'show-past\');this.textContent=this.parentNode.classList.contains(\'show-past\')?\'Hide earlier holidays\':\'Show '+pastN+' earlier this year\'">Show '+pastN+' earlier this year</button>' : '')+
+  el.innerHTML=holAllBar()+(pastN ? '<button class="hol-more" onclick="this.parentNode.classList.toggle(\'show-past\');this.textContent=this.parentNode.classList.contains(\'show-past\')?\'Hide earlier holidays\':\'Show '+pastN+' earlier this year\'">Show '+pastN+' earlier this year</button>' : '')+
   list.map((h,i)=>{
     const dt=parseD(h.date), days=Math.round((dt-parseD(TODAY))/86400000);
     const when=days===0?'Today':days===1?'Tomorrow':days>0?'in '+days+' days':Math.abs(days)+' days ago';
@@ -5027,10 +5411,56 @@ async function openHolidays(){
       '<div class="hol-main"><div class="hol-name">'+escHtml(h.localName||h.name)+'</div>'+
         '<div class="hol-sub">'+(h.localName&&h.localName!==h.name?escHtml(h.name)+' · ':'')+dt.toLocaleDateString('en-GB',{weekday:'long'})+' · '+when+
         (evs?' · <span class="hol-busy">'+evs+' scheduled</span>':'')+'</div></div>'+
-      '<button class="btn sm'+(i===nextIdx?' acc':'')+'" onclick="holGo(\''+h.date+'\')"><i class="ti ti-calendar"></i> See calendar</button>'+
+      '<div class="hol-acts">'+(days>=0?holBtn(i):'')+
+        '<button class="btn sm hol-see" onclick="holGo(\''+h.date+'\')" aria-label="See in calendar"><i class="ti ti-calendar"></i></button></div>'+
     '</div>';
   }).join('')+
   '<div class="cc-foot">'+(d.source==='local'?'Romanian legal holidays, worked out on this server (Orthodox Easter included).':'Source: Nager.Date public holidays.')+'</div>';
+}
+// ── Add holidays to the calendar ──
+// A holiday becomes an all-day calendar entry in a "Holidays" group. It
+// never goes overdue, and tapping again takes it back out.
+let _holList=null;
+function holTask(h){ return S.tasks.find(t=>t.src==='holiday' && t.date===h.date); }
+function holBtn(i){
+  const h=_holList.list[i];
+  return holTask(h)
+    ? '<button class="btn sm hol-in" id="holB'+i+'" onclick="holToggle('+i+')" aria-label="Remove from calendar"><i class="ti ti-check"></i> In calendar</button>'
+    : '<button class="btn sm hol-add" id="holB'+i+'" onclick="holToggle('+i+')"><i class="ti ti-calendar-plus"></i> Add</button>';
+}
+function holUpcoming(){ return _holList ? _holList.list.map((h,i)=>({h,i})).filter(x=>x.h.date>=TODAY) : []; }
+function holAllBar(){
+  const up=holUpcoming(); if(!up.length) return '';
+  const missing=up.filter(x=>!holTask(x.h)).length;
+  return '<div class="hol-all" id="holAll">'+(missing
+    ? '<span>'+up.length+' coming up · '+(up.length-missing)+' in your calendar</span><button class="btn sm acc" onclick="holAddAll()"><i class="ti ti-calendar-plus"></i> Add all '+missing+'</button>'
+    : '<span><i class="ti ti-circle-check" style="color:var(--green)"></i> All '+up.length+' upcoming holidays are in your calendar</span>')+'</div>';
+}
+function holGroup(){
+  if(!S.groups.some(g=>g.id==='g_holidays')) S.groups.push({ id:'g_holidays', name:'Holidays', color:'#fb7185' });
+  return 'g_holidays';
+}
+function holMake(h){
+  return { id:uid(), name:CC_FLAG(_holList.cc)+' '+(h.localName||h.name), date:h.date, time:'', freq:'none', priority:'normal', group:holGroup(),
+    notes:(h.localName&&h.localName!==h.name?h.name+' · ':'')+'Public holiday', done:false, reminders:[], reminder:'', src:'holiday' };
+}
+function holRefreshUi(){
+  const up=holUpcoming();
+  up.forEach(({i})=>{ const b=document.getElementById('holB'+i); if(b) b.outerHTML=holBtn(i); });
+  const a=document.getElementById('holAll'); if(a) a.outerHTML=holAllBar();
+}
+function holToggle(i){
+  const h=_holList.list[i], t=holTask(h);
+  if(t) S.tasks=S.tasks.filter(x=>x.id!==t.id);
+  else S.tasks.push(holMake(h));
+  saveState(); renderAll(); holRefreshUi();
+  if(navigator.vibrate) navigator.vibrate(8);
+}
+function holAddAll(){
+  const add=holUpcoming().filter(x=>!holTask(x.h));
+  add.forEach(x=>S.tasks.push(holMake(x.h)));
+  saveState(); renderAll(); holRefreshUi();
+  if(add.length) showToast('<i class="ti ti-calendar-plus"></i> '+add.length+' holiday'+(add.length>1?'s':'')+' added to the calendar');
 }
 function holGo(ds){
   closeModal();
@@ -5595,7 +6025,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-19-touchpad';
+const APP_BUILD='2026-10-20-worship';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
