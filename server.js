@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-21-screen-fix';
+const BUILD_VERSION = '2026-10-21-screen-fix2';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3958,9 +3958,12 @@ function Run-Mode($ws, $cmd, $id){
     # fall back to the display-switch program, newer numbered form first.
     $rc = [OrgInput]::Topology([uint32]$flags[$cmd])
     if($rc -ne 0){
-      Start-Process -FilePath $Switch -ArgumentList $nums[$cmd] -Wait
-      Start-Sleep -Milliseconds 600
-      Start-Process -FilePath $Switch -ArgumentList ('/' + $cmd) -Wait
+      # Never wait on it for long: on some Windows 11 builds it stays open.
+      foreach($a in @($nums[$cmd], ('/' + $cmd))){
+        $pr = Start-Process -FilePath $Switch -ArgumentList $a -PassThru
+        if(-not $pr.WaitForExit(4000)){ try{ $pr.Kill() }catch{} }
+        Start-Sleep -Milliseconds 600
+      }
     }
     Start-Sleep -Milliseconds 1200
     $n = @(Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams -ErrorAction SilentlyContinue | Where-Object { $_.Active }).Count
