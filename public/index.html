@@ -1045,6 +1045,35 @@ select option:checked{background:#2E3A78;color:#fff}
 @media (max-width:600px){ .wx-drop{left:8px;right:8px;width:auto;max-width:none} }
 .wx-loc-bar input{min-width:0;width:0}
 .wx-loc-bar button{flex:none}
+/* Forecast details */
+.wx-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:12px 14px 4px}
+.wx-stat{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--border);min-width:0}
+.wx-stat i{font-size:15px;color:var(--accent)}
+.wx-stat span{font-size:11px;color:var(--txt2)}
+.wx-stat b{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.wx-stat small{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wx-hours-h{padding:10px 14px 0;font-size:12px;font-weight:650;color:var(--txt2)}
+.wx-hours-h i{color:var(--accent)}
+.wx-hours{display:flex;gap:6px;overflow-x:auto;padding:8px 14px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.wx-hours::-webkit-scrollbar{display:none}
+.wx-hour{flex:none;width:50px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border-radius:14px;background:rgba(255,255,255,.04)}
+.wx-hour.now{background:rgba(140,168,255,.16);box-shadow:inset 0 0 0 1px rgba(140,168,255,.45)}
+.wx-hour span{font-size:11px;color:var(--txt2);font-variant-numeric:tabular-nums}
+.wx-hour i{font-size:19px}
+.wx-hour b{font-size:13px}
+.wx-hour small{font-size:10.5px;color:#93c5fd}
+.wx-hour small.dry{visibility:hidden}
+.wx-hsep{flex:none;align-self:stretch;display:flex;align-items:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;font-weight:650;color:var(--txt2);padding:0 2px;border-left:1px dashed var(--border2)}
+.wx-day{cursor:pointer;transition:transform 140ms var(--ease-out),background-color 150ms ease,box-shadow 150ms ease}
+.wx-day:active{transform:scale(0.97)}
+.wx-day.on{background:rgba(140,168,255,.16);box-shadow:inset 0 0 0 1px rgba(140,168,255,.5)}
+@media (max-width:380px){ .wx-stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* Weather chip on event cards (ivory cards, so darker ink) */
+.ev-wx{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600;color:#3A3542;padding:1px 8px;border-radius:99px;
+  background:rgba(43,39,51,.06);border:1px solid rgba(43,39,51,.10);font-variant-numeric:tabular-nums}
+.ev-wx i{font-size:14px}
+.ev-wx.wet{background:rgba(37,99,235,.10);border-color:rgba(37,99,235,.28)}
+.ev-wx b{font-weight:650;color:#1d4ed8;margin-left:2px}
 /* Screen remote */
 .rm-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:12px}
 .rm-status b{color:var(--txt)}
@@ -1222,6 +1251,9 @@ select option:checked{background:#2E3A78;color:#fff}
       <input id="wxLI" value="" placeholder="Change location…" onkeydown="if(event.key==='Enter'){changeWxLoc();event.stopPropagation()}">
       <button class="btn sm acc" onclick="changeWxLoc()">Go</button>
     </div>
+    <div class="wx-stats" id="wxStats"></div>
+    <div class="wx-hours-h" id="wxHoursH"></div>
+    <div class="wx-hours" id="wxHours"></div>
     <div class="wx-days" id="wxDays"></div>
     <a class="wx-windy" id="wxWindyLink" href="https://www.windy.com/45.689/21.903?45.689,21.903,10" target="_blank" onclick="event.stopPropagation()">
       <i class="ti ti-wind"></i> Open Windy interactive forecast
@@ -1775,8 +1807,9 @@ function renderWx(){
   document.getElementById('wxT').textContent=wx.tempC+'°C';
   document.getElementById('wxMM').textContent='↑ '+wx.high+'° · ↓ '+wx.low+'°';
   document.getElementById('wxC').textContent=wx.text;
-  document.getElementById('wxDays').innerHTML=wx.forecast.map(d=>
-    '<div class="wx-day">'+
+  if(_wxDay>=wx.forecast.length) _wxDay=0;
+  document.getElementById('wxDays').innerHTML=wx.forecast.map((d,i)=>
+    '<div class="wx-day'+(i===_wxDay?' on':'')+'" role="button" tabindex="0" onclick="wxPickDay('+i+')" aria-label="'+escHtml(d.dow)+': show hour by hour">'+
     '<div class="wx-day-n">'+d.dow+'</div>'+
     '<div class="wx-day-i"><i class="ti '+(WXI[d.cond]||'ti-cloud')+'" style="color:'+(WXC[d.cond]||'#888')+'"></i></div>'+
     '<div class="wx-day-h">'+d.high+'°</div>'+
@@ -1784,6 +1817,75 @@ function renderWx(){
     (d.rain>0?'<div class="wx-day-r">💧'+d.rain+'%</div>':'')+
     '</div>'
   ).join('');
+  wxRenderDetail();
+}
+// ── Forecast details: tiles + hour by hour ──
+// Today shows "now" (feels like, wind, humidity, UV) and the next 24 hours;
+// tapping another day shows that day's figures and its hours.
+let _wxDay=0;
+function wxPickDay(i){ _wxDay=i; renderWx(); const h=document.getElementById('wxHours'); if(h) h.scrollLeft=0; }
+function uvLabel(u){ if(u==null) return ''; return u<3?'Low':u<6?'Moderate':u<8?'High':u<11?'Very high':'Extreme'; }
+function wxIcon(cond, night){
+  if(night && cond==='sunny') return { i:'ti-moon', c:'#c4b5fd' };
+  if(night && cond==='partly_cloudy') return { i:'ti-cloud', c:'#a5b4fc' };
+  return { i:WXI[cond]||'ti-cloud', c:WXC[cond]||'#94a3b8' };
+}
+function wxIsNight(t, day){ const hm=String(t).slice(11,16); return !!(day && day.sunrise && day.sunset && (hm<day.sunrise.slice(0,3)+'00' || hm>=day.sunset)); }
+function wxRenderDetail(){
+  const wx=S.wx, st=document.getElementById('wxStats'), hh=document.getElementById('wxHours'), hd=document.getElementById('wxHoursH');
+  if(!st||!hh||!hd) return;
+  if(!wx || !Array.isArray(wx.hourly) || !wx.forecast){ st.innerHTML=''; hh.innerHTML=''; hd.innerHTML=''; return; }
+  const day=wx.forecast[_wxDay]||wx.forecast[0];
+  const tile=(ic,label,val,sub)=>'<div class="wx-stat"><i class="ti '+ic+'"></i><span>'+label+'</span><b>'+val+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
+  const n=wx.now||{};
+  const tiles=[];
+  if(_wxDay===0){
+    if(n.feels!=null) tiles.push(tile('ti-temperature','Feels like',n.feels+'°'));
+    if(n.wind!=null) tiles.push(tile('ti-wind','Wind',n.wind+' km/h',n.gust?'gusts '+n.gust:''));
+    if(n.humidity!=null) tiles.push(tile('ti-droplet','Humidity',n.humidity+'%'));
+    const uv = n.uv!=null ? n.uv : day.uv;
+    if(uv!=null) tiles.push(tile('ti-sun-high','UV now',Math.round(uv),uvLabel(uv)+(day.uv!=null?' · max '+Math.round(day.uv):'')));
+  } else {
+    tiles.push(tile('ti-umbrella','Rain chance',day.rain+'%'));
+    if(day.wind!=null) tiles.push(tile('ti-wind','Wind',day.wind+' km/h',day.gust?'gusts '+day.gust:''));
+    if(day.uv!=null) tiles.push(tile('ti-sun-high','UV max',Math.round(day.uv),uvLabel(day.uv)));
+  }
+  if(day.sunrise) tiles.push(tile('ti-sunrise','Sunrise',day.sunrise));
+  if(day.sunset) tiles.push(tile('ti-sunset','Sunset',day.sunset));
+  st.innerHTML=tiles.join('');
+  const nowKey=(n.time||'').slice(0,13);
+  let list;
+  if(_wxDay===0){ let i=wx.hourly.findIndex(h=>h.t.slice(0,13)>=nowKey); if(i<0) i=0; list=wx.hourly.slice(i,i+24); }
+  else list=wx.hourly.filter(h=>h.t.slice(0,10)===day.date);
+  const dayOf=t=>wx.forecast.find(f=>f.date===String(t).slice(0,10));
+  hd.innerHTML='<i class="ti ti-clock-hour-4"></i> '+(_wxDay===0?'Next 24 hours':escHtml(parseD(day.date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}))+' · hour by hour');
+  hh.innerHTML=list.map((h,k)=>{
+    const ic=wxIcon(h.cond, wxIsNight(h.t, dayOf(h.t)));
+    const lab=(_wxDay===0&&k===0)?'Now':h.t.slice(11,16);
+    const newDay=_wxDay===0 && k>0 && h.t.slice(11,13)==='00';
+    return (newDay?'<div class="wx-hsep">'+escHtml(parseD(h.t.slice(0,10)).toLocaleDateString('en-GB',{weekday:'short'}))+'</div>':'')+
+      '<div class="wx-hour'+(k===0&&_wxDay===0?' now':'')+'"><span>'+lab+'</span><i class="ti '+ic.i+'" style="color:'+ic.c+'"></i><b>'+((k===0&&_wxDay===0&&wx.tempC!=null)?wx.tempC:h.temp)+'°</b>'+
+      '<small'+(h.rain>=10?'':' class="dry"')+'>💧'+h.rain+'%</small></div>';
+  }).join('');
+}
+// ── Weather on event cards ──
+// The hourly forecast at the event's start (home weather location, next 7
+// days). Concerts abroad are skipped: their weather would be the wrong city's.
+function evWx(ev){
+  const wx=S.wx; if(!wx || !Array.isArray(wx.hourly) || !ev || !ev.time || ev.concertId || ev.src==='holiday') return null;
+  const ds=ev._occDate||ev.date; const key=ds+'T'+fmtTime(ev.time).slice(0,2)+':00';
+  return wx.hourly.find(h=>h.t===key) || null;
+}
+const WXC_INK = {sunny:'#d97706',partly_cloudy:'#2563eb',cloudy:'#64748b',rainy:'#2563eb',snow:'#0284c7',storm:'#6d28d9',fog:'#64748b',windy:'#059669'};
+const WMO_TEXT={sunny:'Clear',partly_cloudy:'Partly cloudy',cloudy:'Cloudy',rainy:'Rain',snow:'Snow',storm:'Thunderstorm',fog:'Fog',windy:'Windy'};
+function evWxChip(ev){
+  if(ev.done || isPastEvent(ev)) return '';
+  const h=evWx(ev); if(!h) return '';
+  const f=S.wx.forecast.find(x=>x.date===h.t.slice(0,10));
+  const ic=wxIcon(h.cond, wxIsNight(h.t, f));
+  const wet=h.rain>=30;
+  const tip='Weather at '+h.t.slice(11,16)+' in '+(S.wxLocName||'your area')+': '+(WMO_TEXT[h.cond]||h.cond)+', '+h.temp+'°, '+h.rain+'% chance of rain';
+  return '<span class="ev-wx'+(wet?' wet':'')+'" title="'+escHtml(tip)+'"><i class="ti '+ic.i+'" style="color:'+(WXC_INK[h.cond]||'#64748b')+'"></i>'+h.temp+'°'+(wet?'<b>💧'+h.rain+'%</b>':'')+'</span>';
 }
 
 // Fetches real weather from our backend (which calls Open-Meteo).
@@ -1804,6 +1906,7 @@ async function loadWeather(opts){
     S.wxLat=d.lat; S.wxLon=d.lon;
     if(d.locName) S.wxLocName=d.locName;
     renderWx();
+    try{ renderLP(); }catch(e){}
     // Settings-only save. Routing this through the full saveState() meant
     // every weather refresh re-sent this tab's whole task list — which is
     // how a stale phone tab wiped tasks created on the laptop.
@@ -1856,6 +1959,7 @@ function renderCard(ev){
   const pri=ev.priority||'normal';
   let meta='<span class="grp-name" style="--gc:'+col+';color:'+col+';font-size:9px">'+gName+'</span>';
   meta+='<span style="color:var(--txt3)">'+(ev.time?fmtTime(ev.time):'All day')+'</span>';
+  meta+=evWxChip(ev);
   if(ev.freq&&ev.freq!=='none')meta+='<span style="color:var(--txt3)"><i class="ti ti-repeat" style="font-size:9px"></i>'+ev.freq+'</span>';
   meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
   if(!ev.done && isPastEvent(ev) && !noOverdue(ev)) meta+='<span class="od-pill"><i class="ti ti-alert-circle"></i>Overdue \u00b7 '+overdueFor(ev)+'</span>';
@@ -6033,7 +6137,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-20-solid-forecast';
+const APP_BUILD='2026-10-21-weather-plus';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
