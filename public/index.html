@@ -4876,7 +4876,7 @@ function rmPadOpen(){
 function rmPadClose(){
   if(!_pad) return;
   _pad.alive=false;
-  try{ if(_pad.drag) rmSend('u l'); }catch(e){}
+  try{ if(_pad.drag) rmPadSend('u l'); }catch(e){}
   try{ _pad.ws && _pad.ws.close(); }catch(e){}
   clearInterval(_pad.ping); clearTimeout(_pad.retryT); cancelAnimationFrame(_pad.raf);
   const o=document.getElementById('rmPad'); if(o) o.remove();
@@ -4935,11 +4935,11 @@ async function rmPadTrust(){
   const L=document.getElementById('padLock'); if(L){ L.hidden=true; L.innerHTML=''; }
   rmPadConnect();
 }
-function rmSend(msg){
+function rmPadSend(msg){
   if(!_pad || !_pad.ws || _pad.ws.readyState!==1) return false;
   try{ _pad.ws.send(msg); return true; }catch(e){ return false; }
 }
-function rmKey(k){ rmSend('k '+k); if(navigator.vibrate) navigator.vibrate(8); }
+function rmKey(k){ rmPadSend('k '+k); if(navigator.vibrate) navigator.vibrate(8); }
 function rmSensCycle(){
   const v=rmSens()%5+1; try{ localStorage.setItem(RM_SENS_KEY,String(v)); }catch(e){}
   const b=document.getElementById('padSens'); if(b) b.textContent=v;
@@ -4955,9 +4955,9 @@ function rmFlush(){
   if(!_pad) return;
   _pad.raf=0;
   const mx=Math.trunc(_pad.ax), my=Math.trunc(_pad.ay);
-  if(mx||my){ _pad.ax-=mx; _pad.ay-=my; rmSend('m '+Math.max(-9999,Math.min(9999,mx))+' '+Math.max(-9999,Math.min(9999,my))); }
+  if(mx||my){ _pad.ax-=mx; _pad.ay-=my; rmPadSend('m '+Math.max(-9999,Math.min(9999,mx))+' '+Math.max(-9999,Math.min(9999,my))); }
   const sy=Math.trunc(_pad.sy), sx=Math.trunc(_pad.sx);
-  if(sy||sx){ _pad.sy-=sy; _pad.sx-=sx; rmSend('s '+Math.max(-99999,Math.min(99999,sy))+' '+Math.max(-99999,Math.min(99999,sx))); }
+  if(sy||sx){ _pad.sy-=sy; _pad.sx-=sx; rmPadSend('s '+Math.max(-99999,Math.min(99999,sy))+' '+Math.max(-99999,Math.min(99999,sx))); }
 }
 function rmQueue(){ if(_pad && !_pad.raf) _pad.raf=requestAnimationFrame(rmFlush); }
 function rmPadWire(){
@@ -4972,7 +4972,7 @@ function rmPadWire(){
     [lx,ly]=pt(e); lt=performance.now();
     clearTimeout(hold);
     if(n===1 && !_pad.drag){
-      hold=setTimeout(()=>{ if(moved<10 && _pad){ _pad.drag=true; rmSend('d l'); A.classList.add('dragging'); if(navigator.vibrate) navigator.vibrate(20); } }, 480);
+      hold=setTimeout(()=>{ if(moved<10 && _pad){ _pad.drag=true; rmPadSend('d l'); A.classList.add('dragging'); if(navigator.vibrate) navigator.vibrate(20); } }, 480);
     }
   }, {passive:false});
   A.addEventListener('touchmove', e=>{
@@ -5001,9 +5001,9 @@ function rmPadWire(){
     if(!_pad) return;
     if(e.touches.length>0){ n=e.touches.length; [lx,ly]=pt(e); lt=performance.now(); return; }
     const dur=performance.now()-t0;
-    if(_pad.drag){ _pad.drag=false; rmSend('u l'); A.classList.remove('dragging'); }
+    if(_pad.drag){ _pad.drag=false; rmPadSend('u l'); A.classList.remove('dragging'); }
     else if(dur<260 && moved<12){
-      rmSend(maxN>=2 ? 'c r' : 'c l');
+      rmPadSend(maxN>=2 ? 'c r' : 'c l');
       A.classList.add('tap'); setTimeout(()=>A.classList.remove('tap'),120);
     }
     n=0; maxN=0;
@@ -5014,7 +5014,7 @@ function rmPadWire(){
   let md=false;
   A.addEventListener('mousedown', e=>{ md=true; moved=0; lx=e.clientX; ly=e.clientY; t0=performance.now(); });
   A.addEventListener('mousemove', e=>{ if(!md) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; moved+=Math.abs(dx)+Math.abs(dy); _pad.ax+=dx*1.5; _pad.ay+=dy*1.5; rmQueue(); });
-  window.addEventListener('mouseup', ()=>{ if(md && moved<6 && performance.now()-t0<300) rmSend('c l'); md=false; });
+  window.addEventListener('mouseup', ()=>{ if(md && moved<6 && performance.now()-t0<300) rmPadSend('c l'); md=false; });
   // One-finger scroll strip on the right edge.
   let sly=0;
   SC.addEventListener('touchstart', e=>{ e.preventDefault(); sly=e.touches[0].clientY; SC.classList.add('on'); }, {passive:false});
@@ -5023,9 +5023,9 @@ function rmPadWire(){
   // Buttons: Left supports hold-to-drag too.
   const L=document.getElementById('padL'), R=document.getElementById('padR');
   const press=(el,down,up)=>{
-    el.addEventListener('touchstart', e=>{ e.preventDefault(); el.classList.add('on'); rmSend(down); if(navigator.vibrate) navigator.vibrate(8); }, {passive:false});
-    el.addEventListener('touchend', e=>{ e.preventDefault(); el.classList.remove('on'); if(up) rmSend(up); }, {passive:false});
-    el.addEventListener('click', ()=>{ if(!('ontouchstart' in window)){ rmSend(down); if(up) rmSend(up); } });
+    el.addEventListener('touchstart', e=>{ e.preventDefault(); el.classList.add('on'); rmPadSend(down); if(navigator.vibrate) navigator.vibrate(8); }, {passive:false});
+    el.addEventListener('touchend', e=>{ e.preventDefault(); el.classList.remove('on'); if(up) rmPadSend(up); }, {passive:false});
+    el.addEventListener('click', ()=>{ if(!('ontouchstart' in window)){ rmPadSend(down); if(up) rmPadSend(up); } });
   };
   press(L,'d l','u l');
   press(R,'c r',null);
@@ -5035,17 +5035,17 @@ function rmPadWire(){
   const keep=()=>{ K.value='  '; try{ K.setSelectionRange(2,2); }catch(e){} };
   K.addEventListener('beforeinput', e=>{
     const t=e.inputType;
-    if(t==='insertText' || t==='insertReplacementText' || t==='insertFromPaste'){ const d=e.data || (e.dataTransfer && e.dataTransfer.getData('text')) || ''; if(d) rmSend('t '+d.slice(0,200)); }
-    else if(t==='deleteContentBackward' || t==='deleteWordBackward'){ rmSend('k back'); }
-    else if(t==='insertLineBreak' || t==='insertParagraph'){ rmSend('k enter'); }
+    if(t==='insertText' || t==='insertReplacementText' || t==='insertFromPaste'){ const d=e.data || (e.dataTransfer && e.dataTransfer.getData('text')) || ''; if(d) rmPadSend('t '+d.slice(0,200)); }
+    else if(t==='deleteContentBackward' || t==='deleteWordBackward'){ rmPadSend('k back'); }
+    else if(t==='insertLineBreak' || t==='insertParagraph'){ rmPadSend('k enter'); }
     e.preventDefault(); keep();
   });
   K.addEventListener('input', keep);
   K.addEventListener('keydown', e=>{
-    if(e.key==='Enter'){ e.preventDefault(); rmSend('k enter'); }
-    else if(e.key==='Tab'){ e.preventDefault(); rmSend('k tab'); }
-    else if(e.key==='Escape'){ e.preventDefault(); rmSend('k esc'); }
-    else if(e.key.startsWith('Arrow')){ e.preventDefault(); rmSend('k '+e.key.slice(5).toLowerCase()); }
+    if(e.key==='Enter'){ e.preventDefault(); rmPadSend('k enter'); }
+    else if(e.key==='Tab'){ e.preventDefault(); rmPadSend('k tab'); }
+    else if(e.key==='Escape'){ e.preventDefault(); rmPadSend('k esc'); }
+    else if(e.key.startsWith('Arrow')){ e.preventDefault(); rmPadSend('k '+e.key.slice(5).toLowerCase()); }
   });
   K.addEventListener('focus', ()=>{ document.getElementById('rmPad').classList.add('kb'); keep(); });
   K.addEventListener('blur', ()=>{ const o=document.getElementById('rmPad'); if(o) o.classList.remove('kb'); });
@@ -6137,7 +6137,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-21-screen-fix';
+const APP_BUILD='2026-10-21-screen-fix2';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
