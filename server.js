@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-21-weather-plus';
+const BUILD_VERSION = '2026-10-21-screen-fix';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3929,6 +3929,9 @@ public static class OrgInput {
   }
   public static void Key(ushort vk, bool ext){ uint e = ext ? 1u : 0u; Send(new INPUT[]{ K(vk,0,e), K(vk,0,e | 2u) }); }
   public static void Combo(ushort mod, ushort vk, bool ext){ uint e = ext ? 1u : 0u; Send(new INPUT[]{ K(mod,0,0), K(vk,0,e), K(vk,0,e | 2u), K(mod,0,2u) }); }
+  [DllImport("user32.dll")] static extern int SetDisplayConfig(uint nPaths, IntPtr paths, uint nModes, IntPtr modes, uint flags);
+  // Same call Windows+P makes: 1 internal, 2 clone, 4 extend, 8 external; 0x80 = apply now.
+  public static int Topology(uint t){ return SetDisplayConfig(0, IntPtr.Zero, 0, IntPtr.Zero, t | 0x80u); }
 }
 '@
 
@@ -3948,11 +3951,23 @@ function Send-Text($ws, [string]$text){
 function Run-Mode($ws, $cmd, $id){
   $ok = 1; $msg = ''
   try{
-    if(@('internal','clone','extend','external') -notcontains $cmd){ throw ('Unknown mode ' + $cmd) }
-    Start-Process -FilePath $Switch -ArgumentList ('/' + $cmd) -Wait
-    Start-Sleep -Milliseconds 800
+    $flags = @{ 'internal'=1; 'clone'=2; 'extend'=4; 'external'=8 }
+    $nums  = @{ 'internal'='1'; 'clone'='2'; 'extend'='3'; 'external'='4' }
+    if(-not $flags.ContainsKey($cmd)){ throw ('Unknown mode ' + $cmd) }
+    # Ask Windows directly (works on Windows 10 and 11). If that is refused,
+    # fall back to the display-switch program, newer numbered form first.
+    $rc = [OrgInput]::Topology([uint32]$flags[$cmd])
+    if($rc -ne 0){
+      Start-Process -FilePath $Switch -ArgumentList $nums[$cmd] -Wait
+      Start-Sleep -Milliseconds 600
+      Start-Process -FilePath $Switch -ArgumentList ('/' + $cmd) -Wait
+    }
+    Start-Sleep -Milliseconds 1200
     $n = @(Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams -ErrorAction SilentlyContinue | Where-Object { $_.Active }).Count
-    if($n -eq 1){ $msg = '1 screen on' } elseif($n){ $msg = "$n screens on" }
+    if(($cmd -eq 'clone' -or $cmd -eq 'extend') -and $n -le 1){
+      $ok = 0; $msg = 'Only one screen found — is the TV plugged in and switched on?'
+    } elseif($n -eq 1){ $msg = '1 screen on' } elseif($n){ $msg = "$n screens on" }
+    if($rc -ne 0 -and $ok -eq 1){ $msg = $msg + ' (via DisplaySwitch)' }
   }catch{ $ok = 0; $msg = $_.Exception.Message }
   Send-Text $ws ('done ' + $id + ' ' + $ok + ' ' + $msg)
 }
