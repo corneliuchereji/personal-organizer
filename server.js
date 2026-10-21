@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-20-solid-forecast';
+const BUILD_VERSION = '2026-10-21-weather-plus';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -4170,19 +4170,38 @@ app.get('/api/weather', async (req, res) => {
     }
     if (!lat || !lon) { lat = 45.689; lon = 21.903; label = label || 'Lugoj, RO'; }
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_gusts_10m,is_day` +
+      `&hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m,uv_index` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max` +
+      `&forecast_days=7&timezone=auto`;
     const r = await fetch(url);
     const d = await r.json();
     if (!d.current || !d.daily) return res.status(502).json({ error: 'Weather provider error' });
 
+    const hm = t => String(t||'').slice(11,16);           // "2026-10-21T07:43" -> "07:43"
+    const rnd = v => (v==null || isNaN(v)) ? null : Math.round(v);
     const forecast = d.daily.time.slice(0, 7).map((t, i) => ({
+      date: t,
       dow: new Date(t + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short' }),
       high: Math.round(d.daily.temperature_2m_max[i]),
       low: Math.round(d.daily.temperature_2m_min[i]),
       rain: Math.round(d.daily.precipitation_probability_max?.[i] || 0),
-      cond: wmoToCond(d.daily.weather_code[i])
+      cond: wmoToCond(d.daily.weather_code[i]),
+      sunrise: hm(d.daily.sunrise?.[i]), sunset: hm(d.daily.sunset?.[i]),
+      uv: d.daily.uv_index_max ? Math.round((d.daily.uv_index_max[i]||0)*10)/10 : null,
+      wind: rnd(d.daily.wind_speed_10m_max?.[i]), gust: rnd(d.daily.wind_gusts_10m_max?.[i])
+    }));
+    // Hour by hour for the whole week, in the place's own time zone.
+    const H = d.hourly || {};
+    const hourly = (H.time || []).map((t, i) => ({
+      t, temp: rnd(H.temperature_2m?.[i]), cond: wmoToCond(H.weather_code?.[i]),
+      rain: Math.round(H.precipitation_probability?.[i] || 0), wind: rnd(H.wind_speed_10m?.[i]),
+      uv: H.uv_index ? Math.round((H.uv_index[i]||0)*10)/10 : null
     }));
     const cond = wmoToCond(d.current.weather_code);
+    const nowKey = String(d.current.time||'').slice(0,13);
+    const nowH = hourly.find(h => h.t.slice(0,13) === nowKey);
 
     res.json({
       lat: Number(lat), lon: Number(lon),
@@ -4191,7 +4210,13 @@ app.get('/api/weather', async (req, res) => {
       cond, text: WMO_LABEL[cond] || 'Cloudy',
       high: forecast[0]?.high ?? null,
       low: forecast[0]?.low ?? null,
-      forecast
+      now: {
+        time: d.current.time, feels: rnd(d.current.apparent_temperature), humidity: rnd(d.current.relative_humidity_2m),
+        wind: rnd(d.current.wind_speed_10m), gust: rnd(d.current.wind_gusts_10m), isDay: !!d.current.is_day,
+        uv: nowH ? nowH.uv : null
+      },
+      tz: d.timezone || null,
+      forecast, hourly
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
