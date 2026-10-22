@@ -1083,6 +1083,60 @@ select option:checked{background:#2E3A78;color:#fff}
 .wx-hour .wxi2{font-size:21px}
 .wx-day-i .wxi2{font-size:22px}
 .wx-icon{display:flex;align-items:center}
+/* Smart plugs */
+.pl-sum{font-size:12.5px;color:var(--txt2);margin-bottom:8px}
+.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pl-card{position:relative;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--border);transition:background-color 200ms ease,border-color 200ms ease}
+.pl-card.on{background:linear-gradient(160deg,rgba(163,230,53,.22),rgba(163,230,53,.06));border-color:rgba(163,230,53,.55)}
+.pl-card.offline{opacity:.55}
+.pl-card.armed{border-color:#f87171;background:rgba(248,113,113,.12)}
+.pl-main{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px;border:0;background:transparent;color:var(--txt);font-family:inherit;text-align:left;cursor:pointer;min-height:118px;border-radius:20px;transition:transform 140ms var(--ease-out)}
+.pl-main:active:not(:disabled){transform:scale(0.97)}
+.pl-main:disabled{cursor:default}
+.pl-ic{width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.07);font-size:22px;color:var(--txt2);margin-bottom:6px;transition:background-color 200ms ease,color 200ms ease}
+.pl-card.on .pl-ic{background:#a3e635;color:#1a2e05}
+.pl-main b{font-size:15px;font-weight:650}
+.pl-sub{font-size:12px;color:var(--txt2)}
+.pl-card.on .pl-sub{color:#d9f99d}
+.pl-timer{font-size:11.5px;color:#fbbf24;margin-top:2px}
+.pl-sw{position:absolute;top:16px;right:14px;width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,.14);transition:background-color 200ms ease}
+.pl-sw span{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 200ms var(--ease-out)}
+.pl-card.on .pl-sw{background:#65a30d}
+.pl-card.on .pl-sw span{transform:translateX(16px)}
+.pl-clock{position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt2);font-size:17px;cursor:pointer;touch-action:manipulation}
+.pl-warn{grid-column:1/-1;font-size:12px;color:#fecaca;padding:0 14px 12px}
+.pl-card.armed .pl-clock{display:none}
+.pl-card.armed .pl-main{min-height:0;padding-bottom:6px}
+.pl-tm{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 12px 12px;font-size:12px;color:var(--txt2)}
+.pl-tm span{flex-basis:100%}
+.pl-setup{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:16px 8px}
+.pl-setup > i{font-size:34px;color:#a3e635}
+.pl-setup b{font-size:16px}
+.pl-setup span{font-size:12.5px;color:var(--txt2);max-width:300px}
+.pl-setup ol{text-align:left;font-size:12.5px;color:var(--txt2);margin:4px 0 8px 18px;padding:0;line-height:1.55}
+.pl-rules{display:flex;flex-direction:column;gap:6px}
+.pl-rule{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+.pl-rule.off{opacity:.55}
+.pl-rule b{font-size:15px;font-variant-numeric:tabular-nums}
+.pl-rule span{flex:1;font-size:12.5px;color:var(--txt2);min-width:0}
+.pl-x{flex:none;width:32px;height:32px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--txt2);cursor:pointer}
+.pl-add{margin-top:10px}
+.pl-add summary{cursor:pointer;font-size:13px;font-weight:650;list-style:none;padding:6px 0}
+.pl-add summary::-webkit-details-marker{display:none}
+.pl-add summary i{color:#a3e635}
+.pl-form{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pl-form select,.pl-row select{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);font-family:inherit;font-size:13px}
+.pl-form input{width:80px;font-variant-numeric:tabular-nums}
+.pl-days{display:flex;gap:4px;flex-basis:100%}
+.pl-days button{flex:1;padding:6px 0;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--txt2);font-family:inherit;font-size:12px;cursor:pointer}
+.pl-days button.on{background:rgba(163,230,53,.2);border-color:rgba(163,230,53,.5);color:#d9f99d}
+.pl-row{display:flex;gap:6px;align-items:center;margin-top:6px}
+.pl-row .pl-name{flex:1;min-width:0}
+.pl-row .pl-id{width:38%;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.pl-macts{display:flex;gap:8px;margin-top:8px}
+.pl-log{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--txt2)}
+.pl-log span{color:var(--txt3);font-variant-numeric:tabular-nums}
+@media (max-width:360px){ .pl-grid{grid-template-columns:1fr} }
 /* Screen remote */
 .rm-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:12px}
 .rm-status b{color:var(--txt)}
@@ -1760,7 +1814,7 @@ function agendaEventsOnDay(ds){
 // ─── MODAL ───────────────────────────────────────────────
 function closeModal(){
   // The life timer ticks once a second; stop it as soon as its dialog goes.
-  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');unlockPageScroll();if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}if(typeof _rmPoll!=='undefined'&&_rmPoll){clearInterval(_rmPoll);_rmPoll=null;}}
+  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');unlockPageScroll();if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}if(typeof _rmPoll!=='undefined'&&_rmPoll){clearInterval(_rmPoll);_rmPoll=null;}if(typeof _plTimer!=='undefined'&&_plTimer){clearInterval(_plTimer);_plTimer=null;}}
 // While a dialog is open the page behind it is frozen in place. On iPhone a
 // swipe that started on the dim backdrop scrolled the calendar underneath,
 // and the dialog's own list then wouldn't scroll.
@@ -2864,6 +2918,11 @@ async function renderPrivBox(msg){
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-microphone-2"></i> Concerts</div>'+
     keyRow('Ticketmaster key','tmIn','ticketmasterKey','Ticketmaster Consumer Key\u2026',
       'Finds your artists\u2019 concerts in Europe. Free at <a href="https://developer.ticketmaster.com/" target="_blank" rel="noopener" style="color:var(--accent)">developer.ticketmaster.com</a> \u2192 My Apps \u2192 copy the <b>Consumer Key</b>.')+
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-plug"></i> Smart plugs (Shelly)</div>'+
+    keyRow('Shelly cloud key','shKIn','shellyKey','Authorization cloud key\u2026',
+      'In the Shelly app: <b>User settings \u2192 Authorization cloud key \u2192 Get key</b>.')+
+    keyRow('Shelly server','shSIn','shellyServer','e.g. shelly-123-eu.shelly.cloud',
+      'Shown right next to the key in the Shelly app (the server / URI). With or without https://.')+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-map-2"></i> Map</div>'+
     keyRow('CARTO map key','cartoIn','cartoKey','CARTO basemaps key\u2026',
       'Gives route maps the dark style that matches the app. Without it the maps use standard OpenStreetMap. Free key (no account) at <a href="https://carto.com/basemaps/apikey/" target="_blank" rel="noopener" style="color:var(--accent)">carto.com/basemaps</a>. This key is sent to the browser to load the map, as map keys always are.')+
@@ -4200,6 +4259,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
   {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
   {id:'w_worship',name:'Worship schedule', desc:'Read the monthly team plan into the calendar', action:'worship', icon:'ti-music'},
+  {id:'w_plugs',name:'Smart plugs', desc:'Switch your Shelly plugs, timers and schedules', action:'plugs', icon:'ti-plug'},
   {id:'w_remote',name:'Screen remote', desc:'Mirror the laptop on the TV from your phone', action:'remote', icon:'ti-device-tv'},
   {id:'w_clocks',name:'World clocks', desc:'Time and weather in other cities', action:'clocks', icon:'ti-world'},
   {id:'w_holidays',name:'Public holidays', desc:'National days, Easter, Christmas', action:'holidays', icon:'ti-confetti'},
@@ -4263,9 +4323,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -4433,6 +4493,7 @@ function widgetPeek(w){
       return S.worldClocks.slice(0,2).map(c=>c.name+' '+clockTime(c.tz)).join(' · ');
     }
     if(w.action==='holidays' && _holNext){ return _holNext; }
+    if(w.action==='plugs' && _pl && Array.isArray(_pl.plugs) && _pl.plugs.length){ const on=_pl.plugs.filter(p=>p.on); const W=on.reduce((a,p)=>a+(p.watts||0),0); return on.length ? on.length+' on'+(W?' · '+plFmtW(W):'') : 'All off'; }
     if(w.action==='remote' && _rm && !_rm.error){ return !_rm.paired ? 'Not set up' : (_rm.online ? (_rm.host||'Laptop')+' online' : 'Laptop offline'); }
     if(w.action==='fx' && _fx && _fx.rates){ const f=S.fxFrom||'EUR', t=S.fxTo||'RON'; const v=fxRate(f,t); if(v) return '1 '+f+' = '+fxFmt(v)+' '+t; }
     if(w.action==='shopping' && _shop && _shop.lists){
@@ -5441,6 +5502,161 @@ function wsUndo(){
   _ws=null; wsRender('<i class="ti ti-arrow-back-up"></i> Undone — your calendar is back as it was.');
 }
 
+// ─── SMART PLUGS (Shelly) ────────────────────────────────
+// Tap a plug to switch it. The clock button gives "off in 30 min" style
+// timers (Shelly's own countdown, so it runs even if the phone is off).
+// Schedules run on the server. Adding plugs needs the private password.
+let _pl=null, _plTimer=null, _plBusy={}, _plOpenTimer=null, _plArm=null, _plMsg='';
+const PL_ICONS=[['plug','Plug'],['device-tv','TV'],['router','Router'],['bulb','Lamp'],['flame','Heater'],['device-laptop','Laptop'],['coffee','Coffee'],['propeller','Fan'],['device-speaker','Speaker'],['wash-machine','Washer']];
+const PL_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function plIsRouter(p){ return /router|wi-?fi|modem|internet/i.test(p.name) || p.icon==='router'; }
+async function openPlugs(){
+  showModal('Smart plugs','<div id="plBody" class="pl-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Asking the plugs…</div></div>',
+    '<button class="btn sm" onclick="plLoad(true)"><i class="ti ti-refresh"></i> Refresh</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  await plLoad(true);
+  clearInterval(_plTimer);
+  _plTimer=setInterval(()=>{ if(!document.getElementById('plBody')){ clearInterval(_plTimer); _plTimer=null; return; } if(!Object.keys(_plBusy).length) plLoad(false); }, 10000);
+}
+async function plLoad(fresh){
+  try{ _pl=await (await fetch('/api/plugs'+(fresh?'?fresh=1':''))).json(); }catch(e){ _pl={ error:'Couldn’t reach the server.', plugs:[] }; }
+  plRender();
+}
+function plFmtW(w){ return w==null?'':(w<10?w.toFixed(1):Math.round(w))+' W'; }
+function plRender(){
+  const el=document.getElementById('plBody'); if(!el||!_pl) return;
+  const plugs=_pl.plugs||[];
+  let h='';
+  if(_plMsg) h+='<div class="ws-msg">'+_plMsg+'</div>';
+  if(!_pl.hasKey){
+    h+='<div class="pl-setup"><i class="ti ti-plug-connected"></i><b>Connect your Shelly account</b>'+
+      '<ol><li>In the Shelly app: <b>User settings → Authorization cloud key → Get key</b>.</li>'+
+      '<li>In the Organizer: <b>Settings → Private → Smart plugs</b>, paste the <b>key</b> and the <b>server</b> shown next to it.</li>'+
+      '<li>Come back here and add your plugs.</li></ol>'+
+      '<button class="btn acc sm" onclick="closeModal();openSettings()"><i class="ti ti-settings"></i> Open Settings</button></div>';
+  }
+  if(_pl.error && _pl.hasKey) h+='<div class="ws-msg" style="color:var(--red)"><i class="ti ti-alert-triangle"></i> '+escHtml(_pl.error)+'</div>';
+  if(plugs.length){
+    const on=plugs.filter(p=>p.on), watts=on.reduce((a,p)=>a+(p.watts||0),0);
+    h+='<div class="pl-sum">'+(on.length?on.length+' on'+(watts?' · '+plFmtW(watts)+' in total':''):'All off')+'</div>';
+    h+='<div class="pl-grid">'+plugs.map((p,i)=>{
+      const busy=_plBusy[p.id], st = !p.online ? 'offline' : p.on ? 'on' : 'off';
+      const sub = busy ? 'Switching…' : !_pl.hasKey ? 'Not connected' : !p.online ? (p.missing?'Not found in Shelly':'Offline') : p.on ? ('On'+(p.watts!=null?' · '+plFmtW(p.watts):'')) : 'Off';
+      const timer = p.timerEnds ? '<span class="pl-timer"><i class="ti ti-clock"></i> '+(p.on?'off':'on')+' at '+new Date(p.timerEnds).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span>' : '';
+      const armed = _plArm===p.id;
+      return '<div class="pl-card '+st+(busy?' busy':'')+(armed?' armed':'')+'">'+
+        '<button class="pl-main" onclick="plTap('+i+')" '+((!p.online||busy)?'disabled ':'')+'aria-pressed="'+(!!p.on)+'">'+
+          '<span class="pl-ic"><i class="ti '+(busy?'ti-loader-2 rm-spin':'ti-'+(p.icon||'plug'))+'"></i></span>'+
+          '<b>'+escHtml(p.name)+'</b><span class="pl-sub">'+(armed?'Tap again to switch off':escHtml(sub))+'</span>'+timer+
+          '<span class="pl-sw" aria-hidden="true"><span></span></span>'+
+        '</button>'+
+        (p.online&&!busy?'<button class="pl-clock" onclick="plTimerOpen('+i+')" aria-label="Timer for '+escHtml(p.name)+'"><i class="ti ti-clock-play"></i></button>':'')+
+        (armed?'<div class="pl-warn"><i class="ti ti-alert-triangle"></i> This plug powers your internet. Once off, it can only be switched on again with the plug’s own button.</div>':'')+
+        (_plOpenTimer===p.id?plTimerHtml(p,i):'')+
+      '</div>';
+    }).join('')+'</div>';
+    h+=plRulesHtml(plugs);
+    const log=_pl.log||[];
+    if(log.length) h+='<div class="slabel"><i class="ti ti-history"></i> Recent</div><div class="pl-log">'+log.slice(0,5).map(l=>
+      '<div><span>'+new Date(l.at).toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'})+'</span> '+escHtml(l.plug)+' '+(l.on?'on':'off')+' · '+escHtml(l.by)+
+      (l.ok?' <i class="ti ti-check" style="color:var(--green)"></i>':' <i class="ti ti-alert-triangle" style="color:var(--red)"></i> '+escHtml(l.msg))+'</div>').join('')+'</div>';
+  } else if(_pl.hasKey){
+    h+='<div class="pl-setup"><i class="ti ti-plug"></i><b>Add your plugs</b><span>For each plug, copy its <b>Device ID</b> from the Shelly app (the plug → Settings → Device information) and give it a name.</span></div>';
+  }
+  h+=plManageHtml(plugs);
+  el.innerHTML=h;
+}
+function plTimerHtml(p,i){
+  const opts=[15,30,60,120,240];
+  return '<div class="pl-tm"><span>'+(p.on?'Switch off in':'Switch on for')+'</span>'+opts.map(m=>'<button class="sh-chip" onclick="plSet('+i+','+(p.on?'true':'true')+','+m+')">'+(m<60?m+' min':(m/60)+' h')+'</button>').join('')+
+    (p.timerEnds?'<button class="sh-chip" onclick="plSet('+i+','+(p.on?'true':'false')+',0)">Cancel timer</button>':'')+'</div>';
+}
+function plTimerOpen(i){ const p=_pl.plugs[i]; _plOpenTimer = _plOpenTimer===p.id ? null : p.id; plRender(); }
+function plTap(i){
+  const p=_pl.plugs[i];
+  if(p.on && plIsRouter(p) && _plArm!==p.id){ _plArm=p.id; plRender(); setTimeout(()=>{ if(_plArm===p.id){ _plArm=null; plRender(); } }, 6000); return; }
+  _plArm=null;
+  plSet(i, !p.on, 0);
+}
+async function plSet(i, on, minutes){
+  const p=_pl.plugs[i]; if(!p) return;
+  _plBusy[p.id]=true; _plOpenTimer=null; _plMsg=''; plRender();
+  if(navigator.vibrate) navigator.vibrate(10);
+  try{
+    const r=await fetch('/api/plugs/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ id:p.id, on, minutes })});
+    const d=await r.json(); if(d.error) throw new Error(d.error);
+    // Shelly takes a moment to report the new state.
+    await new Promise(r=>setTimeout(r,1400));
+    delete _plBusy[p.id]; await plLoad(true);
+    if(minutes){ _plMsg='<i class="ti ti-clock"></i> '+escHtml(p.name)+' '+(on?'on — off again':'off — on again')+' in '+(minutes<60?minutes+' min':(minutes/60)+' h')+'.'; plRender(); }
+  }catch(e){ delete _plBusy[p.id]; _plMsg='<span style="color:var(--red)">'+escHtml(e.message)+'</span>'; plRender(); }
+}
+// ── Schedules ──
+function plRulesHtml(plugs){
+  const rules=(_pl.rules||[]);
+  const name=id=>(plugs.find(p=>p.id===id)||{}).name||'?';
+  const days=r=>r.days.length===7?'every day':(r.days.join()==='1,2,3,4,5'?'weekdays':(r.days.join()==='0,6'?'weekends':r.days.map(d=>PL_DAYS[d]).join(' ')));
+  return '<div class="slabel"><i class="ti ti-calendar-time"></i> Schedules</div>'+
+    (rules.length?'<div class="pl-rules">'+rules.map((r,k)=>'<div class="pl-rule'+(r.active===false?' off':'')+'">'+
+      '<b>'+escHtml(r.time)+'</b><span>'+escHtml(name(r.plug))+' '+(r.on?'on':'off')+' · '+days(r)+'</span>'+
+      '<button class="sh-chip" onclick="plRuleTog('+k+')">'+(r.active===false?'Paused':'Active')+'</button>'+
+      '<button class="pl-x" onclick="plRuleDel('+k+')" aria-label="Delete schedule"><i class="ti ti-trash"></i></button></div>').join('')+'</div>'
+      :'<div class="cc-foot" style="margin-top:0">e.g. switch the TV off every night at 01:00. Runs on the server, so the phone can be off.</div>')+
+    '<details class="pl-add"><summary><i class="ti ti-plus"></i> Add a schedule</summary>'+
+      '<div class="pl-form"><select id="plRP">'+plugs.map(p=>'<option value="'+p.id+'">'+escHtml(p.name)+'</option>').join('')+'</select>'+
+      '<select id="plRA"><option value="0">Switch off</option><option value="1">Switch on</option></select>'+
+      '<input id="plRT" class="cc-input" inputmode="numeric" maxlength="5" placeholder="hh:mm" aria-label="Time (24-hour)">'+
+      '<div class="pl-days" id="plRD">'+[1,2,3,4,5,6,0].map(d=>'<button type="button" class="on" data-d="'+d+'" onclick="this.classList.toggle(\'on\')">'+PL_DAYS[d][0]+PL_DAYS[d][1]+'</button>').join('')+'</div>'+
+      '<button class="btn acc sm" onclick="plRuleAdd()"><i class="ti ti-check"></i> Save schedule</button></div></details>';
+}
+async function plSaveRules(rules){
+  const r=await fetch('/api/plugs/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ rules })});
+  const d=await r.json(); if(d.error){ _plMsg='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; } else _pl.rules=d.rules;
+  plRender();
+}
+function plRuleAdd(){
+  const raw=((document.getElementById('plRT')||{}).value||'').trim().replace(/[.,h ]/g,':');
+  const m=raw.match(/^(\d{1,2})(?::?(\d{2}))?$/);
+  if(!m || +m[1]>23 || (m[2] && +m[2]>59)){ _plMsg='<span style="color:var(--red)">Type the time as hh:mm, e.g. 01:00 or 2230.</span>'; plRender(); return; }
+  const time=String(m[1]).padStart(2,'0')+':'+(m[2]||'00');
+  const days=[...document.querySelectorAll('#plRD button.on')].map(b=>+b.dataset.d);
+  if(!days.length){ _plMsg='<span style="color:var(--red)">Pick at least one day.</span>'; plRender(); return; }
+  _plMsg='<i class="ti ti-check" style="color:var(--green)"></i> Schedule saved.';
+  plSaveRules([...(_pl.rules||[]), { plug:document.getElementById('plRP').value, on:document.getElementById('plRA').value==='1', time, days }]);
+}
+function plRuleTog(k){ const r=[...(_pl.rules||[])]; r[k]={ ...r[k], active: r[k].active===false }; plSaveRules(r); }
+function plRuleDel(k){ const r=[...(_pl.rules||[])]; r.splice(k,1); _plMsg=''; plSaveRules(r); }
+// ── Manage plugs (password) ──
+function plManageHtml(plugs){
+  if(!_pl.hasKey) return '';
+  const rows=(plugs.length?plugs:[{id:'',name:'',icon:'plug'}]).map((p,k)=>plRowHtml(p,k)).join('');
+  return '<details class="pl-add pl-manage"'+(plugs.length?'':' open')+'><summary><i class="ti ti-adjustments"></i> '+(plugs.length?'Manage plugs':'Add plugs')+'</summary>'+
+    '<div id="plRows">'+rows+'</div>'+
+    '<div class="pl-macts"><button class="btn sm" onclick="plAddRow()"><i class="ti ti-plus"></i> Another plug</button><span class="msp"></span><button class="btn acc sm" onclick="plSaveConfig()"><i class="ti ti-device-floppy"></i> Save plugs</button></div>'+
+    '<div id="plPw"></div><div class="cc-foot">Needs your private-settings password. Device ID: in the Shelly app, the plug → Settings → Device information.</div></details>';
+}
+function plRowHtml(p,k){
+  return '<div class="pl-row" data-k="'+k+'"><select class="pl-icon" aria-label="Icon">'+PL_ICONS.map(([v,n])=>'<option value="'+v+'"'+(p.icon===v?' selected':'')+'>'+n+'</option>').join('')+'</select>'+
+    '<input class="cc-input pl-name" placeholder="Name, e.g. TV" value="'+escHtml(p.name||'')+'" maxlength="30">'+
+    '<input class="cc-input pl-id" placeholder="Device ID" value="'+escHtml(p.id||'')+'" autocapitalize="off" autocorrect="off" spellcheck="false">'+
+    '<button class="pl-x" onclick="this.closest(\'.pl-row\').remove()" aria-label="Remove"><i class="ti ti-trash"></i></button></div>';
+}
+function plAddRow(){ const w=document.getElementById('plRows'); if(w) w.insertAdjacentHTML('beforeend', plRowHtml({icon:'plug'}, w.children.length)); }
+async function plSaveConfig(){
+  const rows=[...document.querySelectorAll('#plRows .pl-row')].map(r=>({ icon:r.querySelector('.pl-icon').value, name:r.querySelector('.pl-name').value.trim(), id:r.querySelector('.pl-id').value.trim() })).filter(x=>x.name||x.id);
+  const pw=document.getElementById('plPwIn');
+  if(pw && pw.value){ const u=await privPost('/api/private/unlock',{password:pw.value}); if(u.error){ _plMsg='<span style="color:var(--red)">'+escHtml(u.error)+'</span>'; plRender(); return; } setPrivTok(u.token); }
+  const d=await privPost('/api/plugs/config',{ plugs:rows });
+  if(d.locked || (d.error && /locked/i.test(d.error))){
+    const box=document.getElementById('plPw');
+    if(box) box.innerHTML='<div class="rm-unlock" style="margin-top:8px"><input id="plPwIn" type="password" class="cc-input" placeholder="Private-settings password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')plSaveConfig()"><button class="btn acc sm" onclick="plSaveConfig()">Unlock &amp; save</button></div>';
+    setTimeout(()=>{ const i=document.getElementById('plPwIn'); if(i) i.focus(); },50);
+    return;
+  }
+  if(d.error){ _plMsg='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; plRender(); return; }
+  _plMsg='<i class="ti ti-check" style="color:var(--green)"></i> Plugs saved.';
+  await plLoad(true);
+}
+
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
 // key). Windy's own API only returns real data on a paid plan, so each city
@@ -6207,7 +6423,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-22-wx-icons';
+const APP_BUILD='2026-10-22-smart-plugs';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
