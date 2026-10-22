@@ -5512,21 +5512,23 @@ const PL_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 function plIsRouter(p){ return /router|wi-?fi|modem|internet/i.test(p.name) || p.icon==='router'; }
 async function openPlugs(){
   showModal('Smart plugs','<div id="plBody" class="pl-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Asking the plugs…</div></div>',
-    '<button class="btn sm" onclick="plLoad(true)"><i class="ti ti-refresh"></i> Refresh</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+    '<button class="btn sm" onclick="plLoad(true, true)"><i class="ti ti-refresh"></i> Refresh</button><span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   await plLoad(true);
   clearInterval(_plTimer);
-  _plTimer=setInterval(()=>{ if(!document.getElementById('plBody')){ clearInterval(_plTimer); _plTimer=null; return; } if(!Object.keys(_plBusy).length) plLoad(false); }, 10000);
+  _plTimer=setInterval(()=>{ if(!document.getElementById('plBody')){ clearInterval(_plTimer); _plTimer=null; return; } if(!Object.keys(_plBusy).length) plLoad(false, true); }, 10000);
 }
-async function plLoad(fresh){
-  try{ _pl=await (await fetch('/api/plugs'+(fresh?'?fresh=1':''))).json(); }catch(e){ _pl={ error:'Couldn’t reach the server.', plugs:[] }; }
-  plRender();
+async function plLoad(fresh, live){
+  let d; try{ d=await (await fetch('/api/plugs'+(fresh?'?fresh=1':''))).json(); }catch(e){ d={ error:'Couldn’t reach the server.', plugs:[] }; }
+  const sameList = _pl && (_pl.plugs||[]).map(p=>p.id).join()===(d.plugs||[]).map(p=>p.id).join() && _pl.hasKey===d.hasKey;
+  _pl=d;
+  if(live && sameList) plRenderLive(); else plRender();
 }
 function plFmtW(w){ return w==null?'':(w<10?w.toFixed(1):Math.round(w))+' W'; }
 function plRender(){
   const el=document.getElementById('plBody'); if(!el||!_pl) return;
   const plugs=_pl.plugs||[];
   let h='';
-  if(_plMsg) h+='<div class="ws-msg">'+_plMsg+'</div>';
+  h+='<div id="plMsg">'+(_plMsg?'<div class="ws-msg">'+_plMsg+'</div>':'')+'</div>';
   if(!_pl.hasKey){
     h+='<div class="pl-setup"><i class="ti ti-plug-connected"></i><b>Connect your Shelly account</b>'+
       '<ol><li>In the Shelly app: <b>User settings → Authorization cloud key → Get key</b>.</li>'+
@@ -5536,6 +5538,19 @@ function plRender(){
   }
   if(_pl.error && _pl.hasKey) h+='<div class="ws-msg" style="color:var(--red)"><i class="ti ti-alert-triangle"></i> '+escHtml(_pl.error)+'</div>';
   if(plugs.length){
+    h+='<div id="plLive">'+plLiveHtml()+'</div>';
+    h+=plRulesHtml(plugs);
+  } else if(_pl.hasKey){
+    h+='<div class="pl-setup"><i class="ti ti-plug"></i><b>Add your plugs</b><span>For each plug, copy its <b>Device ID</b> from the Shelly app (the plug → Settings → Device information) and give it a name.</span></div>';
+  }
+  h+=plManageHtml(plugs);
+  el.innerHTML=h;
+}
+// The part that changes as plugs switch: summary, cards, recent activity.
+// Auto-refresh redraws only this, so forms below keep what you've typed.
+function plLiveHtml(){
+  const plugs=_pl.plugs||[]; let h='';
+  {
     const on=plugs.filter(p=>p.on), watts=on.reduce((a,p)=>a+(p.watts||0),0);
     h+='<div class="pl-sum">'+(on.length?on.length+' on'+(watts?' · '+plFmtW(watts)+' in total':''):'All off')+'</div>';
     h+='<div class="pl-grid">'+plugs.map((p,i)=>{
@@ -5554,41 +5569,45 @@ function plRender(){
         (_plOpenTimer===p.id?plTimerHtml(p,i):'')+
       '</div>';
     }).join('')+'</div>';
-    h+=plRulesHtml(plugs);
     const log=_pl.log||[];
     if(log.length) h+='<div class="slabel"><i class="ti ti-history"></i> Recent</div><div class="pl-log">'+log.slice(0,5).map(l=>
       '<div><span>'+new Date(l.at).toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'})+'</span> '+escHtml(l.plug)+' '+(l.on?'on':'off')+' · '+escHtml(l.by)+
       (l.ok?' <i class="ti ti-check" style="color:var(--green)"></i>':' <i class="ti ti-alert-triangle" style="color:var(--red)"></i> '+escHtml(l.msg))+'</div>').join('')+'</div>';
-  } else if(_pl.hasKey){
-    h+='<div class="pl-setup"><i class="ti ti-plug"></i><b>Add your plugs</b><span>For each plug, copy its <b>Device ID</b> from the Shelly app (the plug → Settings → Device information) and give it a name.</span></div>';
   }
-  h+=plManageHtml(plugs);
-  el.innerHTML=h;
+  return h;
+}
+function plShowMsg(){ const m=document.getElementById('plMsg'); if(m) m.innerHTML=_plMsg?'<div class="ws-msg">'+_plMsg+'</div>':''; }
+function plRenderLive(){
+  // No cards yet (still setting up): nothing to refresh, and the forms
+  // must be left alone. A changed plug list is redrawn in full by plLoad.
+  const live=document.getElementById('plLive');
+  if(!live || !(_pl.plugs||[]).length) return;
+  live.innerHTML=plLiveHtml();
 }
 function plTimerHtml(p,i){
   const opts=[15,30,60,120,240];
   return '<div class="pl-tm"><span>'+(p.on?'Switch off in':'Switch on for')+'</span>'+opts.map(m=>'<button class="sh-chip" onclick="plSet('+i+','+(p.on?'true':'true')+','+m+')">'+(m<60?m+' min':(m/60)+' h')+'</button>').join('')+
     (p.timerEnds?'<button class="sh-chip" onclick="plSet('+i+','+(p.on?'true':'false')+',0)">Cancel timer</button>':'')+'</div>';
 }
-function plTimerOpen(i){ const p=_pl.plugs[i]; _plOpenTimer = _plOpenTimer===p.id ? null : p.id; plRender(); }
+function plTimerOpen(i){ const p=_pl.plugs[i]; _plOpenTimer = _plOpenTimer===p.id ? null : p.id; plRenderLive(); }
 function plTap(i){
   const p=_pl.plugs[i];
-  if(p.on && plIsRouter(p) && _plArm!==p.id){ _plArm=p.id; plRender(); setTimeout(()=>{ if(_plArm===p.id){ _plArm=null; plRender(); } }, 6000); return; }
+  if(p.on && plIsRouter(p) && _plArm!==p.id){ _plArm=p.id; plRenderLive(); setTimeout(()=>{ if(_plArm===p.id){ _plArm=null; plRenderLive(); } }, 6000); return; }
   _plArm=null;
   plSet(i, !p.on, 0);
 }
 async function plSet(i, on, minutes){
   const p=_pl.plugs[i]; if(!p) return;
-  _plBusy[p.id]=true; _plOpenTimer=null; _plMsg=''; plRender();
+  _plBusy[p.id]=true; _plOpenTimer=null; _plMsg=''; plShowMsg(); plRenderLive();
   if(navigator.vibrate) navigator.vibrate(10);
   try{
     const r=await fetch('/api/plugs/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ id:p.id, on, minutes })});
     const d=await r.json(); if(d.error) throw new Error(d.error);
     // Shelly takes a moment to report the new state.
     await new Promise(r=>setTimeout(r,1400));
-    delete _plBusy[p.id]; await plLoad(true);
-    if(minutes){ _plMsg='<i class="ti ti-clock"></i> '+escHtml(p.name)+' '+(on?'on — off again':'off — on again')+' in '+(minutes<60?minutes+' min':(minutes/60)+' h')+'.'; plRender(); }
-  }catch(e){ delete _plBusy[p.id]; _plMsg='<span style="color:var(--red)">'+escHtml(e.message)+'</span>'; plRender(); }
+    delete _plBusy[p.id]; await plLoad(true, true);
+    if(minutes){ _plMsg='<i class="ti ti-clock"></i> '+escHtml(p.name)+' '+(on?'on — off again':'off — on again')+' in '+(minutes<60?minutes+' min':(minutes/60)+' h')+'.'; plShowMsg(); }
+  }catch(e){ delete _plBusy[p.id]; _plMsg='<span style="color:var(--red)">'+escHtml(e.message)+'</span>'; plShowMsg(); plRenderLive(); }
 }
 // ── Schedules ──
 function plRulesHtml(plugs){
@@ -5616,10 +5635,10 @@ async function plSaveRules(rules){
 function plRuleAdd(){
   const raw=((document.getElementById('plRT')||{}).value||'').trim().replace(/[.,h ]/g,':');
   const m=raw.match(/^(\d{1,2})(?::?(\d{2}))?$/);
-  if(!m || +m[1]>23 || (m[2] && +m[2]>59)){ _plMsg='<span style="color:var(--red)">Type the time as hh:mm, e.g. 01:00 or 2230.</span>'; plRender(); return; }
+  if(!m || +m[1]>23 || (m[2] && +m[2]>59)){ _plMsg='<span style="color:var(--red)">Type the time as hh:mm, e.g. 01:00 or 2230.</span>'; plShowMsg(); return; }
   const time=String(m[1]).padStart(2,'0')+':'+(m[2]||'00');
   const days=[...document.querySelectorAll('#plRD button.on')].map(b=>+b.dataset.d);
-  if(!days.length){ _plMsg='<span style="color:var(--red)">Pick at least one day.</span>'; plRender(); return; }
+  if(!days.length){ _plMsg='<span style="color:var(--red)">Pick at least one day.</span>'; plShowMsg(); return; }
   _plMsg='<i class="ti ti-check" style="color:var(--green)"></i> Schedule saved.';
   plSaveRules([...(_pl.rules||[]), { plug:document.getElementById('plRP').value, on:document.getElementById('plRA').value==='1', time, days }]);
 }
@@ -5644,7 +5663,7 @@ function plAddRow(){ const w=document.getElementById('plRows'); if(w) w.insertAd
 async function plSaveConfig(){
   const rows=[...document.querySelectorAll('#plRows .pl-row')].map(r=>({ icon:r.querySelector('.pl-icon').value, name:r.querySelector('.pl-name').value.trim(), id:r.querySelector('.pl-id').value.trim() })).filter(x=>x.name||x.id);
   const pw=document.getElementById('plPwIn');
-  if(pw && pw.value){ const u=await privPost('/api/private/unlock',{password:pw.value}); if(u.error){ _plMsg='<span style="color:var(--red)">'+escHtml(u.error)+'</span>'; plRender(); return; } setPrivTok(u.token); }
+  if(pw && pw.value){ const u=await privPost('/api/private/unlock',{password:pw.value}); if(u.error){ _plMsg='<span style="color:var(--red)">'+escHtml(u.error)+'</span>'; plShowMsg(); return; } setPrivTok(u.token); }
   const d=await privPost('/api/plugs/config',{ plugs:rows });
   if(d.locked || (d.error && /locked/i.test(d.error))){
     const box=document.getElementById('plPw');
@@ -5652,7 +5671,7 @@ async function plSaveConfig(){
     setTimeout(()=>{ const i=document.getElementById('plPwIn'); if(i) i.focus(); },50);
     return;
   }
-  if(d.error){ _plMsg='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; plRender(); return; }
+  if(d.error){ _plMsg='<span style="color:var(--red)">'+escHtml(d.error)+'</span>'; plShowMsg(); return; }
   _plMsg='<i class="ti ti-check" style="color:var(--green)"></i> Plugs saved.';
   await plLoad(true);
 }
@@ -6423,7 +6442,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-22-smart-plugs';
+const APP_BUILD='2026-10-22-plugs-form';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
