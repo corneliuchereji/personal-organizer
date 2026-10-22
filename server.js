@@ -29,8 +29,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ═══════════════════════════════════════════════════
 const crypto = require('crypto');
 const PRIVATE_SETTING_KEYS = ['footballDataKey','highlightlyKey','apiFootballKey','tsdbKey','orsKey',
-  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey','remoteKey','remotePhones'];
-const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey','cartoKey','ticketmasterKey'];
+  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey','remoteKey','remotePhones','shellyKey','shellyServer'];
+const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey','cartoKey','ticketmasterKey','shellyKey','shellyServer'];
 const PRIV_TTL_MS = 30*60*1000;              // 30 min, renewed while in use
 const _privSessions = new Map();             // token -> expiry
 let _privFails = 0, _privLockUntil = 0;
@@ -134,6 +134,7 @@ app.post('/api/private/password', requirePrivate, (req, res) => {
 app.get('/api/private', requirePrivate, (req, res) => {
   const st = readData().settings || {};
   res.json({ footballDataKey: st.footballDataKey||'', highlightlyKey: st.highlightlyKey||'', orsKey: st.orsKey||'', cartoKey: st.cartoKey||'', ticketmasterKey: st.ticketmasterKey||'',
+             shellyKey: st.shellyKey||'', shellyServer: st.shellyServer||'',
              homeAddress: st.homeAddress||'', homeName: st.homeName||'' });
 });
 app.post('/api/private', requirePrivate, (req, res) => {
@@ -1040,7 +1041,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-22-wx-icons';
+const BUILD_VERSION = '2026-10-22-smart-plugs';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2853,6 +2854,8 @@ const MCP_TOOLS = [
     inputSchema:{ type:'object', properties:{} } },
   { name:'exchange_rate', description:'Convert between currencies at the official BNR (National Bank of Romania) reference rate of the day.',
     inputSchema:{ type:'object', required:['from','to'], properties:{ from:{type:'string', description:'ISO code, e.g. EUR'}, to:{type:'string', description:'ISO code, e.g. RON'}, amount:{type:'number', description:'Defaults to 1'} } } },
+  { name:'smart_plug', description:'Turn a Shelly smart plug on or off, optionally for N minutes, or report the plugs\' state and power use. Plug names are the ones set in the Smart plugs widget.',
+    inputSchema:{ type:'object', properties:{ name:{type:'string', description:'Plug name, e.g. TV. Leave out for all plugs\' status.'}, action:{type:'string', enum:['on','off','status'], description:'Defaults to status'}, minutes:{type:'number', description:'With on: switch off again after this many minutes. With off: switch on again after.'} } } },
   { name:'complete_task', description:'Mark a task done (or not done) by name.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, done:{type:'boolean'} } } },
   { name:'delete_task', description:'Delete a task by name.',
@@ -2974,6 +2977,22 @@ async function mcpCall(name, args){
       const v = fxConvert(fx, amt, from, to);
       if(v == null) return mcpText('BNR has no rate for '+(fx.rates[from]?to:from)+'.');
       return mcpText(amt+' '+from+' = '+v.toFixed(4)+' '+to+' (BNR reference rate of '+fx.date+')');
+    }
+    case 'smart_plug': {
+      const plugs = plugList(d);
+      if(!plugs.length) return mcpText('No smart plugs set up yet — add them in the Smart plugs widget.');
+      const act = String(args.action||'status').toLowerCase();
+      const q = String(args.name||'').trim().toLowerCase();
+      const pl = q ? (plugs.find(p=>p.name.toLowerCase()===q) || plugs.find(p=>p.name.toLowerCase().includes(q))) : null;
+      if(act !== 'status'){
+        if(!pl) return mcpText('No plug called "'+(args.name||'')+'". Plugs: '+plugs.map(p=>p.name).join(', '));
+        const mins = +args.minutes || 0;
+        await plugSet(pl.id, act==='on', mins);
+        return mcpText(pl.name+' switched '+act+(mins?' — back '+(act==='on'?'off':'on')+' in '+mins+' min':'')+'.');
+      }
+      const st = await plugStatus(true);
+      const rows = st.plugs.filter(p => !pl || p.id===pl.id).map(p => p.name+': '+(!p.online?'offline':(p.on?'ON':'off'))+(p.watts!=null&&p.online?' · '+p.watts+' W':''));
+      return mcpText(rows.join('\n') || 'No plug status.');
     }
     case 'complete_task': {
       const t = mcpFindTask(d, args.name);
@@ -4021,6 +4040,161 @@ while($true){
 }
 `;
 }
+
+// ═══════════════════════════════════════════════════
+// SMART PLUGS (Shelly Cloud Control API v2)
+// The cloud key and server address are private settings; the plug list
+// (Shelly device id + a name) is ordinary settings. Shelly allows one call
+// per second, so calls go through a small queue. Status is cached briefly.
+// Daily schedules run here on the server (Romanian time), so they work
+// with the phone and the laptop switched off.
+// ═══════════════════════════════════════════════════
+const PLUG_GAP_MS = 1100;
+let _plugLast = 0, _plugChain = Promise.resolve(), _plugCache = null, _plugLog = [];
+function plugList(d){ return ((d.settings||{}).plugs||[]).filter(p => p && p.id); }
+function plugRules(d){ return ((d.settings||{}).plugRules||[]).filter(r => r && r.plug); }
+function shellyCfg(d){
+  const st = d.settings || {};
+  const host = String(st.shellyServer||'').trim().replace(/^https?:\/\//i,'').replace(/[\/?#].*$/,'');
+  return { key: String(st.shellyKey||'').trim(), host };
+}
+function plugErr(msg){
+  const m = String(msg||'');
+  if(/DEVICE_OFFLINE/i.test(m)) return 'The plug is offline — is it plugged in and on Wi-Fi?';
+  if(/NOT_FOUND/i.test(m)) return 'Shelly doesn’t know that Device ID — check it in the Shelly app.';
+  if(/UNAUTH|401|auth/i.test(m)) return 'Shelly didn’t accept the cloud key — check it in Settings → Private.';
+  if(/429|LIMIT/i.test(m)) return 'Shelly is busy (too many requests) — try again in a moment.';
+  return m;
+}
+function shellyCall(path, body){
+  const run = async () => {
+    const wait = _plugLast + PLUG_GAP_MS - Date.now();
+    if(wait > 0) await sleep(wait);
+    _plugLast = Date.now();
+    const { key, host } = shellyCfg(readData());
+    if(!key || !host) throw new Error('Add the Shelly cloud key and server in Settings → Private first.');
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
+    try{
+      const r = await fetch('https://'+host+path+'?auth_key='+encodeURIComponent(key), {
+        method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
+      const txt = await r.text(); let j = null; try{ j = txt ? JSON.parse(txt) : null; }catch(e){}
+      if(!r.ok){
+        const why = (j && (j.error || (j.data && Array.isArray(j.data.messages) && j.data.messages.join(', ')))) || ('HTTP '+r.status);
+        throw new Error(plugErr(why));
+      }
+      return j;
+    }catch(e){
+      if(e.name === 'AbortError') throw new Error('Shelly’s cloud didn’t answer in time.');
+      if(e.cause && e.cause.code) throw new Error('Couldn’t reach Shelly ('+e.cause.code+') — check the server address in Settings → Private.');
+      throw e;
+    }finally{ clearTimeout(t); }
+  };
+  const p = _plugChain.then(run, run); _plugChain = p.catch(()=>{}); return p;
+}
+async function plugStatus(fresh){
+  const d = readData(); const plugs = plugList(d);
+  const { key, host } = shellyCfg(d);
+  const base = { hasKey: !!(key && host), plugs: [], rules: plugRules(d), log: _plugLog.slice(0,8) };
+  if(!plugs.length) return base;
+  if(!base.hasKey) return { ...base, plugs: plugs.map(p => ({ ...p, online:false, on:null })) };
+  if(!fresh && _plugCache && Date.now() - _plugCache.at < 4000) return { ...base, plugs: _plugCache.plugs, error: _plugCache.error };
+  const byId = {}; let error = null;
+  try{
+    for(let i=0; i<plugs.length; i+=10){
+      const arr = await shellyCall('/v2/devices/api/get', { ids: plugs.slice(i,i+10).map(p=>p.id), select:['status'] });
+      for(const x of (Array.isArray(arr)?arr:[])) byId[String(x.id).toLowerCase()] = x;
+    }
+  }catch(e){ error = e.message; }
+  const out = plugs.map(p => {
+    const x = byId[p.id.toLowerCase()];
+    if(!x) return { ...p, online:false, on:null, missing: !error };
+    const sw = (x.status && (x.status['switch:0'] || x.status['relays'] && x.status['relays'][0])) || {};
+    const on = typeof sw.output === 'boolean' ? sw.output : (typeof sw.ison === 'boolean' ? sw.ison : null);
+    const watts = typeof sw.apower === 'number' ? Math.round(sw.apower*10)/10 : (x.status && x.status.meters && x.status.meters[0] ? x.status.meters[0].power : null);
+    const timerEnds = (sw.timer_started_at && sw.timer_duration) ? Math.round((sw.timer_started_at + sw.timer_duration)*1000) : null;
+    return { ...p, online: !!x.online, on, watts, energyKWh: sw.aenergy && typeof sw.aenergy.total==='number' ? Math.round(sw.aenergy.total/10)/100 : null,
+      timerEnds: timerEnds && timerEnds > Date.now() ? timerEnds : null, model: x.code || '' };
+  });
+  _plugCache = { at: Date.now(), plugs: out, error };
+  return { ...base, plugs: out, error };
+}
+async function plugSet(id, on, minutes){
+  const body = { id, channel: 0, on: !!on };
+  if(minutes > 0) body.toggle_after = Math.round(Math.min(minutes, 24*60) * 60);
+  await shellyCall('/v2/devices/api/set/switch', body);
+  _plugCache = null;
+}
+app.get('/api/plugs', async (req, res) => {
+  try{ res.json(await plugStatus(req.query.fresh === '1')); }
+  catch(e){ res.json({ error: e.message, plugs: [] }); }
+});
+// Switching a plug works like the rest of the calendar (no password);
+// adding or removing plugs and the Shelly key need the private password.
+app.post('/api/plugs/set', async (req, res) => {
+  const b = req.body || {};
+  const p = plugList(readData()).find(x => x.id === b.id);
+  if(!p) return res.status(400).json({ error:'Unknown plug.' });
+  try{ await plugSet(p.id, !!b.on, +b.minutes || 0); res.json({ ok:true }); }
+  catch(e){ res.status(502).json({ error: e.message }); }
+});
+app.post('/api/plugs/config', requirePrivate, (req, res) => {
+  const list = Array.isArray((req.body||{}).plugs) ? req.body.plugs : null;
+  if(!list) return res.status(400).json({ error:'No plugs.' });
+  const clean = [];
+  for(const p of list.slice(0, 12)){
+    const id = String(p.id||'').trim().toLowerCase().replace(/[^0-9a-f]/g,'');
+    const name = String(p.name||'').trim().slice(0, 30);
+    if(id.length < 6 || id.length > 16 || !name) return res.status(400).json({ error:'Each plug needs a name and its Device ID (letters a–f and numbers, from the Shelly app).' });
+    if(clean.some(x => x.id === id)) continue;
+    clean.push({ id, name, icon: /^[a-z-]{2,30}$/.test(p.icon||'') ? p.icon : 'plug' });
+  }
+  const d = readData(); d.settings = d.settings || {};
+  d.settings.plugs = clean;
+  d.settings.plugRules = plugRules(d).filter(r => clean.some(p => p.id === r.plug));
+  writeData(d); _plugCache = null;
+  res.json({ ok:true, plugs: clean });
+});
+app.post('/api/plugs/rules', (req, res) => {
+  const list = Array.isArray((req.body||{}).rules) ? req.body.rules : null;
+  if(!list) return res.status(400).json({ error:'No schedules.' });
+  const d = readData(); const plugs = plugList(d);
+  const clean = list.slice(0, 30).map(r => ({
+    id: /^[a-z0-9]{4,16}$/.test(r.id||'') ? r.id : uid(),
+    plug: String(r.plug||''), on: !!r.on,
+    time: /^([01]\d|2[0-3]):[0-5]\d$/.test(r.time||'') ? r.time : null,
+    days: Array.isArray(r.days) ? [...new Set(r.days.map(Number).filter(n => n>=0 && n<=6))].sort() : [0,1,2,3,4,5,6],
+    active: r.active !== false
+  })).filter(r => r.time && plugs.some(p => p.id === r.plug) && r.days.length);
+  d.settings = d.settings || {}; d.settings.plugRules = clean; writeData(d);
+  res.json({ ok:true, rules: clean });
+});
+// Schedules: checked every minute in Romanian time.
+let _plugFired = new Set();
+function bucharestNow(){
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone:'Europe/Bucharest', hour:'2-digit', minute:'2-digit', weekday:'short', hour12:false })
+    .formatToParts(new Date()).map(x => [x.type, x.value]));
+  const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(parts.weekday);
+  return { hm: (parts.hour==='24'?'00':parts.hour)+':'+parts.minute, wd };
+}
+let _plugCron = cron.schedule('* * * * *', async () => {
+  try{
+    const d = readData(); const rules = plugRules(d).filter(r => r.active !== false); if(!rules.length) return;
+    const { hm, wd } = bucharestNow();
+    const stamp = new Date().toISOString().slice(0,16);
+    for(const r of rules){
+      if(r.time !== hm || !r.days.includes(wd)) continue;
+      const k = r.id + '|' + stamp; if(_plugFired.has(k)) continue; _plugFired.add(k);
+      const p = plugList(d).find(x => x.id === r.plug); if(!p) continue;
+      let ok = true, msg = '';
+      try{ await plugSet(p.id, r.on, 0); }catch(e){ ok = false; msg = e.message; }
+      _plugLog.unshift({ at: new Date().toISOString(), plug: p.name, on: r.on, ok, msg, by:'schedule' });
+      _plugLog = _plugLog.slice(0, 20);
+      try{ await sendWebPush(ok ? '🔌 '+p.name+' switched '+(r.on?'on':'off') : '⚠️ '+p.name+' schedule failed',
+        ok ? 'Your '+r.time+' schedule' : msg, { tag:'plug-'+r.id, noBadge:true }, { ttl: 3600 }); }catch(e){}
+    }
+    if(_plugFired.size > 500) _plugFired = new Set([..._plugFired].slice(-100));
+  }catch(e){ console.log('Plug schedule error:', e.message); }
+}, { timezone: 'UTC' });
 
 // ═══════════════════════════════════════════════════
 // GIVING / TITHE TRACKER
