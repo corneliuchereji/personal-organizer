@@ -1074,6 +1074,15 @@ select option:checked{background:#2E3A78;color:#fff}
 .ev-wx i{font-size:14px}
 .ev-wx.wet{background:rgba(37,99,235,.10);border-color:rgba(37,99,235,.28)}
 .ev-wx b{font-weight:650;color:#1d4ed8;margin-left:2px}
+/* Sun (or moon) behind a cloud: "partly sunny" */
+.wxi2{position:relative;display:inline-block;width:1.2em;height:1em;vertical-align:middle;line-height:1}
+.wxi2 i{position:absolute;line-height:1}
+.wxi2 .a{right:0;top:-.08em;font-size:.74em}
+.wxi2 .b{left:0;bottom:0;font-size:.86em;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+.ev-wx .wxi2{font-size:14px}
+.wx-hour .wxi2{font-size:21px}
+.wx-day-i .wxi2{font-size:22px}
+.wx-icon{display:flex;align-items:center}
 /* Screen remote */
 .rm-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:12px}
 .rm-status b{color:var(--txt)}
@@ -1242,7 +1251,7 @@ select option:checked{background:#2E3A78;color:#fff}
 <!-- WEATHER -->
 <div id="wx" onclick="toggleWx(event)">
   <div class="wx-main">
-    <div class="wx-icon"><i id="wxi" class="ti ti-sun" style="color:#fbbf24"></i></div>
+    <div class="wx-icon" id="wxIco"><i id="wxi" class="ti ti-loader-2" style="color:#94a3b8"></i></div>
     <div class="wx-data">
       <div class="wx-temp" id="wxT">—</div>
       <div class="wx-mm" id="wxMM"></div>
@@ -1253,7 +1262,7 @@ select option:checked{background:#2E3A78;color:#fff}
   <div class="wx-hint">tap for forecast ↓</div>
   <div class="wx-drop" id="wxDrop" onclick="event.stopPropagation()">
     <div class="wx-drop-head">
-      <h3><i class="ti ti-cloud-sun" style="color:var(--accent)"></i> 7-day forecast</h3>
+      <h3><i class="ti ti-sun-high" style="color:var(--accent)"></i> 7-day forecast</h3>
       <button class="btn ghost ico sm" onclick="closeWx(event)"><i class="ti ti-x"></i></button>
     </div>
     <div class="wx-loc-bar">
@@ -1346,7 +1355,17 @@ const PAL = ['#4f8ef7','#34d399','#f97316','#e879a0','#fbbf24','#a78bfa','#60a5f
 const FREQS = ['none','daily','weekly','monthly','yearly'];
 const PRIS = ['low','normal','high','very'];
 const ALLH = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
-const WXI = {sunny:'ti-sun',partly_cloudy:'ti-cloud-sun',cloudy:'ti-cloud',rainy:'ti-cloud-rain',snow:'ti-snowflake',storm:'ti-storm',fog:'ti-mist',windy:'ti-wind'};
+const WXI = {sunny:'ti-sun',partly_cloudy:'ti-sun',cloudy:'ti-cloud',rainy:'ti-cloud-rain',snow:'ti-cloud-snow',storm:'ti-cloud-storm',fog:'ti-cloud-fog',windy:'ti-wind'};
+// One weather picture for every place (header, days, hours, event cards).
+// "Partly sunny" has no single icon in the font, so it's a sun with a cloud
+// in front; at night the sun becomes the moon. ink:true = for the ivory cards.
+function wxIconHtml(cond, night, ink){
+  const cloudC = ink ? '#64748b' : '#cbd5e1';
+  if(cond==='partly_cloudy') return '<span class="wxi2"><i class="ti '+(night?'ti-moon-filled':'ti-sun-filled')+' a" style="color:'+(night?'#c4b5fd':'#fbbf24')+'"></i><i class="ti ti-cloud-filled b" style="color:'+cloudC+'"></i></span>';
+  if(cond==='sunny' && night) return '<i class="ti ti-moon" style="color:#c4b5fd"></i>';
+  const c = ink ? ({sunny:'#d97706',cloudy:'#64748b',rainy:'#2563eb',snow:'#0284c7',storm:'#6d28d9',fog:'#64748b',windy:'#059669'})[cond] : WXC[cond];
+  return '<i class="ti '+(WXI[cond]||'ti-cloud')+'" style="color:'+(c||'#94a3b8')+'"></i>';
+}
 const WXC = {sunny:'#fbbf24',partly_cloudy:'#60a5fa',cloudy:'#94a3b8',rainy:'#60a5fa',snow:'#bae6fd',storm:'#818cf8',fog:'#94a3b8',windy:'#34d399'};
 const BTC_HOLD=0.00359, BTC_RON=1800, USD_RON=4.65;
 const SPORT_COLORS = {f1:'#e879a0',motogp:'#f97316',tdf:'#fbbf24',giro:'#f87171',ucl:'#4f8ef7',seriea:'#34d399',bundesliga:'#fb923c',snooker:'#a78bfa',n24h:'#2dd4bf',wec:'#60a5fa',cycling:'#fbbf24',football:'#4f8ef7',soccer:'#4f8ef7',romania:'#f87171'};
@@ -1803,16 +1822,16 @@ function renderWx(){
 
   if(!wx){
     // Loading or failed state — never show fake numbers
-    ic.className='ti ti-loader-2';
-    ic.style.color='#94a3b8';
+    const ico0=document.getElementById('wxIco');
+    if(ico0) ico0.innerHTML='<i id="wxi" class="ti '+(S._wxError?'ti-cloud-off':'ti-loader-2')+'" style="color:#94a3b8"></i>';
     document.getElementById('wxT').textContent='—';
     document.getElementById('wxMM').textContent='';
     document.getElementById('wxC').textContent=S._wxError?'Unavailable':'Loading…';
     document.getElementById('wxDays').innerHTML='';
     return;
   }
-  ic.className='ti '+(WXI[wx.cond]||'ti-cloud');
-  ic.style.color=WXC[wx.cond]||'#94a3b8';
+  const ico=document.getElementById('wxIco');
+  if(ico) ico.innerHTML=wxIconHtml(wx.cond, wx.now && wx.now.isDay===false);
   document.getElementById('wxT').textContent=wx.tempC+'°C';
   document.getElementById('wxMM').textContent='↑ '+wx.high+'° · ↓ '+wx.low+'°';
   document.getElementById('wxC').textContent=wx.text;
@@ -1820,7 +1839,7 @@ function renderWx(){
   document.getElementById('wxDays').innerHTML=wx.forecast.map((d,i)=>
     '<div class="wx-day'+(i===_wxDay?' on':'')+'" role="button" tabindex="0" onclick="wxPickDay('+i+')" aria-label="'+escHtml(d.dow)+': show hour by hour">'+
     '<div class="wx-day-n">'+d.dow+'</div>'+
-    '<div class="wx-day-i"><i class="ti '+(WXI[d.cond]||'ti-cloud')+'" style="color:'+(WXC[d.cond]||'#888')+'"></i></div>'+
+    '<div class="wx-day-i">'+wxIconHtml(d.cond,false)+'</div>'+
     '<div class="wx-day-h">'+d.high+'°</div>'+
     '<div class="wx-day-l">'+d.low+'°</div>'+
     (d.rain>0?'<div class="wx-day-r">💧'+d.rain+'%</div>':'')+
@@ -1834,11 +1853,6 @@ function renderWx(){
 let _wxDay=0;
 function wxPickDay(i){ _wxDay=i; renderWx(); const h=document.getElementById('wxHours'); if(h) h.scrollLeft=0; }
 function uvLabel(u){ if(u==null) return ''; return u<3?'Low':u<6?'Moderate':u<8?'High':u<11?'Very high':'Extreme'; }
-function wxIcon(cond, night){
-  if(night && cond==='sunny') return { i:'ti-moon', c:'#c4b5fd' };
-  if(night && cond==='partly_cloudy') return { i:'ti-cloud', c:'#a5b4fc' };
-  return { i:WXI[cond]||'ti-cloud', c:WXC[cond]||'#94a3b8' };
-}
 function wxIsNight(t, day){ const hm=String(t).slice(11,16); return !!(day && day.sunrise && day.sunset && (hm<day.sunrise.slice(0,3)+'00' || hm>=day.sunset)); }
 function wxRenderDetail(){
   const wx=S.wx, st=document.getElementById('wxStats'), hh=document.getElementById('wxHours'), hd=document.getElementById('wxHoursH');
@@ -1869,11 +1883,10 @@ function wxRenderDetail(){
   const dayOf=t=>wx.forecast.find(f=>f.date===String(t).slice(0,10));
   hd.innerHTML='<i class="ti ti-clock-hour-4"></i> '+(_wxDay===0?'Next 24 hours':escHtml(parseD(day.date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}))+' · hour by hour');
   hh.innerHTML=list.map((h,k)=>{
-    const ic=wxIcon(h.cond, wxIsNight(h.t, dayOf(h.t)));
     const lab=(_wxDay===0&&k===0)?'Now':h.t.slice(11,16);
     const newDay=_wxDay===0 && k>0 && h.t.slice(11,13)==='00';
     return (newDay?'<div class="wx-hsep">'+escHtml(parseD(h.t.slice(0,10)).toLocaleDateString('en-GB',{weekday:'short'}))+'</div>':'')+
-      '<div class="wx-hour'+(k===0&&_wxDay===0?' now':'')+'"><span>'+lab+'</span><i class="ti '+ic.i+'" style="color:'+ic.c+'"></i><b>'+((k===0&&_wxDay===0&&wx.tempC!=null)?wx.tempC:h.temp)+'°</b>'+
+      '<div class="wx-hour'+(k===0&&_wxDay===0?' now':'')+'"><span>'+lab+'</span>'+(k===0&&_wxDay===0?wxIconHtml(wx.cond, n.isDay===false):wxIconHtml(h.cond, wxIsNight(h.t, dayOf(h.t))))+'<b>'+((k===0&&_wxDay===0&&wx.tempC!=null)?wx.tempC:h.temp)+'°</b>'+
       '<small'+(h.rain>=10?'':' class="dry"')+'>💧'+h.rain+'%</small></div>';
   }).join('');
 }
@@ -1891,10 +1904,9 @@ function evWxChip(ev){
   if(ev.done || isPastEvent(ev)) return '';
   const h=evWx(ev); if(!h) return '';
   const f=S.wx.forecast.find(x=>x.date===h.t.slice(0,10));
-  const ic=wxIcon(h.cond, wxIsNight(h.t, f));
   const wet=h.rain>=30;
   const tip='Weather at '+h.t.slice(11,16)+' in '+(S.wxLocName||'your area')+': '+(WMO_TEXT[h.cond]||h.cond)+', '+h.temp+'°, '+h.rain+'% chance of rain';
-  return '<span class="ev-wx'+(wet?' wet':'')+'" title="'+escHtml(tip)+'"><i class="ti '+ic.i+'" style="color:'+(WXC_INK[h.cond]||'#64748b')+'"></i>'+h.temp+'°'+(wet?'<b>💧'+h.rain+'%</b>':'')+'</span>';
+  return '<span class="ev-wx'+(wet?' wet':'')+'" title="'+escHtml(tip)+'">'+wxIconHtml(h.cond, wxIsNight(h.t, f), true)+h.temp+'°'+(wet?'<b>💧'+h.rain+'%</b>':'')+'</span>';
 }
 
 // Fetches real weather from our backend (which calls Open-Meteo).
@@ -6195,7 +6207,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-22-worship-sync';
+const APP_BUILD='2026-10-22-wx-icons';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
