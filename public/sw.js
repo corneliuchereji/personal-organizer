@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v13';
+const CACHE = 'organizer-shell-v15';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -64,6 +64,8 @@ self.addEventListener('push', event => {
     // Done in the app (index.html → syncAppBadge), not merely by opening it.
     // Not supported everywhere, so failure is ignored rather than breaking
     // the notification itself.
+    // Information-only pushes (e.g. a plug schedule ran) don't count.
+    if (data.noBadge) return;
     try {
       const cache = await caches.open('organizer-badge');
       const prev = await cache.match('items');
@@ -107,7 +109,9 @@ self.addEventListener('notificationclick', event => {
   // right day instead of today — a "1 day before" reminder is about
   // tomorrow, and landing on today showed the wrong events entirely.
   const d = (event.notification.data) || {};
-  const qs = d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '')) : '';
+  // A new-concert notification opens the Concerts widget instead of a day.
+  const qs = d.concert ? '?concerts=1'
+    : d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '')) : '';
   const target = new URL('/' + qs, self.location.origin).href;
   event.waitUntil((async () => {
     const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
@@ -120,7 +124,9 @@ self.addEventListener('notificationclick', event => {
         if ('focus' in c) {
           // An already-open window is told which day to show, rather than
           // being navigated — reloading would lose any unsaved state.
-          try { c.postMessage({ type:'OPEN_DATE', date: d.date || null, id: d.id || null }); } catch (e) {}
+          try {
+            c.postMessage(d.concert ? { type:'OPEN_CONCERTS' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null });
+          } catch (e) {}
           return c.focus();
         }
       }
