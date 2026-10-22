@@ -1041,7 +1041,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-22-smart-plugs';
+const BUILD_VERSION = '2026-10-22-plugs-form';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -4085,8 +4085,12 @@ function shellyCall(path, body){
       return j;
     }catch(e){
       if(e.name === 'AbortError') throw new Error('Shelly’s cloud didn’t answer in time.');
-      if(e.cause && e.cause.code) throw new Error('Couldn’t reach Shelly ('+e.cause.code+') — check the server address in Settings → Private.');
-      throw e;
+      // Network errors quote the full address, which contains the key:
+      // never pass that text on.
+      const raw = String((e.cause && e.cause.code) || e.code || e.message || '');
+      if(/ECONNREFUSED|ENOTFOUND|EAI_AGAIN|getaddrinfo|ECONNRESET|ETIMEDOUT|CERT|certificate|request to/i.test(raw))
+        throw new Error('Couldn’t reach Shelly’s server “'+host+'” — check the server address in Settings → Private.');
+      throw new Error(plugErr(String(e.message||'').replace(/auth_key=[^&\s]+/g,'auth_key=…')));
     }finally{ clearTimeout(t); }
   };
   const p = _plugChain.then(run, run); _plugChain = p.catch(()=>{}); return p;
