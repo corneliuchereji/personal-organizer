@@ -1219,6 +1219,15 @@ select option:checked{background:#2E3A78;color:#fff}
 .ws-done b{font-size:16px}
 .ws-done span{font-size:12.5px;color:var(--txt2)}
 .ws-done .ws-acts{width:100%}
+.ws-sec{margin:12px 2px 2px;font-size:12.5px;font-weight:650;color:var(--txt2)}
+.ws-sec i{color:#f87171}
+.ws-row.stale{border-style:dashed}
+.ws-chk.del input:checked + span{background:#ef4444;border-color:#ef4444}
+.ws-chk.del input:checked + span::after{border-color:#fff}
+.ws-t{font-size:13px;color:var(--txt2);font-variant-numeric:tabular-nums}
+.ws-name.ro{border:0;padding:4px 8px;line-height:1.25;overflow-wrap:anywhere}
+.ws-k.gone{background:rgba(148,163,184,.14);color:#cbd5e1}
+.ws-k.del{background:rgba(239,68,68,.14);color:#fca5a5}
 .fx-name{font-size:11px;color:var(--txt3);margin-top:-4px;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fx-tip{top:6px;transform:translate(-50%,0)}
 .fx-pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
@@ -5256,7 +5265,7 @@ function wsRender(msg){
     (msg?'<div class="ws-msg">'+msg+'</div>':'')+
     '<label class="ws-drop"><input type="file" accept="image/*" onchange="wsPick(this)" hidden>'+
       '<i class="ti ti-photo-up"></i><b>Choose the schedule image</b><span>From Photos, Files or a screenshot. It’s read on this phone — nothing is uploaded.</span></label>'+
-    (_wsLast?'<div class="ws-last"><i class="ti ti-history"></i> Last added: '+escHtml(_wsLast.label)+' · '+_wsLast.n+' events '+
+    (_wsLast?'<div class="ws-last"><i class="ti ti-history"></i> Last update: '+escHtml(_wsLast.label)+' · '+_wsLast.n+' added'+((_wsLast.removed||[]).length?', '+_wsLast.removed.length+' removed':'')+' '+
       '<button class="btn sm" onclick="wsUndo()"><i class="ti ti-arrow-back-up"></i> Undo</button></div>':'')+
     wsOptsHtml();
 }
@@ -5280,14 +5289,34 @@ async function wsPick(inp){
 }
 function wsTitle(e){ const o=wsOpts(); return (o.prefix||'Worship')+' · '+(e.name||'?')+(e.tag?' · '+e.tag:''); }
 function wsMarkExisting(){
+  const used=new Set();
   for(const e of _ws.entries){
     e.state='new'; e.replaces=null;
     const same=S.tasks.filter(t=>t.date===e.ds && (t.time||'')===(e.time||'') && e.time);
-    if(same.some(t=>t.name===wsTitle(e))){ e.state='have'; e.on=false; continue; }
+    const have=same.find(t=>t.name===wsTitle(e));
+    if(have){ e.state='have'; e.on=false; used.add(have.id); continue; }
+    // Days already gone: history isn't rewritten, and a service that has
+    // happened would only show up as "overdue". Unticked; can be ticked.
+    if(e.ds<TODAY){ e.state='past'; if(!e._touched) e.on=false; continue; }
     const old=same.find(t=>t.src==='worship');
-    if(old){ e.state='update'; e.replaces=old.id; }
+    if(old){ e.state='update'; e.replaces=old.id; used.add(old.id); }
   }
+  // Upcoming worship services in the period this plan covers that it no
+  // longer has: cancelled, or moved to another time. Past ones are history
+  // and are never touched. Ticked for removal unless the user unticks them.
+  const days=_ws.entries.map(e=>e.ds).sort();
+  _ws.staleOff=_ws.staleOff||new Set();
+  _ws.stale = !days.length ? [] : S.tasks
+    .filter(t=>t.src==='worship' && !used.has(t.id) && t.date>=TODAY && t.date>=days[0] && t.date<=days[days.length-1])
+    .sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')))
+    .map(t=>{
+      const moved=_ws.entries.find(e=>e.ds===t.date && e.time && e.time!==t.time && wsNorm(wsTitle(e))===wsNorm(t.name));
+      const sameDay=_ws.entries.some(e=>e.ds===t.date);
+      return { id:t.id, ds:t.date, time:t.time||'', name:t.name, on:!_ws.staleOff.has(t.id),
+        why: moved ? 'Moved to '+moved.time : sameDay ? 'Changed in the new plan' : 'Not in the new plan' };
+    });
 }
+function wsStaleTog(i,v){ const x=_ws.stale[i]; x.on=v; if(v) _ws.staleOff.delete(x.id); else _ws.staleOff.add(x.id); wsRenderList(); }
 function wsRenderReview(msg){
   const el=document.getElementById('wsBody'); if(!el) return;
   const mName = _ws.month ? RO_MONTHS[_ws.month-1] : '';
@@ -5317,16 +5346,35 @@ function wsRenderList(){
           (need?'<span class="ws-k ask">Set the time</span>':'')+
           (e.state==='have'?'<span class="ws-k have">Already in calendar</span>':'')+
           (e.state==='update'?'<span class="ws-k upd">Replaces the old one</span>':'')+
+          (e.state==='past'?'<span class="ws-k gone">Already happened</span>':'')+
         '</div></div>'+
     '</div>';
   }).join('');
+  const stale=_ws.stale||[];
+  if(stale.length){
+    L.innerHTML+='<div class="ws-sec"><i class="ti ti-calendar-minus"></i> In your calendar, not in this plan</div>'+stale.map((x,i)=>{
+      const dt=parseD(x.ds);
+      const day=dt.toLocaleDateString('en-GB',{weekday:'short'})+' '+dt.getDate()+' '+dt.toLocaleDateString('en-GB',{month:'short'});
+      return '<div class="ws-row stale'+(x.on?'':' off')+'">'+
+        '<label class="ws-chk del"><input type="checkbox"'+(x.on?' checked':'')+' onchange="wsStaleTog('+i+',this.checked)" aria-label="Remove from calendar"><span></span></label>'+
+        '<div class="ws-when"><b>'+day+'</b><span class="ws-t">'+escHtml(x.time||'')+'</span></div>'+
+        '<div class="ws-what"><div class="ws-name ro">'+escHtml(x.name)+'</div><div class="ws-tags">'+
+          '<span class="ws-k '+(/^Moved/.test(x.why)?'upd':'gone')+'">'+escHtml(x.why)+'</span>'+
+          (x.on?'<span class="ws-k del">Will be removed</span>':'<span class="ws-k have">Keep</span>')+
+        '</div></div></div>';
+    }).join('');
+  }
   const n=_ws.entries.filter(e=>e.on).length, miss=_ws.entries.filter(e=>e.on&&!e.time).length;
+  const rm=stale.filter(x=>x.on).length;
   const b=document.getElementById('wsAdd');
   const all=_ws.entries.every(e=>e.state==='have');
-  if(b){ b.disabled=!n||!!miss; b.innerHTML= miss ? '<i class="ti ti-clock"></i> Set '+miss+' time'+(miss>1?'s':'')
-    : (!n && all) ? '<i class="ti ti-circle-check"></i> All already in calendar' : '<i class="ti ti-calendar-plus"></i> Add '+n+' to calendar'; }
+  if(b){ b.disabled=(!n&&!rm)||!!miss;
+    b.innerHTML= miss ? '<i class="ti ti-clock"></i> Set '+miss+' time'+(miss>1?'s':'')
+    : (!n && !rm && all) ? '<i class="ti ti-circle-check"></i> All already in calendar'
+    : (!n && rm) ? '<i class="ti ti-calendar-minus"></i> Remove '+rm+' from calendar'
+    : '<i class="ti ti-calendar-plus"></i> Add '+n+(rm?' · remove '+rm:' to calendar'); }
 }
-function wsTog(i,v){ _ws.entries[i].on=v; wsRenderList(); }
+function wsTog(i,v){ _ws.entries[i].on=v; _ws.entries[i]._touched=true; wsRenderList(); }
 // Times are typed as 24-hour text ("19", "1930", "19.30" or "19:30").
 function wsTime(i,inp){
   const raw=String(inp.value||'').trim().replace(/[.,h ]/g,':');
@@ -5335,8 +5383,8 @@ function wsTime(i,inp){
   _ws.entries[i].time=v; wsMarkOne(i); wsRenderList();
 }
 function wsName(i,v){ _ws.entries[i].name=v.trim(); wsMarkOne(i); wsRenderList(); }
-function wsMarkOne(i){ const keep=_ws.entries.map(e=>e.on); wsMarkExisting(); _ws.entries.forEach((e,k)=>{ if(e.state!=='have') e.on=keep[k]; }); }
-function wsOnly(k){ const team = k===null ? null : (_ws.teams||[])[k]; _ws.entries.forEach(e=>{ e.on = e.state!=='have' && (team===null || e.name===team); }); wsRenderList(); }
+function wsMarkOne(i){ const keep=_ws.entries.map(e=>e.on); wsMarkExisting(); _ws.entries.forEach((e,k)=>{ if(e.state!=='have' && (e.state!=='past' || e._touched)) e.on=keep[k]; }); }
+function wsOnly(k){ const team = k===null ? null : (_ws.teams||[])[k]; _ws.entries.forEach(e=>{ e.on = e.state!=='have' && e.state!=='past' && (team===null || e.name===team); }); wsRenderList(); }
 function wsAdd(){
   const o=wsOpts(); let group=o.group;
   if(!group || group==='__new' || !S.groups.some(g=>g.id===group)){
@@ -5353,22 +5401,32 @@ function wsAdd(){
     S.tasks.push(t); added.push(t.id);
     try{ scheduleReminder(t); }catch(err){}
   }
-  if(!added.length) return;
+  const removed=[];
+  for(const x of (_ws.stale||[])){
+    if(!x.on) continue;
+    const t=S.tasks.find(k=>k.id===x.id); if(!t) continue;
+    removed.push(t); S.tasks=S.tasks.filter(k=>k.id!==x.id);
+  }
+  if(!added.length && !removed.length) return;
   const mName=_ws.month?RO_MONTHS[_ws.month-1]:'schedule';
-  _wsLast={ ids:added, replaced, n:added.length, label:mName[0].toUpperCase()+mName.slice(1)+' '+_ws.year, first:_ws.entries.find(e=>e.on).ds };
+  const firstOn=_ws.entries.find(e=>e.on) || _ws.entries[0];
+  _wsLast={ ids:added, replaced, removed, n:added.length, label:mName[0].toUpperCase()+mName.slice(1)+' '+_ws.year, first:(firstOn&&firstOn.ds)||TODAY };
   saveState(); renderAll();
   _ws=null;
   const el=document.getElementById('wsBody');
-  if(el) el.innerHTML='<div class="ws-done"><i class="ti ti-circle-check"></i><b>'+added.length+' services added</b><span>'+escHtml(_wsLast.label)+(replaced.length?' · '+replaced.length+' updated':'')+'</span>'+
+  const head = added.length ? added.length+' service'+(added.length>1?'s':'')+' added' : removed.length+' service'+(removed.length>1?'s':'')+' removed';
+  const sub = [escHtml(_wsLast.label), replaced.length?replaced.length+' updated':'', (added.length&&removed.length)?removed.length+' removed':''].filter(Boolean).join(' · ');
+  if(el) el.innerHTML='<div class="ws-done"><i class="ti ti-circle-check"></i><b>'+head+'</b><span>'+sub+'</span>'+
     '<div class="ws-acts"><button class="btn" onclick="wsUndo()"><i class="ti ti-arrow-back-up"></i> Undo</button><span class="msp"></span><button class="btn acc" onclick="holGo(\''+_wsLast.first+'\')"><i class="ti ti-calendar"></i> See calendar</button></div></div>';
 }
 function wsUndo(){
   if(!_wsLast) return;
   S.tasks=S.tasks.filter(t=>!_wsLast.ids.includes(t.id));
   for(const t of _wsLast.replaced||[]) S.tasks.push(t);
-  const n=_wsLast.n; _wsLast=null;
+  for(const t of _wsLast.removed||[]) S.tasks.push(t);
+  const n=_wsLast.n, r=(_wsLast.removed||[]).length; _wsLast=null;
   saveState(); renderAll();
-  _ws=null; wsRender('<i class="ti ti-arrow-back-up"></i> Removed the '+n+' services again.');
+  _ws=null; wsRender('<i class="ti ti-arrow-back-up"></i> Undone — your calendar is back as it was.');
 }
 
 // ─── WORLD CLOCKS ────────────────────────────────────────
@@ -6137,7 +6195,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-21-screen-fix2';
+const APP_BUILD='2026-10-22-worship-sync';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
