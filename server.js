@@ -1040,7 +1040,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-22-worship-sync';
+const BUILD_VERSION = '2026-10-22-wx-icons';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -4189,9 +4189,9 @@ app.get('/api/weather', async (req, res) => {
     if (!lat || !lon) { lat = 45.689; lon = 21.903; label = label || 'Lugoj, RO'; }
 
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_gusts_10m,is_day` +
-      `&hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m,uv_index` +
-      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_gusts_10m,is_day,precipitation` +
+      `&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,wind_speed_10m,uv_index` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max` +
       `&forecast_days=7&timezone=auto`;
     const r = await fetch(url);
     const d = await r.json();
@@ -4199,13 +4199,18 @@ app.get('/api/weather', async (req, res) => {
 
     const hm = t => String(t||'').slice(11,16);           // "2026-10-21T07:43" -> "07:43"
     const rnd = v => (v==null || isNaN(v)) ? null : Math.round(v);
+    // The weather code alone can say "overcast" while rain is clearly
+    // expected (ensemble rain chance, forecast millimetres). Show it as rain.
+    const DRYISH = ['sunny','partly_cloudy','cloudy'];
+    const wet = (cond, mm, prob, mmMin) => (DRYISH.includes(cond) && ((mm||0) >= mmMin || (prob||0) >= 70)) ? 'rainy' : cond;
     const forecast = d.daily.time.slice(0, 7).map((t, i) => ({
       date: t,
       dow: new Date(t + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short' }),
       high: Math.round(d.daily.temperature_2m_max[i]),
       low: Math.round(d.daily.temperature_2m_min[i]),
       rain: Math.round(d.daily.precipitation_probability_max?.[i] || 0),
-      cond: wmoToCond(d.daily.weather_code[i]),
+      cond: wet(wmoToCond(d.daily.weather_code[i]), d.daily.precipitation_sum?.[i], (d.daily.precipitation_sum?.[i]||0) >= 0.3 ? d.daily.precipitation_probability_max?.[i] : 0, 1),
+      mm: d.daily.precipitation_sum ? Math.round((d.daily.precipitation_sum[i]||0)*10)/10 : null,
       sunrise: hm(d.daily.sunrise?.[i]), sunset: hm(d.daily.sunset?.[i]),
       uv: d.daily.uv_index_max ? Math.round((d.daily.uv_index_max[i]||0)*10)/10 : null,
       wind: rnd(d.daily.wind_speed_10m_max?.[i]), gust: rnd(d.daily.wind_gusts_10m_max?.[i])
@@ -4213,24 +4218,28 @@ app.get('/api/weather', async (req, res) => {
     // Hour by hour for the whole week, in the place's own time zone.
     const H = d.hourly || {};
     const hourly = (H.time || []).map((t, i) => ({
-      t, temp: rnd(H.temperature_2m?.[i]), cond: wmoToCond(H.weather_code?.[i]),
+      t, temp: rnd(H.temperature_2m?.[i]), cond: wet(wmoToCond(H.weather_code?.[i]), H.precipitation?.[i], H.precipitation_probability?.[i], 0.2),
+      mm: H.precipitation ? Math.round((H.precipitation[i]||0)*10)/10 : null,
       rain: Math.round(H.precipitation_probability?.[i] || 0), wind: rnd(H.wind_speed_10m?.[i]),
       uv: H.uv_index ? Math.round((H.uv_index[i]||0)*10)/10 : null
     }));
-    const cond = wmoToCond(d.current.weather_code);
     const nowKey = String(d.current.time||'').slice(0,13);
     const nowH = hourly.find(h => h.t.slice(0,13) === nowKey);
+    const baseCond = wmoToCond(d.current.weather_code);
+    const cond = (DRYISH.includes(baseCond) && ((d.current.precipitation||0) > 0 || (nowH && nowH.cond==='rainy'))) ? 'rainy' : baseCond;
+    const showers = cond==='rainy' && (baseCond==='sunny' || baseCond==='partly_cloudy');
 
     res.json({
       lat: Number(lat), lon: Number(lon),
       locName: label,
       tempC: Math.round(d.current.temperature_2m),
-      cond, text: WMO_LABEL[cond] || 'Cloudy',
+      cond, text: showers ? 'Showers' : (WMO_LABEL[cond] || 'Cloudy'),
       high: forecast[0]?.high ?? null,
       low: forecast[0]?.low ?? null,
       now: {
         time: d.current.time, feels: rnd(d.current.apparent_temperature), humidity: rnd(d.current.relative_humidity_2m),
         wind: rnd(d.current.wind_speed_10m), gust: rnd(d.current.wind_gusts_10m), isDay: !!d.current.is_day,
+        mm: d.current.precipitation ?? null,
         uv: nowH ? nowH.uv : null
       },
       tz: d.timezone || null,
