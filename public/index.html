@@ -1141,6 +1141,78 @@ select option:checked{background:#2E3A78;color:#fff}
 .pl-log{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--txt2)}
 .pl-log span{color:var(--txt3);font-variant-numeric:tabular-nums}
 @media (max-width:360px){ .pl-grid{grid-template-columns:1fr} }
+/* Notes */
+.nt-wrap{position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;background:#0B1128;color:var(--txt);
+  padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));animation:mbgIn 160ms ease-out}
+.nt-top{display:flex;align-items:center;gap:8px;flex:none;margin-bottom:8px}
+.nt-top > b{flex:1;font-size:20px;font-weight:700;letter-spacing:-.3px}
+.nt-top .pad-ic.on{background:rgba(250,204,21,.18);border-color:rgba(250,204,21,.5);color:#facc15}
+.nt-center{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto}
+.nt-lock{width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.nt-lock > i{font-size:40px;color:#facc15}
+.nt-lock b{font-size:18px}
+.nt-lock > span{font-size:13px;color:var(--txt2);min-height:18px}
+.nt-dots{display:flex;gap:12px;align-items:center;min-height:36px}
+.nt-dots span{width:13px;height:13px;border-radius:50%;border:2px solid var(--txt3)}
+.nt-dots span.on{background:#facc15;border-color:#facc15}
+.nt-dots.shake{animation:ntShake 300ms}
+@keyframes ntShake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-4px)}}
+.nt-ok{margin-left:6px;border:0;border-radius:99px;padding:6px 14px;background:#facc15;color:#1a1a2e;font:inherit;font-weight:700;cursor:pointer}
+.nt-pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;margin-top:6px}
+.nt-pad button{height:72px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt);font:inherit;font-size:26px;font-weight:500;cursor:pointer;touch-action:manipulation;transition:transform 120ms var(--ease-out),background-color 120ms ease}
+.nt-pad button:active{transform:scale(0.94);background:rgba(250,204,21,.2)}
+.nt-bio{margin-top:8px}
+.nt-banner{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.3);font-size:13px;margin-bottom:8px}
+.nt-banner > i{color:#facc15;font-size:18px}
+.nt-banner span{flex:1;min-width:140px}
+.nt-search{display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid var(--border);flex:none;margin-bottom:8px}
+.nt-search i{color:var(--txt3)}
+.nt-search input{flex:1;min-width:0;border:0;background:transparent;color:var(--txt);font:inherit;font-size:15px;padding:10px 0;outline:none}
+.nt-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:80px}
+.nt-sec{font-size:12px;font-weight:650;color:var(--txt2);margin:8px 2px 6px;text-transform:none}
+.nt-grid{columns:2;column-gap:8px}
+.nt-card{position:relative;break-inside:avoid;margin-bottom:8px;padding:12px;border-radius:16px;background:var(--nc,#2a3358);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:transform 140ms var(--ease-out)}
+.nt-card:active{transform:scale(0.98)}
+.nt-card > b{display:block;font-size:14.5px;font-weight:700;margin-bottom:4px;padding-right:16px;overflow-wrap:anywhere}
+.nt-pinic{position:absolute;top:10px;right:10px;font-size:13px;color:#facc15}
+.nt-prev{font-size:13px;line-height:1.45;color:#dbe2f5;overflow-wrap:anywhere}
+.nt-prev a{color:#93c5fd}
+.nt-ck{display:flex;align-items:flex-start;gap:4px}
+.nt-ck button{flex:none;border:0;background:transparent;color:#cbd5e1;padding:0;font-size:17px;line-height:1;cursor:pointer;margin-top:1px}
+.nt-ck.on span{text-decoration:line-through;opacity:.6}
+.nt-ck.on button{color:#facc15}
+.nt-more{font-size:11.5px;color:var(--txt2);margin-top:3px}
+.nt-when{font-size:11px;color:rgba(219,226,245,.55);margin-top:6px}
+.nt-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:50px 10px;color:var(--txt2);font-size:13.5px;text-align:center}
+.nt-empty i{font-size:40px;color:var(--txt3)}
+.nt-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:20px;border:0;background:#facc15;color:#1a1a2e;font-size:28px;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);cursor:pointer;transition:transform 140ms var(--ease-out)}
+.nt-fab:active{transform:scale(0.94)}
+.nt-binlink{display:flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--txt2);font:inherit;font-size:13px;padding:10px 2px;cursor:pointer}
+.nt-binnote{font-size:12px;color:var(--txt3);margin-bottom:8px}
+.nt-binacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.nt-edit{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:18px;background:var(--nc,#2a3358);border:1px solid rgba(255,255,255,.08);padding:4px 2px;transition:background-color 200ms ease}
+.nt-title{border:0;background:transparent;color:var(--txt);font:inherit;font-size:20px;font-weight:700;padding:12px 12px 4px;outline:none}
+.nt-body{flex:1;min-height:0;border:0;background:transparent;color:var(--txt);font:inherit;font-size:16px;line-height:1.55;padding:6px 12px 12px;outline:none;resize:none}
+.nt-title::placeholder,.nt-body::placeholder{color:rgba(219,226,245,.4)}
+.nt-tools{display:flex;gap:6px;align-items:center;flex:none;padding-top:8px;overflow-x:auto;scrollbar-width:none}
+.nt-tools button{flex:none;display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt);font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
+.nt-meta{margin-left:auto;font-size:11.5px;color:var(--txt3);white-space:nowrap;padding-left:6px}
+.nt-saved{font-size:12px;color:var(--txt2);white-space:nowrap;margin-left:auto}
+.nt-dot{display:inline-block;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.6)}
+.nt-colors{display:flex;gap:10px;justify-content:flex-end;padding:0 4px 8px;flex:none}
+.nt-colors[hidden]{display:none}
+.nt-colors button{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.5);cursor:pointer}
+.nt-menu{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:10px}
+.nt-mrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
+.nt-mrow.col{flex-direction:column;align-items:flex-start}
+.nt-mrow > span{color:var(--txt2);margin-right:4px}
+.nt-mrow i{color:#facc15}
+.nt-dev{display:flex;align-items:center;gap:6px;font-size:13px}
+.nt-dev em{color:var(--txt3);font-style:normal}
+.sh-chip.on{background:rgba(250,204,21,.2);border-color:rgba(250,204,21,.55);color:#fde68a}
+@media (min-width:700px){ .nt-grid{columns:3} .nt-wrap{padding-left:max(12px,calc((100vw - 900px)/2));padding-right:max(12px,calc((100vw - 900px)/2))} }
+@media (prefers-reduced-motion:reduce){ .nt-dots.shake{animation:none} }
 /* Screen remote */
 .rm-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt2);padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:12px}
 .rm-status b{color:var(--txt)}
@@ -4263,6 +4335,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
   {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
   {id:'w_worship',name:'Worship schedule', desc:'Read the monthly team plan into the calendar', action:'worship', icon:'ti-music'},
+  {id:'w_notes',name:'Notes', desc:'Your notes on every device, behind a PIN or Face ID', action:'notes', icon:'ti-notes'},
   {id:'w_plugs',name:'Smart plugs', desc:'Switch your Shelly plugs, timers and schedules', action:'plugs', icon:'ti-plug'},
   {id:'w_remote',name:'Screen remote', desc:'Mirror the laptop on the TV from your phone', action:'remote', icon:'ti-device-tv'},
   {id:'w_clocks',name:'World clocks', desc:'Time and weather in other cities', action:'clocks', icon:'ti-world'},
@@ -4327,9 +4400,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -4497,6 +4570,7 @@ function widgetPeek(w){
       return S.worldClocks.slice(0,2).map(c=>c.name+' '+clockTime(c.tz)).join(' · ');
     }
     if(w.action==='holidays' && _holNext){ return _holNext; }
+    if(w.action==='notes' && _nt.st && _nt.st.pinSet){ return '🔒 '+(_nt.st.count||0)+' note'+(_nt.st.count===1?'':'s'); }
     if(w.action==='plugs' && _pl && Array.isArray(_pl.plugs) && _pl.plugs.length){ const on=_pl.plugs.filter(p=>p.on); const W=on.reduce((a,p)=>a+(p.watts||0),0); return on.length ? on.length+' on'+(W?' · '+plFmtW(W):'') : 'All off'; }
     if(w.action==='remote' && _rm && !_rm.error){ return !_rm.paired ? 'Not set up' : (_rm.online ? (_rm.host||'Laptop')+' online' : 'Laptop offline'); }
     if(w.action==='fx' && _fx && _fx.rates){ const f=S.fxFrom||'EUR', t=S.fxTo||'RON'; const v=fxRate(f,t); if(v) return '1 '+f+' = '+fxFmt(v)+' '+t; }
@@ -5680,6 +5754,377 @@ async function plSaveConfig(){
   await plLoad(true);
 }
 
+// ─── NOTES ───────────────────────────────────────────────
+// Full-screen notes behind a PIN or Face ID / fingerprint (passkey). The
+// notes token lives only in memory; the screen locks itself after a few
+// idle minutes or when the app has been in the background for a minute.
+// Lines written "- [ ] milk" / "- [x] milk" become tick-boxes on the card.
+let _nt={ tok:null, notes:[], st:null, view:'list', cur:null, q:'', saveT:null, saving:false, dirty:false, idleT:null, hiddenAt:0, bin:false, pin:'', pin1:null, bioCh:null, menu:false };
+const NT_COLORS={ '':'#2a3358', yellow:'#4a4220', green:'#1f3d2c', blue:'#1d3352', purple:'#33264f', pink:'#4a2238', orange:'#4a2f1c' };
+const NT_DOT={ '':'#94a3b8', yellow:'#facc15', green:'#4ade80', blue:'#60a5fa', purple:'#c084fc', pink:'#f472b6', orange:'#fb923c' };
+const NT_BIO_KEY='org:notesBioId', NT_IDLE_KEY='org:notesIdleMin';
+function ntIdleMin(){ try{ const v=+localStorage.getItem(NT_IDLE_KEY); return [1,5,15].includes(v)?v:5; }catch(e){ return 5; } }
+function ntBioId(){ try{ return localStorage.getItem(NT_BIO_KEY)||''; }catch(e){ return ''; } }
+function ntB64u(buf){ let s=''; const b=new Uint8Array(buf); for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function ntUnb64u(str){ const s=atob(String(str).replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((String(str).length+3)%4)); const b=new Uint8Array(s.length); for(let i=0;i<s.length;i++) b[i]=s.charCodeAt(i); return b.buffer; }
+async function ntBioAvailable(){ try{ return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); }catch(e){ return false; } }
+async function ntApi(url, body){
+  const r=await fetch(url, body===undefined?{ headers:{'X-Notes-Token':_nt.tok||''} }:{ method:'POST', headers:{'Content-Type':'application/json','X-Notes-Token':_nt.tok||''}, body:JSON.stringify(body) });
+  let d={}; try{ d=await r.json(); }catch(e){}
+  if(r.status===401 && d.locked){ ntLock('Locked — please unlock again.'); throw new Error('locked'); }
+  if(!r.ok && !d.error) d.error='Request failed ('+r.status+')';
+  return d;
+}
+// ── Opening, locking, idle ──
+async function openNotes(){
+  closeModal();
+  let o=document.getElementById('ntWrap');
+  if(!o){ o=document.createElement('div'); o.id='ntWrap'; o.className='nt-wrap'; document.body.appendChild(o); lockPageScroll(); }
+  try{ _nt.st=await (await fetch('/api/notes/status',{headers:{'X-Notes-Token':_nt.tok||''}})).json(); }catch(e){ _nt.st={ error:'Couldn’t reach the server.' }; }
+  if(_nt.tok && _nt.st.unlocked){ await ntLoad(); ntShowList(); } else { _nt.tok=null; ntShowLock(); }
+}
+function ntClose(){
+  ntFlush();
+  if(_nt.st && _nt.tok) _nt.st.count=_nt.notes.filter(n=>!n.deleted).length;
+  const o=document.getElementById('ntWrap'); if(o) o.remove();
+  unlockPageScroll();
+  _nt.view='list'; _nt.cur=null; _nt.menu=false;
+}
+function ntLock(msg){
+  ntFlush(true);
+  if(_nt.tok) fetch('/api/notes/lock',{method:'POST',headers:{'X-Notes-Token':_nt.tok}}).catch(()=>{});
+  _nt.tok=null; _nt.notes=[]; _nt.cur=null; _nt.view='list'; _nt.pin=''; _nt.pin1=null; _nt.menu=false;
+  clearTimeout(_nt.idleT);
+  if(document.getElementById('ntWrap')) ntShowLock(msg);
+}
+function ntTouch(){
+  clearTimeout(_nt.idleT);
+  if(_nt.tok) _nt.idleT=setTimeout(()=>ntLock('Locked after '+ntIdleMin()+' min without use.'), ntIdleMin()*60000);
+}
+// iPhone: keep the editor's toolbar above the on-screen keyboard.
+if(window.visualViewport){ const vv=window.visualViewport, fit=()=>{ const o=document.getElementById('ntWrap'); if(o){ o.style.height=vv.height+'px'; o.style.top=vv.offsetTop+'px'; o.style.bottom='auto'; } };
+  vv.addEventListener('resize',fit); vv.addEventListener('scroll',fit); }
+setTimeout(()=>{ fetch('/api/notes/status').then(r=>r.json()).then(d=>{ if(!_nt.st) _nt.st=d; }).catch(()=>{}); }, 3000);
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ _nt.hiddenAt=Date.now(); ntFlush(); return; }
+  if(_nt.tok && _nt.hiddenAt && Date.now()-_nt.hiddenAt > 60000) ntLock('Locked while the app was in the background.');
+});
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev, ()=>{ if(_nt.tok) ntTouch(); }, {passive:true}));
+// ── Lock screen ──
+async function ntShowLock(msg){
+  const o=document.getElementById('ntWrap'); if(!o) return;
+  const st=_nt.st||{};
+  if(st.error){ o.innerHTML=ntTop('Notes','')+'<div class="nt-center"><div class="cc-msg" style="color:var(--red)">'+escHtml(st.error)+'</div></div>'; return; }
+  if(!st.pinSet){ ntShowSetup(); return; }
+  const bioHere = !!ntBioId() && (st.bio||[]).some(b=>b.id===ntBioId()) && await ntBioAvailable();
+  o.innerHTML=ntTop('Notes','')+
+    '<div class="nt-center"><div class="nt-lock"><i class="ti ti-lock"></i><b>Notes are locked</b>'+
+      '<span id="ntLockMsg">'+escHtml(msg||(bioHere?'Use Face ID / fingerprint or your PIN':'Enter your PIN'))+'</span>'+
+      '<div class="nt-dots" id="ntDots"></div>'+
+      ntPad('ntPinKey')+
+      (bioHere?'<button class="btn acc nt-bio" id="ntBioBtn" onclick="ntBioUnlock()"><i class="ti ti-fingerprint"></i> Unlock with Face ID / fingerprint</button>':'')+
+    '</div></div>';
+  _nt.pin=''; ntDots();
+  if(bioHere){
+    // Fetch the challenge now so the tap can go straight to Face ID (iPhone
+    // only allows it right after a tap).
+    try{ _nt.bioCh=await (await fetch('/api/notes/bio/begin',{method:'POST'})).json(); }catch(e){ _nt.bioCh=null; }
+  }
+}
+function ntPad(fn){
+  const k=[1,2,3,4,5,6,7,8,9,'',0,'⌫'];
+  return '<div class="nt-pad">'+k.map(x=>x===''?'<span></span>':'<button onclick="'+fn+'(\''+x+'\')" aria-label="'+(x==='⌫'?'Delete':x)+'">'+x+'</button>').join('')+'</div>';
+}
+function ntDots(n){ const d=document.getElementById('ntDots'); if(!d) return; const len=_nt.pin.length; d.innerHTML=Array.from({length:Math.max(4,len)},(_,i)=>'<span class="'+(i<len?'on':'')+'"></span>').join('')+(len>=4?'<button class="nt-ok" onclick="'+(n||'ntPinSubmit')+'()">OK</button>':''); }
+function ntPinKey(k){
+  if(k==='⌫') _nt.pin=_nt.pin.slice(0,-1); else if(_nt.pin.length<8) _nt.pin+=k;
+  ntDots();
+  if(navigator.vibrate) navigator.vibrate(6);
+}
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('ntWrap') || !document.querySelector('.nt-pad')) return;
+  if(/^\d$/.test(e.key)){ (document.getElementById('ntSetupDots')?ntSetupKey:ntPinKey)(e.key); e.preventDefault(); }
+  else if(e.key==='Backspace'){ (document.getElementById('ntSetupDots')?ntSetupKey:ntPinKey)('⌫'); e.preventDefault(); }
+  else if(e.key==='Enter'){ (document.getElementById('ntSetupDots')?ntSetupNext:ntPinSubmit)(); e.preventDefault(); }
+});
+async function ntPinSubmit(){
+  if(_nt.pin.length<4) return;
+  const msg=document.getElementById('ntLockMsg');
+  let d; try{ d=await (await fetch('/api/notes/unlock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:_nt.pin})})).json(); }catch(e){ d={error:'Couldn’t reach the server.'}; }
+  _nt.pin=''; ntDots();
+  if(!d.token){
+    if(msg) msg.innerHTML='<span style="color:#fca5a5">'+escHtml(d.error||'Wrong PIN.')+(d.triesLeft!=null&&d.triesLeft<5&&d.triesLeft>0?' '+d.triesLeft+' tries left.':'')+'</span>';
+    const dots=document.getElementById('ntDots'); if(dots){ dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake'); }
+    if(navigator.vibrate) navigator.vibrate([30,40,30]);
+    return;
+  }
+  await ntUnlocked(d.token);
+}
+async function ntBioUnlock(){
+  const msg=document.getElementById('ntLockMsg');
+  try{
+    const ch=_nt.bioCh; _nt.bioCh=null;
+    if(!ch || !ch.challenge) throw new Error(ch&&ch.error||'Try again.');
+    const cred=await navigator.credentials.get({ publicKey:{ challenge:ntUnb64u(ch.challenge), rpId:location.hostname, timeout:60000, userVerification:'required',
+      allowCredentials:[{ type:'public-key', id:ntUnb64u(ntBioId()) }] } });
+    const r=cred.response;
+    const d=await (await fetch('/api/notes/bio/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      id:cred.id, clientDataJSON:ntB64u(r.clientDataJSON), authenticatorData:ntB64u(r.authenticatorData), signature:ntB64u(r.signature) })})).json();
+    if(!d.token) throw new Error(d.error||'Not accepted.');
+    await ntUnlocked(d.token);
+  }catch(e){
+    if(msg) msg.innerHTML='<span style="color:#fca5a5">'+escHtml(e.name==='NotAllowedError'?'Cancelled — use your PIN or try again.':(e.message||'Didn’t work.'))+'</span>';
+    try{ _nt.bioCh=await (await fetch('/api/notes/bio/begin',{method:'POST'})).json(); }catch(err){}
+  }
+}
+async function ntUnlocked(tok){
+  _nt.tok=tok; ntTouch();
+  await ntLoad();
+  ntShowList();
+  // Offer Face ID / fingerprint on this device once.
+  const st=_nt.st||{};
+  if(!ntBioId() && await ntBioAvailable()){
+    let asked=false; try{ asked=localStorage.getItem('org:notesBioAsked')==='1'; }catch(e){}
+    if(!asked){ const b=document.getElementById('ntBanner'); if(b) b.innerHTML='<div class="nt-banner"><i class="ti ti-fingerprint"></i><span>Unlock next time with Face ID / fingerprint?</span><button class="btn sm acc" onclick="ntBioRegister()">Turn on</button><button class="btn sm" onclick="ntBioNo()">Not now</button></div>'; }
+  }
+}
+function ntBioNo(){ try{ localStorage.setItem('org:notesBioAsked','1'); }catch(e){} const b=document.getElementById('ntBanner'); if(b) b.innerHTML=''; }
+async function ntBioRegister(){
+  const say=t=>{ const b=document.getElementById('ntBanner'); if(b) b.innerHTML='<div class="nt-banner">'+t+'</div>'; };
+  try{
+    const beg=await ntApi('/api/notes/bio/register-begin',{});
+    if(beg.error) throw new Error(beg.error);
+    const label=(navigator.userAgent.match(/(iPhone|iPad|Android|Windows|Macintosh)/)||['Device'])[0];
+    const cred=await navigator.credentials.create({ publicKey:{
+      challenge:ntUnb64u(beg.challenge), rp:{ name:'Personal Organizer', id:location.hostname },
+      user:{ id:ntUnb64u(beg.userId), name:'notes', displayName:'Organizer notes' },
+      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257},{type:'public-key',alg:-8}],
+      authenticatorSelection:{ authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred' },
+      excludeCredentials:(beg.exclude||[]).map(id=>({type:'public-key', id:ntUnb64u(id)})), timeout:60000, attestation:'none' } });
+    const r=cred.response;
+    if(typeof r.getPublicKey!=='function' || !r.getPublicKey()) throw new Error('This browser can’t set it up — please update it.');
+    const d=await ntApi('/api/notes/bio/register-finish',{ id:cred.id, clientDataJSON:ntB64u(r.clientDataJSON), publicKey:ntB64u(r.getPublicKey()), alg:r.getPublicKeyAlgorithm(), label });
+    if(d.error) throw new Error(d.error);
+    try{ localStorage.setItem(NT_BIO_KEY, cred.id); localStorage.setItem('org:notesBioAsked','1'); }catch(e){}
+    _nt.st=await (await fetch('/api/notes/status',{headers:{'X-Notes-Token':_nt.tok}})).json();
+    say('<i class="ti ti-circle-check" style="color:var(--green)"></i><span>Done — next time unlock with Face ID / fingerprint.</span>');
+    setTimeout(()=>say(''),4000);
+  }catch(e){ if(e.message!=='locked') say('<i class="ti ti-alert-triangle" style="color:#fca5a5"></i><span>'+escHtml(e.name==='NotAllowedError'?'Cancelled.':(e.message||'Didn’t work.'))+'</span><button class="btn sm" onclick="ntBioNo()">Close</button>'); }
+}
+// ── First-time setup: choose a PIN (needs the private password) ──
+function ntShowSetup(step){
+  const o=document.getElementById('ntWrap'); if(!o) return;
+  const confirm = _nt.pin1!==null;
+  o.innerHTML=ntTop('Notes','')+
+    '<div class="nt-center"><div class="nt-lock"><i class="ti ti-shield-lock"></i><b>'+(confirm?'Type the PIN again':'Choose a PIN for your notes')+'</b>'+
+      '<span id="ntLockMsg">'+(step||'4 to 8 digits. You can add Face ID / fingerprint after.')+'</span>'+
+      '<div class="nt-dots" id="ntSetupDots"></div>'+ntPad('ntSetupKey')+
+      '<div id="ntSetupPw"></div></div></div>';
+  _nt.pin=''; ntSetupDots();
+}
+function ntSetupDots(){ const d=document.getElementById('ntSetupDots'); if(!d) return; const len=_nt.pin.length; d.innerHTML=Array.from({length:Math.max(4,len)},(_,i)=>'<span class="'+(i<len?'on':'')+'"></span>').join('')+(len>=4?'<button class="nt-ok" onclick="ntSetupNext()">'+(_nt.pin1===null?'Next':'Save')+'</button>':''); }
+function ntSetupKey(k){ if(k==='⌫') _nt.pin=_nt.pin.slice(0,-1); else if(_nt.pin.length<8) _nt.pin+=k; ntSetupDots(); }
+async function ntSetupNext(){
+  if(_nt.pin.length<4) return;
+  if(_nt.pin1===null){ _nt.pin1=_nt.pin; ntShowSetup(); return; }
+  if(_nt.pin!==_nt.pin1){ _nt.pin1=null; ntShowSetup('<span style="color:#fca5a5">The two PINs didn’t match — start again.</span>'); return; }
+  const pw=document.getElementById('ntPw');
+  if(pw && pw.value){ const u=await privPost('/api/private/unlock',{password:pw.value}); if(u.error){ document.getElementById('ntLockMsg').innerHTML='<span style="color:#fca5a5">'+escHtml(u.error)+'</span>'; return; } setPrivTok(u.token); }
+  const d=await privPost('/api/notes/pin',{ pin:_nt.pin });
+  if(d.locked || (d.error && /locked/i.test(d.error))){
+    if(!S.privateSet){ document.getElementById('ntLockMsg').innerHTML='<span style="color:#fca5a5">First set a private-settings password in Settings → Private.</span>'; return; }
+    document.getElementById('ntLockMsg').innerHTML='To protect your notes, confirm with your private-settings password once.';
+    document.getElementById('ntSetupPw').innerHTML='<div class="rm-unlock" style="margin-top:10px;width:100%"><input id="ntPw" type="password" class="cc-input" placeholder="Private-settings password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\'){event.stopPropagation();ntSetupNext()}"><button class="btn acc sm" onclick="ntSetupNext()">Save PIN</button></div>';
+    setTimeout(()=>{ const i=document.getElementById('ntPw'); if(i) i.focus(); },50);
+    return;
+  }
+  if(d.error){ document.getElementById('ntLockMsg').innerHTML='<span style="color:#fca5a5">'+escHtml(d.error)+'</span>'; return; }
+  _nt.pin1=null; _nt.pin='';
+  _nt.st=await (await fetch('/api/notes/status',{headers:{'X-Notes-Token':d.token}})).json();
+  await ntUnlocked(d.token);
+}
+// ── Data ──
+async function ntLoad(){
+  try{ const d=await ntApi('/api/notes'); _nt.notes=d.notes||[]; }catch(e){ if(e.message!=='locked') _nt.notes=[]; }
+}
+function ntTop(title, right){
+  return '<div class="nt-top"><button class="pad-x" onclick="'+(_nt.view==='edit'?'ntBack()':'ntClose()')+'" aria-label="'+(_nt.view==='edit'?'Back':'Close')+'"><i class="ti '+(_nt.view==='edit'?'ti-arrow-left':'ti-x')+'"></i></button><b>'+title+'</b>'+right+'</div>';
+}
+function ntRel(ts){ const s=(Date.now()-ts)/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; const d=new Date(ts);
+  if(s<86400 && d.getDate()===new Date().getDate()) return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('en-GB',Object.assign({day:'numeric',month:'short'},d.getFullYear()!==new Date().getFullYear()?{year:'numeric'}:{})); }
+// Search ignores case, accents (ă/ș/ț…) and punctuation: “wifi” finds “Wi-Fi”.
+function ntNorm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,''); }
+function ntLink(t){ return t.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" onclick="event.stopPropagation()">$1</a>'); }
+function ntPreview(n, lines){
+  const L=String(n.body||'').split('\n'); const out=[]; let shown=0;
+  for(let i=0;i<L.length && shown<lines;i++){
+    const m=L[i].match(/^\s*[-*] \[( |x|X)\] ?(.*)$/);
+    if(m){ const on=m[1]!==' '; out.push('<div class="nt-ck'+(on?' on':'')+'"><button onclick="event.stopPropagation();ntTick(\''+n.id+'\','+i+')" aria-label="Tick"><i class="ti '+(on?'ti-square-check-filled':'ti-square')+'"></i></button><span>'+ntLink(escHtml(m[2]))+'</span></div>'); shown++; continue; }
+    if(!L[i].trim() && !out.length) continue;
+    out.push('<div>'+(L[i].trim()?ntLink(escHtml(L[i])):'&nbsp;')+'</div>'); shown++;
+  }
+  const more=L.filter(x=>x.trim()).length - out.length;
+  return out.join('')+(more>0?'<div class="nt-more">+'+more+' more</div>':'');
+}
+// ── List ──
+function ntShowList(){
+  const o=document.getElementById('ntWrap'); if(!o) return;
+  _nt.view='list'; _nt.cur=null;
+  const right='<button class="pad-ic" onclick="ntMenu()" aria-label="Notes settings"><i class="ti ti-dots"></i></button><button class="pad-ic" onclick="ntLock()" aria-label="Lock"><i class="ti ti-lock"></i></button>';
+  o.innerHTML=ntTop(_nt.bin?'Bin':'Notes', right)+'<div id="ntBanner"></div>'+
+    (_nt.bin?'':'<div class="nt-search"><i class="ti ti-search"></i><input id="ntQ" placeholder="Search notes" value="'+escHtml(_nt.q)+'" oninput="_nt.q=this.value;ntRenderCards()" autocomplete="off"></div>')+
+    '<div class="nt-scroll" id="ntScroll"><div id="ntMenuBox"></div><div id="ntCards"></div></div>'+
+    (_nt.bin?'':'<button class="nt-fab" onclick="ntNew()" aria-label="New note"><i class="ti ti-plus"></i></button>');
+  ntRenderCards();
+  if(_nt.menu) ntMenu(true);
+}
+function ntRenderCards(){
+  const box=document.getElementById('ntCards'); if(!box) return;
+  const q=ntNorm(_nt.q);
+  if(_nt.bin){
+    const del=_nt.notes.filter(n=>n.deleted).sort((a,b)=>b.deleted-a.deleted);
+    box.innerHTML='<button class="nt-binlink" onclick="_nt.bin=false;ntShowList()"><i class="ti ti-arrow-left"></i> Back to notes</button>'+
+      (del.length?'<div class="nt-binnote">Deleted notes stay here for 30 days.</div>'+del.map(n=>'<div class="nt-card" style="--nc:'+NT_COLORS[n.color||'']+'"><b>'+escHtml(n.title||'Untitled')+'</b><div class="nt-prev">'+ntPreview(n,3)+'</div>'+
+        '<div class="nt-binacts"><button class="btn sm" onclick="ntRestore(\''+n.id+'\')"><i class="ti ti-arrow-back-up"></i> Restore</button><button class="btn sm red" onclick="ntForever(\''+n.id+'\',this)"><i class="ti ti-trash-x"></i> Delete forever</button></div></div>').join('')
+        :'<div class="nt-empty"><i class="ti ti-trash"></i><span>The bin is empty.</span></div>');
+    return;
+  }
+  const live=_nt.notes.filter(n=>!n.deleted && (!q || ntNorm(n.title+' '+n.body).includes(q)));
+  const sort=(a,b)=>b.updated-a.updated;
+  const pin=live.filter(n=>n.pinned).sort(sort), rest=live.filter(n=>!n.pinned).sort(sort);
+  const card=n=>'<div class="nt-card" style="--nc:'+NT_COLORS[n.color||'']+'" role="button" tabindex="0" onclick="ntOpen(\''+n.id+'\')" onkeydown="if(event.key===\'Enter\')ntOpen(\''+n.id+'\')">'+
+    (n.pinned?'<i class="ti ti-pin-filled nt-pinic"></i>':'')+(n.title?'<b>'+escHtml(n.title)+'</b>':'')+
+    '<div class="nt-prev">'+ntPreview(n,8)+'</div><div class="nt-when">'+ntRel(n.updated)+'</div></div>';
+  const binN=_nt.notes.filter(n=>n.deleted).length;
+  box.innerHTML = !live.length
+    ? '<div class="nt-empty"><i class="ti ti-notes"></i><span>'+(q?'No notes match “'+escHtml(_nt.q)+'”.':'No notes yet — tap <b>+</b> to write one.')+'</span></div>'
+    : (pin.length?'<div class="nt-sec">Pinned</div><div class="nt-grid">'+pin.map(card).join('')+'</div>'+(rest.length?'<div class="nt-sec">Others</div>':''):'')+
+      '<div class="nt-grid">'+rest.map(card).join('')+'</div>';
+  if(binN) box.innerHTML+='<button class="nt-binlink" onclick="_nt.bin=true;ntShowList()"><i class="ti ti-trash"></i> Bin ('+binN+')</button>';
+}
+async function ntTick(id, line){
+  const n=_nt.notes.find(x=>x.id===id); if(!n) return;
+  const L=n.body.split('\n'); L[line]=L[line].replace(/\[( |x|X)\]/, m=>m==='[ ]'?'[x]':'[ ]'); n.body=L.join('\n');
+  const base=n.updated; n.updated=Date.now();
+  if(_nt.view==='list') ntRenderCards();
+  if(navigator.vibrate) navigator.vibrate(6);
+  try{ const d=await ntApi('/api/notes/save',{ note:{ ...n, base } }); if(d.note){ Object.assign(n,d.note); if(d.conflict){ await ntLoad(); ntRenderCards(); } } }catch(e){}
+}
+// ── Editor ──
+function ntNew(){ _nt.cur={ id:null, title:'', body:'', color:'', pinned:false, updated:Date.now(), base:0 }; ntShowEdit(true); }
+function ntOpen(id){ const n=_nt.notes.find(x=>x.id===id); if(!n) return; _nt.cur={ ...n, base:n.updated }; ntShowEdit(false); }
+function ntShowEdit(isNew){
+  const o=document.getElementById('ntWrap'); if(!o||!_nt.cur) return;
+  _nt.view='edit';
+  const n=_nt.cur;
+  const right='<span class="nt-saved" id="ntSaved"></span>'+
+    '<button class="pad-ic'+(n.pinned?' on':'')+'" id="ntPinBtn" onclick="ntPin()" aria-label="Pin"><i class="ti '+(n.pinned?'ti-pin-filled':'ti-pin')+'"></i></button>'+
+    '<button class="pad-ic" onclick="ntColorMenu()" aria-label="Colour"><span class="nt-dot" id="ntDotBtn" style="background:'+NT_DOT[n.color||'']+'"></span></button>'+
+    (navigator.share?'<button class="pad-ic" onclick="ntShare()" aria-label="Share"><i class="ti ti-share"></i></button>':'')+
+    '<button class="pad-ic" onclick="ntDelete()" aria-label="Delete"><i class="ti ti-trash"></i></button>';
+  o.innerHTML=ntTop('', right)+
+    '<div id="ntColors" class="nt-colors" hidden>'+Object.keys(NT_DOT).map(c=>'<button style="background:'+NT_DOT[c]+'" onclick="ntColor(\''+c+'\')" aria-label="'+(c||'default')+'"></button>').join('')+'</div>'+
+    '<div class="nt-edit" style="--nc:'+NT_COLORS[n.color||'']+'">'+
+      '<input id="ntTitle" class="nt-title" placeholder="Title" value="'+escHtml(n.title)+'" oninput="ntChanged()" maxlength="200">'+
+      '<textarea id="ntBody" class="nt-body" placeholder="Write something…" oninput="ntChanged()">'+escHtml(n.body)+'</textarea>'+
+    '</div>'+
+    '<div class="nt-tools"><button onclick="ntCheck()"><i class="ti ti-checkbox"></i> Tick-box</button><button onclick="ntBullet()"><i class="ti ti-list"></i> List</button><button onclick="ntStamp()"><i class="ti ti-calendar"></i> Date</button>'+
+      '<span class="nt-meta">'+(n.created?'Edited '+ntRel(n.updated):'New note')+'</span></div>';
+  const b=document.getElementById('ntBody');
+  b.addEventListener('keydown', ntListEnter);
+  setTimeout(()=>{ (isNew?document.getElementById('ntTitle'):null)?.focus(); },60);
+}
+// Enter on a tick-box or list line starts the next one; Enter on an empty one ends the list.
+function ntListEnter(e){
+  if(e.key!=='Enter' || e.shiftKey) return;
+  const t=e.target, v=t.value, pos=t.selectionStart;
+  const ls=v.lastIndexOf('\n', pos-1)+1, line=v.slice(ls, pos);
+  const m=line.match(/^(\s*)([-*] \[( |x|X)\] |[-*•] )(.*)$/); if(!m) return;
+  e.preventDefault();
+  if(!m[4].trim()){ t.value=v.slice(0,ls)+v.slice(pos); t.selectionStart=t.selectionEnd=ls; }
+  else { const pre='\n'+m[1]+(m[2].includes('[')?'- [ ] ':m[2]); t.value=v.slice(0,pos)+pre+v.slice(pos); t.selectionStart=t.selectionEnd=pos+pre.length; }
+  ntChanged();
+}
+function ntLinePrefix(fn){
+  const t=document.getElementById('ntBody'); if(!t) return;
+  const v=t.value, pos=t.selectionStart, ls=v.lastIndexOf('\n', pos-1)+1, le=(v.indexOf('\n',pos)+1||v.length+1)-1;
+  const line=v.slice(ls,le), nl=fn(line);
+  t.value=v.slice(0,ls)+nl+v.slice(le); const np=Math.max(ls, pos+(nl.length-line.length)); t.focus(); t.selectionStart=t.selectionEnd=np;
+  ntChanged();
+}
+function ntCheck(){ ntLinePrefix(l=>/^\s*[-*] \[( |x|X)\] /.test(l)?l.replace(/^(\s*)[-*] \[( |x|X)\] /,'$1'):l.replace(/^(\s*)(?:[-*•] )?/,'$1- [ ] ')); }
+function ntBullet(){ ntLinePrefix(l=>/^\s*[-*•] (?!\[)/.test(l)?l.replace(/^(\s*)[-*•] /,'$1'):l.replace(/^(\s*)(?:[-*] \[( |x|X)\] )?/,'$1• ')); }
+function ntStamp(){ const t=document.getElementById('ntBody'); if(!t) return; const s=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+' '; const p=t.selectionStart; t.value=t.value.slice(0,p)+s+t.value.slice(t.selectionEnd); t.focus(); t.selectionStart=t.selectionEnd=p+s.length; ntChanged(); }
+function ntPin(){ _nt.cur.pinned=!_nt.cur.pinned; const b=document.getElementById('ntPinBtn'); if(b){ b.classList.toggle('on',_nt.cur.pinned); b.innerHTML='<i class="ti '+(_nt.cur.pinned?'ti-pin-filled':'ti-pin')+'"></i>'; } ntChanged(true); }
+function ntColorMenu(){ const c=document.getElementById('ntColors'); if(c) c.hidden=!c.hidden; }
+function ntColor(c){ _nt.cur.color=c; const e=document.querySelector('.nt-edit'); if(e) e.style.setProperty('--nc',NT_COLORS[c]); const d=document.getElementById('ntDotBtn'); if(d) d.style.background=NT_DOT[c]; ntColorMenu(); ntChanged(true); }
+async function ntShare(){ ntFlush(); try{ await navigator.share({ title:_nt.cur.title||'Note', text:(_nt.cur.title?_nt.cur.title+'\n\n':'')+_nt.cur.body }); }catch(e){} }
+function ntChanged(now){
+  const n=_nt.cur; if(!n) return;
+  const t=document.getElementById('ntTitle'), b=document.getElementById('ntBody');
+  if(t) n.title=t.value; if(b) n.body=b.value;
+  _nt.dirty=true; ntSavedLabel('Saving…');
+  clearTimeout(_nt.saveT); _nt.saveT=setTimeout(ntSave, now?50:700);
+}
+function ntSavedLabel(t){ const e=document.getElementById('ntSaved'); if(e) e.textContent=t; }
+async function ntSave(){
+  const n=_nt.cur; if(!n || !_nt.dirty || !_nt.tok) return;
+  if(!n.id && !n.title.trim() && !n.body.trim()){ _nt.dirty=false; ntSavedLabel(''); return; }    // don't keep empty new notes
+  if(_nt.saving){ clearTimeout(_nt.saveT); _nt.saveT=setTimeout(ntSave,300); return; }
+  _nt.saving=true; _nt.dirty=false;
+  try{
+    const d=await ntApi('/api/notes/save',{ note:{ id:n.id, title:n.title, body:n.body, color:n.color, pinned:n.pinned, base:n.base } });
+    if(d.error) throw new Error(d.error);
+    if(d.conflict){ ntSavedLabel('Saved as a copy'); await ntLoad(); const c=d.note; _nt.cur={ ...c, base:c.updated }; }
+    else { n.id=d.note.id; n.base=d.note.updated; n.updated=d.note.updated; n.created=d.note.created;
+      const i=_nt.notes.findIndex(x=>x.id===n.id); const keep={ ...d.note }; if(i>=0) _nt.notes[i]=keep; else _nt.notes.push(keep);
+      if(!_nt.dirty) ntSavedLabel('Saved ✓'); }
+  }catch(e){ if(e.message!=='locked'){ _nt.dirty=true; ntSavedLabel('Not saved — retrying'); _nt.saveT=setTimeout(ntSave,3000); } }
+  _nt.saving=false;
+}
+function ntFlush(sync){ if(_nt.dirty && _nt.cur){ clearTimeout(_nt.saveT); ntSave(); } }
+async function ntBack(){ clearTimeout(_nt.saveT); await ntSave(); ntShowList(); }
+async function ntDelete(){
+  const n=_nt.cur; clearTimeout(_nt.saveT);
+  if(n.id){ try{ await ntApi('/api/notes/delete',{ id:n.id }); const x=_nt.notes.find(k=>k.id===n.id); if(x) x.deleted=Date.now(); }catch(e){ return; } }
+  _nt.cur=null; _nt.dirty=false; ntShowList();
+  if(n.id){ const b=document.getElementById('ntBanner'); if(b) b.innerHTML='<div class="nt-banner"><i class="ti ti-trash"></i><span>Moved to the bin.</span><button class="btn sm" onclick="ntRestore(\''+n.id+'\')">Undo</button></div>'; }
+}
+async function ntRestore(id){ try{ await ntApi('/api/notes/delete',{ id, restore:true }); const x=_nt.notes.find(k=>k.id===id); if(x){ delete x.deleted; x.updated=Date.now(); } }catch(e){ return; } const b=document.getElementById('ntBanner'); if(b) b.innerHTML=''; ntRenderCards(); }
+async function ntForever(id, btn){
+  if(!btn.dataset.sure){ btn.dataset.sure='1'; btn.innerHTML='<i class="ti ti-alert-triangle"></i> Tap again to delete'; return; }
+  try{ await ntApi('/api/notes/delete',{ id, forever:true }); _nt.notes=_nt.notes.filter(k=>k.id!==id); }catch(e){ return; }
+  ntRenderCards();
+}
+// ── Notes settings (⋯) ──
+function ntMenu(keep){
+  const box=document.getElementById('ntMenuBox'); if(!box) return;
+  if(!keep) _nt.menu=!_nt.menu;
+  if(!_nt.menu){ box.innerHTML=''; return; }
+  const st=_nt.st||{}, idle=ntIdleMin(), here=ntBioId();
+  box.innerHTML='<div class="nt-menu">'+
+    '<div class="nt-mrow"><span><i class="ti ti-clock"></i> Lock after</span>'+[1,5,15].map(m=>'<button class="sh-chip'+(m===idle?' on':'')+'" onclick="ntSetIdle('+m+')">'+m+' min</button>').join('')+'</div>'+
+    '<div class="nt-mrow col"><span><i class="ti ti-fingerprint"></i> Face ID / fingerprint</span>'+
+      ((st.bio||[]).length?(st.bio||[]).map(b=>'<div class="nt-dev">'+escHtml(b.label)+(b.id===here?' <em>(this device)</em>':'')+' <button class="pl-x" onclick="ntBioRemove(\''+b.id+'\')" aria-label="Remove"><i class="ti ti-trash"></i></button></div>').join(''):'<div class="nt-dev">Not set up on any device.</div>')+
+      (!here?'<button class="btn sm acc" onclick="ntBioRegister()"><i class="ti ti-fingerprint"></i> Turn on for this device</button>':'')+'</div>'+
+    '<div class="nt-mrow"><button class="btn sm" onclick="ntChangePin()"><i class="ti ti-key"></i> Change PIN</button><button class="btn sm" onclick="ntExport()"><i class="ti ti-download"></i> Export all notes</button></div>'+
+  '</div>';
+}
+function ntSetIdle(m){ try{ localStorage.setItem(NT_IDLE_KEY,String(m)); }catch(e){} ntTouch(); ntMenu(true); }
+async function ntBioRemove(id){
+  try{ const d=await ntApi('/api/notes/bio/remove',{ id }); if(d.bio){ _nt.st.bio=d.bio; } if(id===ntBioId()){ try{ localStorage.removeItem(NT_BIO_KEY); }catch(e){} } }catch(e){}
+  ntMenu(true);
+}
+function ntChangePin(){ _nt.pin1=null; ntShowSetup('Choose a new PIN. You’ll confirm with your private-settings password.'); }
+function ntExport(){
+  const live=_nt.notes.filter(n=>!n.deleted).sort((a,b)=>b.updated-a.updated);
+  const txt=live.map(n=>'# '+(n.title||'Untitled')+'\n'+new Date(n.updated).toLocaleString('en-GB')+'\n\n'+n.body).join('\n\n-----\n\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'})); a.download='organizer-notes-'+TODAY+'.txt';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+window.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('ntWrap')){ if(_nt.view==='edit') ntBack(); else ntClose(); } });
+
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
 // key). Windy's own API only returns real data on a paid plan, so each city
@@ -6446,7 +6891,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-22-done-look';
+const APP_BUILD='2026-10-23-notes';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
