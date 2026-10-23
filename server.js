@@ -61,6 +61,7 @@ function publicView(d){
   for(const k of PRIVATE_SETTING_KEYS) delete st[k];
   out.settings = st;
   delete out.pushSubs;
+  delete out.notes; delete out.notesAuth;           // only via /api/notes, behind the PIN
   if(d.travelCache){
     out.travelCache = {};
     for(const [k,v] of Object.entries(d.travelCache)){
@@ -1041,7 +1042,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-22-done-look';
+const BUILD_VERSION = '2026-10-23-notes';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1279,6 +1280,10 @@ app.get('/api/data', (req, res) => res.json(publicView(readData())));
 app.post('/api/data', (req, res) => {
   const current = readData();
   const updated = {...current, ...req.body};
+  // Notes are never written through here (the browser doesn't even have them).
+  updated.notes = current.notes; updated.notesAuth = current.notesAuth;
+  if(updated.notes === undefined) delete updated.notes;
+  if(updated.notesAuth === undefined) delete updated.notesAuth;
 
   // Settings must be MERGED, not replaced. The spread above is shallow, so
   // a client payload would otherwise drop every server-owned setting the
@@ -1724,6 +1729,14 @@ app.post('/api/restore', (req, res) => {
     }
     const current = readData();
     const merged = {
+      // Start from what's here, so data the backup doesn't carry (notes,
+      // shopping lists, concerts, Bible plan…) isn't lost by a restore.
+      ...current,
+      ...(incoming.shopping ? { shopping: incoming.shopping } : {}),
+      ...(incoming.concerts ? { concerts: incoming.concerts } : {}),
+      ...(incoming.tithe ? { tithe: incoming.tithe } : {}),
+      ...(incoming.bible ? { bible: incoming.bible } : {}),
+      notes: current.notes, notesAuth: current.notesAuth,
       tasks: Array.isArray(incoming.tasks) ? incoming.tasks : (current.tasks||[]),
       sportEvents: Array.isArray(incoming.sportEvents) ? incoming.sportEvents : (current.sportEvents||[]),
       groups: Array.isArray(incoming.groups) && incoming.groups.length ? incoming.groups : current.groups,
@@ -1781,6 +1794,9 @@ app.post('/api/snapshots/:id/restore', async (req, res) => {
     const restored = { ...snap.data, settings: { ...stripPrivateIncoming((snap.data && snap.data.settings) || {}) } };
     for(const k of PRIVATE_SETTING_KEYS){ if(cur.settings && cur.settings[k] !== undefined) restored.settings[k] = cur.settings[k]; }
     restored.pushSubs = cur.pushSubs || [];
+    // Notes keep their current state: rolling the calendar back shouldn't
+    // roll your notes back too.
+    if(cur.notes) restored.notes = cur.notes; if(cur.notesAuth) restored.notesAuth = cur.notesAuth;
     writeData(restored);
     setupCrons(restored.settings);
     res.json({
@@ -4199,6 +4215,184 @@ let _plugCron = cron.schedule('* * * * *', async () => {
     if(_plugFired.size > 500) _plugFired = new Set([..._plugFired].slice(-100));
   }catch(e){ console.log('Plug schedule error:', e.message); }
 }, { timezone: 'UTC' });
+
+// ═══════════════════════════════════════════════════
+// NOTES (widget) — behind a PIN or the device's Face ID / fingerprint
+// Stored with the rest of the data (so every device sees the same notes)
+// but never in /api/data or backup files: only these endpoints serve them,
+// and only with a notes token from the PIN or a passkey (WebAuthn).
+//  • PIN: 4–8 digits, scrypt hash; setting it the first time (or changing
+//    it) needs the private-settings password. Wrong PINs lock it for a while.
+//  • Face ID / Touch ID / Windows Hello: a passkey per device. The browser
+//    hands over the public key at registration; each unlock is a signature
+//    over a fresh challenge, checked here with Node's crypto.
+// ═══════════════════════════════════════════════════
+const NOTES_TTL_MS = 15*60*1000;                // renewed while in use
+const _notesSessions = new Map();               // token -> expiry
+const _notesChallenges = new Map();             // challenge -> { kind, exp }
+let _pinFails = 0, _pinLockUntil = 0;
+function notesAuthOf(d){ if(!d.notesAuth) d.notesAuth = { creds:[] }; d.notesAuth.creds = d.notesAuth.creds || []; return d.notesAuth; }
+function notesOf(d){ if(!d.notes) d.notes = { items:[] }; d.notes.items = d.notes.items || []; return d.notes; }
+function notesTokOk(req){
+  const t = req.get('X-Notes-Token') || '';
+  const exp = t && _notesSessions.get(t);
+  if(!exp) return false;
+  if(exp < Date.now()){ _notesSessions.delete(t); return false; }
+  _notesSessions.set(t, Date.now() + NOTES_TTL_MS);
+  return true;
+}
+function requireNotes(req, res, next){
+  if(notesTokOk(req)) return next();
+  res.status(401).json({ error:'Notes are locked.', locked:true });
+}
+function notesNewSession(){ const t = crypto.randomBytes(24).toString('hex'); _notesSessions.set(t, Date.now()+NOTES_TTL_MS); return t; }
+const b64u = buf => Buffer.from(buf).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const unb64u = str => Buffer.from(String(str||'').replace(/-/g,'+').replace(/_/g,'/'), 'base64');
+function notesChallenge(kind){
+  const c = b64u(crypto.randomBytes(32));
+  _notesChallenges.set(c, { kind, exp: Date.now() + 3*60*1000 });
+  for(const [k,v] of _notesChallenges) if(v.exp < Date.now()) _notesChallenges.delete(k);
+  return c;
+}
+function takeChallenge(c, kind){
+  const v = _notesChallenges.get(c); _notesChallenges.delete(c);
+  return !!(v && v.kind === kind && v.exp >= Date.now());
+}
+app.get('/api/notes/status', (req, res) => {
+  const d = readData(); const a = d.notesAuth || {};
+  res.json({ pinSet: !!(a.pin && a.pin.hash), unlocked: notesTokOk(req),
+    bio: (a.creds||[]).map(c => ({ id:c.id, label:c.label, at:c.at })),
+    count: ((d.notes && d.notes.items) || []).filter(n => !n.deleted).length,
+    lockedFor: _pinLockUntil > Date.now() ? Math.ceil((_pinLockUntil-Date.now())/1000) : 0 });
+});
+// Set (or change) the PIN: needs the private-settings password.
+app.post('/api/notes/pin', requirePrivate, (req, res) => {
+  const pin = String((req.body||{}).pin||'');
+  if(!/^\d{4,8}$/.test(pin)) return res.status(400).json({ error:'The PIN must be 4 to 8 digits.' });
+  const d = readData(); const a = notesAuthOf(d);
+  const salt = crypto.randomBytes(16).toString('hex');
+  a.pin = { salt, hash: crypto.scryptSync(pin, salt, 64).toString('hex'), at: new Date().toISOString() };
+  writeData(d);
+  _notesSessions.clear(); _pinFails = 0; _pinLockUntil = 0;
+  res.json({ ok:true, token: notesNewSession() });
+});
+app.post('/api/notes/unlock', (req, res) => {
+  const now = Date.now();
+  if(now < _pinLockUntil) return res.status(429).json({ error:'Too many wrong PINs — try again in '+Math.ceil((_pinLockUntil-now)/60000)+' min.', lockedFor: Math.ceil((_pinLockUntil-now)/1000) });
+  const d = readData(); const a = d.notesAuth || {};
+  if(!a.pin || !a.pin.hash) return res.status(400).json({ error:'No PIN set yet.', needsSetup:true });
+  const pin = String((req.body||{}).pin||'');
+  const got = crypto.scryptSync(pin, a.pin.salt, 64), want = Buffer.from(a.pin.hash, 'hex');
+  if(got.length === want.length && crypto.timingSafeEqual(got, want)){ _pinFails = 0; return res.json({ ok:true, token: notesNewSession() }); }
+  _pinFails++;
+  // 5 tries, then 1 min, 5 min, 15 min, 1 h…
+  if(_pinFails >= 5){ const steps=[60,300,900,3600]; _pinLockUntil = now + 1000*steps[Math.min(steps.length-1, _pinFails-5)]; }
+  res.status(401).json({ error: _pinFails>=5 ? 'Wrong PIN — locked for a while.' : 'Wrong PIN.', triesLeft: Math.max(0, 5-_pinFails) });
+});
+app.post('/api/notes/lock', (req, res) => { const t = req.get('X-Notes-Token'); if(t) _notesSessions.delete(t); res.json({ ok:true }); });
+// ── Passkeys (Face ID / fingerprint) ──
+function rpFromOrigin(origin){ try{ return new URL(origin).hostname; }catch(e){ return null; } }
+app.post('/api/notes/bio/register-begin', requireNotes, (req, res) => {
+  const d = readData(); const a = notesAuthOf(d);
+  if(!a.userId){ a.userId = b64u(crypto.randomBytes(16)); writeData(d); }
+  res.json({ challenge: notesChallenge('create'), userId: a.userId, exclude: a.creds.map(c => c.id) });
+});
+app.post('/api/notes/bio/register-finish', requireNotes, (req, res) => {
+  try{
+    const b = req.body || {};
+    const cd = JSON.parse(unb64u(b.clientDataJSON).toString('utf8'));
+    if(cd.type !== 'webauthn.create') throw new Error('Wrong type.');
+    if(!takeChallenge(cd.challenge, 'create')) throw new Error('This request expired — try again.');
+    const rp = rpFromOrigin(cd.origin); if(!rp) throw new Error('Bad origin.');
+    const spki = unb64u(b.publicKey);
+    crypto.createPublicKey({ key: spki, format:'der', type:'spki' });     // throws if it isn't a key
+    if(![-7,-257,-8].includes(Number(b.alg))) throw new Error('Unsupported key type.');
+    const d = readData(); const a = notesAuthOf(d);
+    a.creds = a.creds.filter(c => c.id !== b.id).slice(-7);
+    a.creds.push({ id:String(b.id), pub: b64u(spki), alg:Number(b.alg), rp, origin: cd.origin, label: String(b.label||'Device').slice(0,40), count:0, at:new Date().toISOString() });
+    writeData(d);
+    res.json({ ok:true });
+  }catch(e){ res.status(400).json({ error:'Couldn’t set up Face ID / fingerprint: '+e.message }); }
+});
+app.post('/api/notes/bio/begin', (req, res) => {
+  const a = readData().notesAuth || {};
+  if(!(a.creds||[]).length) return res.status(400).json({ error:'No Face ID / fingerprint set up yet.' });
+  res.json({ challenge: notesChallenge('get'), allow: a.creds.map(c => c.id) });
+});
+app.post('/api/notes/bio/finish', (req, res) => {
+  try{
+    const b = req.body || {};
+    const d = readData(); const a = notesAuthOf(d);
+    const cred = a.creds.find(c => c.id === b.id); if(!cred) throw new Error('This device isn’t registered any more.');
+    const cdRaw = unb64u(b.clientDataJSON), ad = unb64u(b.authenticatorData), sig = unb64u(b.signature);
+    const cd = JSON.parse(cdRaw.toString('utf8'));
+    if(cd.type !== 'webauthn.get') throw new Error('Wrong type.');
+    if(!takeChallenge(cd.challenge, 'get')) throw new Error('This request expired — try again.');
+    if(rpFromOrigin(cd.origin) !== cred.rp) throw new Error('Wrong site.');
+    if(ad.length < 37) throw new Error('Bad data.');
+    const rpHash = crypto.createHash('sha256').update(cred.rp).digest();
+    if(!ad.subarray(0,32).equals(rpHash)) throw new Error('Wrong site.');
+    const flags = ad[32];
+    if(!(flags & 0x01) || !(flags & 0x04)) throw new Error('Face ID / fingerprint wasn’t confirmed.');
+    const signed = Buffer.concat([ad, crypto.createHash('sha256').update(cdRaw).digest()]);
+    const key = crypto.createPublicKey({ key: unb64u(cred.pub), format:'der', type:'spki' });
+    const ok = cred.alg === -8 ? crypto.verify(null, signed, key, sig) : crypto.verify('sha256', signed, key, sig);
+    if(!ok) throw new Error('Signature didn’t match.');
+    const count = ad.readUInt32BE(33);
+    if(count && cred.count && count <= cred.count) throw new Error('This key looks copied — set it up again.');
+    cred.count = count; cred.last = new Date().toISOString(); writeData(d);
+    _pinFails = 0;
+    res.json({ ok:true, token: notesNewSession() });
+  }catch(e){ res.status(401).json({ error: e.message }); }
+});
+app.post('/api/notes/bio/remove', requireNotes, (req, res) => {
+  const d = readData(); const a = notesAuthOf(d);
+  a.creds = a.creds.filter(c => c.id !== String((req.body||{}).id||'')); writeData(d);
+  res.json({ ok:true, bio: a.creds.map(c => ({ id:c.id, label:c.label, at:c.at })) });
+});
+// ── The notes themselves ──
+const NOTE_COLORS = ['', 'yellow','green','blue','purple','pink','orange'];
+function noteClean(n){
+  return { id:n.id, title:String(n.title||'').slice(0,200), body:String(n.body||'').slice(0,50000),
+    color: NOTE_COLORS.includes(n.color) ? n.color : '', pinned: !!n.pinned,
+    created:n.created, updated:n.updated, ...(n.deleted ? { deleted:n.deleted } : {}) };
+}
+app.get('/api/notes', requireNotes, (req, res) => {
+  const d = readData(); const N = notesOf(d);
+  // Bin empties itself after 30 days.
+  const cut = Date.now() - 30*24*3600*1000, before = N.items.length;
+  N.items = N.items.filter(n => !n.deleted || n.deleted > cut);
+  if(N.items.length !== before) writeData(d);
+  res.json({ notes: N.items.map(noteClean) });
+});
+app.post('/api/notes/save', requireNotes, (req, res) => {
+  const b = (req.body||{}).note || {};
+  const d = readData(); const N = notesOf(d); const now = Date.now();
+  let n = b.id && N.items.find(x => x.id === b.id);
+  let conflict = null;
+  if(n && b.base && n.updated > b.base && (n.body !== b.body || n.title !== b.title)){
+    // Changed on another device since this one loaded it: keep both.
+    conflict = { id:'n'+uid(), title:(String(b.title||n.title||'Note'))+' (copy from this device)', body:b.body, color:b.color, pinned:false, created:now, updated:now };
+    N.items.push(conflict);
+  } else if(n){
+    n.title = String(b.title||'').slice(0,200); n.body = String(b.body||'').slice(0,50000);
+    n.color = NOTE_COLORS.includes(b.color) ? b.color : ''; n.pinned = !!b.pinned; n.updated = now;
+  } else {
+    n = { id:'n'+uid(), title:String(b.title||'').slice(0,200), body:String(b.body||'').slice(0,50000),
+      color: NOTE_COLORS.includes(b.color) ? b.color : '', pinned: !!b.pinned, created:now, updated:now };
+    N.items.push(n);
+  }
+  writeData(d);
+  res.json({ ok:true, note: noteClean(conflict || n), conflict: !!conflict });
+});
+app.post('/api/notes/delete', requireNotes, (req, res) => {
+  const b = req.body || {}; const d = readData(); const N = notesOf(d);
+  const n = N.items.find(x => x.id === b.id); if(!n) return res.status(404).json({ error:'Not found.' });
+  if(b.forever) N.items = N.items.filter(x => x.id !== b.id);
+  else if(b.restore){ delete n.deleted; n.updated = Date.now(); }
+  else n.deleted = Date.now();
+  writeData(d); res.json({ ok:true });
+});
 
 // ═══════════════════════════════════════════════════
 // GIVING / TITHE TRACKER
