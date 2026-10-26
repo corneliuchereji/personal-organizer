@@ -403,6 +403,9 @@ body::before{
   /* On phones it floats over the weather panel's top-right corner. */
   #tools{position:absolute;top:calc(env(safe-area-inset-top) + 12px);right:12px}
   #lp{min-height:200px}
+  /* A busy day scrolls inside its own frame (so the calendar stays close
+     below) and opens on the event happening now — see lpAutoScroll. */
+  .lp-body{max-height:min(64vh,680px);overflow-y:auto;-webkit-overflow-scrolling:touch}
 }
 #tools{display:flex;gap:6px;z-index:80;align-items:center}
 #tools .btn.ico{width:34px;height:34px;padding:0;justify-content:center;
@@ -414,10 +417,11 @@ body::before{
 /* Phone widths: labels go, every button becomes an equal round icon.
    Titles and aria-labels keep them identifiable. */
 @media(max-width:700px){
-  #tools{gap:5px}
+  #tools{gap:4px}
   #tools .tl{display:none}
-  #tools .btn{width:36px;height:36px;padding:0;justify-content:center;border-radius:var(--rp)}
-  #tools .btn i{font-size:17px}
+  /* Six round buttons (with the bell) must clear the temperature on the left. */
+  #tools .btn{width:33px;height:33px;padding:0;justify-content:center;border-radius:var(--rp)}
+  #tools .btn i{font-size:16px}
 }
 
 /* ── Assistant dialog ── */
@@ -1141,6 +1145,47 @@ select option:checked{background:#2E3A78;color:#fff}
 .pl-log{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--txt2)}
 .pl-log span{color:var(--txt3);font-variant-numeric:tabular-nums}
 @media (max-width:360px){ .pl-grid{grid-template-columns:1fr} }
+
+
+/* Notification centre */
+#bellBtn{position:relative}
+#bellBtn .bcount{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center;display:none;box-shadow:0 0 0 2px #0F1732}
+#bellBtn.on .bcount{display:block}
+#bellBtn.on i{color:#fde68a}
+.al-card{margin-bottom:10px}
+.al-card.focus{box-shadow:0 0 0 3px rgba(250,204,21,.65)}
+.al-rems{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.al-rem{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 9px;border-radius:99px;background:rgba(15,23,50,.08);color:#3b4260}
+.ecard.sport .al-rem{background:rgba(255,255,255,.1);color:var(--txt2)}
+.al-rem em{font-style:normal;opacity:.75}
+.al-snooze{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 2px}
+.al-snooze[hidden]{display:none}
+.ecard.task .al-snooze .sh-chip{background:#fff7e0;border-color:#d9c48f;color:#5a4410;font-weight:600}
+.al-sec{font-size:12px;font-weight:650;color:var(--txt2);margin:12px 2px 6px}
+.al-srow{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);margin-bottom:6px;font-size:13px}
+.al-srow span{flex:1}
+.al-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px 10px;color:var(--txt2);text-align:center;font-size:13.5px}
+.al-empty i{font-size:36px;color:var(--txt3)}
+/* Verse wallpaper */
+.bw-wrap .nt-top .btn{height:40px}
+.bw-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;padding-bottom:30px}
+.bw-prev{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:#000;flex:none;max-height:48vh;display:flex;justify-content:center}
+.bw-prev canvas{display:block;max-width:100%;max-height:48vh;width:auto;height:auto}
+.bw-dim{position:absolute;right:8px;top:8px;font-size:11px;color:#94a3b8;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:99px}
+.bw-seg .sh-chip{flex:1;justify-content:center}
+.bw-ref{display:flex;gap:8px}
+.bw-ref input{flex:1;min-width:0;font-size:16px}
+.bw-msg{font-size:13px;min-height:4px;margin-bottom:4px}
+.bw-f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--txt2)}
+.bw-f > span{display:flex;align-items:center;gap:6px;font-weight:600}
+.bw-f textarea,.bw-f input.cc-input{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:16px;line-height:1.4;padding:9px 11px;resize:vertical}
+.bw-f em{font-style:normal;font-size:14px;color:var(--txt3)}
+.bw-sec{font-size:12px;font-weight:650;color:var(--txt2);margin-top:4px}
+.bw-range{width:100%;accent-color:#E2C08D}
+.bw-foot{font-size:11.5px;color:var(--txt3);line-height:1.45}
+.spin{animation:spin 900ms linear infinite;display:inline-block}
+.bw-wrap .sh-chip{border-color:var(--border);background:rgba(255,255,255,.05);color:var(--txt)}
+.bw-wrap .sh-chip.on{background:rgba(226,192,141,.18);border-color:rgba(226,192,141,.55);color:#f5dfb8}
 /* Notes */
 .nt-wrap{position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;background:#0B1128;color:var(--txt);
   padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));animation:mbgIn 160ms ease-out}
@@ -1175,7 +1220,9 @@ select option:checked{background:#2E3A78;color:#fff}
 .nt-card:active{transform:scale(0.98)}
 .nt-card > b{display:block;font-size:14.5px;font-weight:700;margin-bottom:4px;padding-right:16px;overflow-wrap:anywhere}
 .nt-pinic{position:absolute;top:10px;right:10px;font-size:13px;color:#facc15}
-.nt-prev{font-size:13px;line-height:1.45;color:#dbe2f5;overflow-wrap:anywhere}
+.nt-prev{font-size:13px;line-height:1.45;color:#dbe2f5;overflow-wrap:anywhere;max-height:230px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+.nt-prev img{display:block;max-width:100%;max-height:140px;object-fit:cover;border-radius:10px;margin:4px 0}
+.nt-prev h1,.nt-prev h2{font-size:15px;margin:2px 0}.nt-prev ul,.nt-prev ol{padding-left:18px;margin:2px 0}
 .nt-prev a{color:#93c5fd}
 .nt-ck{display:flex;align-items:flex-start;gap:4px}
 .nt-ck button{flex:none;border:0;background:transparent;color:#cbd5e1;padding:0;font-size:17px;line-height:1;cursor:pointer;margin-top:1px}
@@ -1191,13 +1238,32 @@ select option:checked{background:#2E3A78;color:#fff}
 .nt-binlink{display:flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--txt2);font:inherit;font-size:13px;padding:10px 2px;cursor:pointer}
 .nt-binnote{font-size:12px;color:var(--txt3);margin-bottom:8px}
 .nt-binacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.nt-edit{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:18px;background:var(--nc,#2a3358);border:1px solid rgba(255,255,255,.08);padding:4px 2px;transition:background-color 200ms ease}
+.nt-edit{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:18px;background:var(--nc,#2a3358);border:1px solid rgba(255,255,255,.08);padding:4px 2px;transition:background-color 200ms ease;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .nt-title{border:0;background:transparent;color:var(--txt);font:inherit;font-size:20px;font-weight:700;padding:12px 12px 4px;outline:none}
-.nt-body{flex:1;min-height:0;border:0;background:transparent;color:var(--txt);font:inherit;font-size:16px;line-height:1.55;padding:6px 12px 12px;outline:none;resize:none}
+.nt-body{flex:1 0 auto;min-height:55%;border:0;background:transparent;color:var(--txt);font:inherit;font-size:16px;line-height:1.55;padding:6px 12px 30vh;outline:none;overflow-wrap:anywhere;position:relative;-webkit-user-select:text;user-select:text}
+.nt-body.empty::before{content:attr(data-ph);color:rgba(219,226,245,.4);position:absolute;pointer-events:none}
+.nt-rich ul,.nt-rich ol{padding-left:22px;margin:2px 0}
+.nt-rich h1,.nt-rich h2{font-size:1.3em;margin:4px 0}
+.nt-rich a{color:#93c5fd}
+.nt-rich img{display:block;max-width:100%;height:auto;border-radius:12px;margin:6px 0}
+.nt-body img.sel{outline:3px solid #facc15;outline-offset:2px}
+.nt-rich font[size="2"]{font-size:.82em}.nt-rich font[size="5"]{font-size:1.32em}.nt-rich font[size="6"]{font-size:1.7em;font-weight:700}
+.nt-rich .ck{position:relative;padding-left:30px;min-height:1.55em}
+.nt-rich .ck::before{content:"";position:absolute;left:2px;top:.2em;width:17px;height:17px;border:2px solid rgba(219,226,245,.75);border-radius:6px;box-sizing:border-box;cursor:pointer}
+.nt-rich .ck.on::before{background:#facc15 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a1a2e' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/13px no-repeat;border-color:#facc15}
+.nt-rich .ck.on{color:rgba(219,226,245,.55);text-decoration:line-through}
+.nt-prev .ck::before{width:15px;height:15px;top:.15em}.nt-prev .ck{padding-left:24px}
+.nt-pop{display:flex;gap:6px;flex-wrap:wrap;padding:8px 2px 0;flex:none}
+.nt-pop[hidden]{display:none}
+.nt-pop button{height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font:inherit;font-size:14px;cursor:pointer}
+.nt-pop button.red{color:#fca5a5;border-color:rgba(248,113,113,.5)}
+.nt-pop .nt-swatch{width:34px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
+.nt-sep{flex:none;width:1px;height:22px;background:var(--border);margin:0 2px}
+.nt-tools button.on{background:rgba(250,204,21,.2);border-color:rgba(250,204,21,.55);color:#fde68a}
 .nt-title::placeholder,.nt-body::placeholder{color:rgba(219,226,245,.4)}
 .nt-tools{display:flex;gap:6px;align-items:center;flex:none;padding-top:8px;overflow-x:auto;scrollbar-width:none}
-.nt-tools button{flex:none;display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt);font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
-.nt-meta{margin-left:auto;font-size:11.5px;color:var(--txt3);white-space:nowrap;padding-left:6px}
+.nt-tools button{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:40px;min-width:40px;padding:0 10px;font-size:18px !important;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt);font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
+.nt-meta{font-size:11.5px;color:var(--txt3);padding:0 12px 2px}
 .nt-saved{font-size:12px;color:var(--txt2);white-space:nowrap;margin-left:auto}
 .nt-dot{display:inline-block;width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.6)}
 .nt-colors{display:flex;gap:10px;justify-content:flex-end;padding:0 4px 8px;flex:none}
@@ -1210,7 +1276,7 @@ select option:checked{background:#2E3A78;color:#fff}
 .nt-mrow i{color:#facc15}
 .nt-dev{display:flex;align-items:center;gap:6px;font-size:13px}
 .nt-dev em{color:var(--txt3);font-style:normal}
-.sh-chip.on{background:rgba(250,204,21,.2);border-color:rgba(250,204,21,.55);color:#fde68a}
+.nt-menu .sh-chip.on{background:rgba(250,204,21,.2);border-color:rgba(250,204,21,.55);color:#fde68a}
 @media (min-width:700px){ .nt-grid{columns:3} .nt-wrap{padding-left:max(12px,calc((100vw - 900px)/2));padding-right:max(12px,calc((100vw - 900px)/2))} }
 @media (prefers-reduced-motion:reduce){ .nt-dots.shake{animation:none} }
 /* Screen remote */
@@ -1413,6 +1479,7 @@ select option:checked{background:#2E3A78;color:#fff}
 <div id="tools">
   <button class="btn acc sm" onclick="openAddTask()" title="Add event" aria-label="Add event"><i class="ti ti-plus"></i><span class="tl">Add event</span></button>
   <button class="btn sm" id="widgetsBtn" onclick="toggleWidgets(event)" aria-haspopup="true" aria-expanded="false" title="Widgets" aria-label="Widgets"><i class="ti ti-apps"></i><span class="tl">Widgets</span></button>
+  <button class="btn sm ico" id="bellBtn" onclick="openAlerts()" title="Notifications" aria-label="Notifications"><i class="ti ti-bell"></i><span class="bcount"></span></button>
   <button class="btn sm ico" onclick="openChat()" title="Assistant" aria-label="Open assistant"><i class="ti ti-message-circle"></i></button>
   <button class="btn sm ico" id="filterBtn" onclick="openFilter()" title="Choose what to show" aria-label="Choose what to show"><i class="ti ti-adjustments-horizontal"></i><span class="fdot"></span></button>
   <button class="btn sm ico" onclick="openSettings()" title="Settings" aria-label="Settings"><i class="ti ti-settings"></i></button>
@@ -2100,7 +2167,31 @@ function renderLP(){
     return;
   }
   el.innerHTML=evs.map(ev=>renderCard(ev)).join('');
+  if(isToday) lpAutoScroll(evs, _lpLastDay!==ds);
+  _lpLastDay=ds;
 }
+// Today's list scrolls itself so the event happening now (or the next one)
+// sits at the top; earlier ones are still there above it. It leaves the
+// list alone for two minutes after you scroll it yourself.
+let _lpLastDay=null, _lpUserAt=0;
+function lpAutoScroll(evs, force){
+  const el=document.getElementById('lpBody'); if(!el) return;
+  if(!force && Date.now()-_lpUserAt < 120000) return;
+  requestAnimationFrame(()=>{
+    if(el.scrollHeight <= el.clientHeight + 4) return;           // everything fits
+    const now=new Date(), nowM=now.getHours()*60+now.getMinutes();
+    const mins=ev=>{ const t=ev && ev.time ? fmtTime(ev.time) : ''; const m=t.match(/^(\d{1,2}):(\d{2})/); return m ? (+m[1])*60+(+m[2]) : null; };
+    let idx=-1, lastTimed=-1;
+    evs.forEach((ev,i)=>{ const m=mins(ev); if(m==null) return; lastTimed=i; if(idx<0 && m >= nowM-60) idx=i; /* started within the last hour, or later */ });
+    if(idx<0) idx=lastTimed;                                    // all earlier today: show the last one
+    const card=el.children[idx]; if(!card || idx<=0){ return; }
+    const top=card.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 6;
+    el.scrollTo({ top, behavior: force ? 'auto' : 'smooth' });
+  });
+}
+['touchstart','wheel','pointerdown','keydown'].forEach(t=>document.addEventListener(t, e=>{ if(e.target && e.target.closest && e.target.closest('#lpBody')) _lpUserAt=Date.now(); }, {passive:true}));
+// Keep up as the day goes on.
+setInterval(()=>{ if(S.dayOffset===0 && !document.hidden){ const evs=agendaEventsOnDay(TODAY); lpAutoScroll(evs, false); } }, 5*60000);
 
 function renderCard(ev){
   const isTask=ev._type==='task';
@@ -4335,6 +4426,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
   {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
   {id:'w_worship',name:'Worship schedule', desc:'Read the monthly team plan into the calendar', action:'worship', icon:'ti-music'},
+  {id:'w_verse',name:'Verse wallpaper', desc:'Black 4K wallpapers: a Bible verse in English, Hebrew and Romanian, or a quote', action:'verse', icon:'ti-photo-heart'},
   {id:'w_notes',name:'Notes', desc:'Your notes on every device, behind a PIN or Face ID', action:'notes', icon:'ti-notes'},
   {id:'w_plugs',name:'Smart plugs', desc:'Switch your Shelly plugs, timers and schedules', action:'plugs', icon:'ti-plug'},
   {id:'w_remote',name:'Screen remote', desc:'Mirror the laptop on the TV from your phone', action:'remote', icon:'ti-device-tv'},
@@ -4400,9 +4492,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes(), verse: ()=>openVerse() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15', verse:'#E2C08D' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -5837,9 +5929,13 @@ function ntPad(fn){
 }
 function ntDots(n){ const d=document.getElementById('ntDots'); if(!d) return; const len=_nt.pin.length; d.innerHTML=Array.from({length:Math.max(4,len)},(_,i)=>'<span class="'+(i<len?'on':'')+'"></span>').join('')+(len>=4?'<button class="nt-ok" onclick="'+(n||'ntPinSubmit')+'()">OK</button>':''); }
 function ntPinKey(k){
+  if(_nt.checking) return;
   if(k==='⌫') _nt.pin=_nt.pin.slice(0,-1); else if(_nt.pin.length<8) _nt.pin+=k;
   ntDots();
   if(navigator.vibrate) navigator.vibrate(6);
+  // Checked as soon as the last digit is in, like a phone's lock screen.
+  const len=(_nt.st||{}).pinLen;
+  if(len && _nt.pin.length===len){ _nt.checking=true; setTimeout(async()=>{ try{ await ntPinSubmit(); } finally { _nt.checking=false; } }, 140); }
 }
 document.addEventListener('keydown', e=>{
   if(!document.getElementById('ntWrap') || !document.querySelector('.nt-pad')) return;
@@ -5879,6 +5975,8 @@ async function ntBioUnlock(){
 }
 async function ntUnlocked(tok){
   _nt.tok=tok; ntTouch();
+  // Fresh status: the server now knows the PIN's length (for auto-check).
+  try{ _nt.st=await (await fetch('/api/notes/status',{headers:{'X-Notes-Token':tok}})).json(); }catch(e){}
   await ntLoad();
   ntShowList();
   // Offer Face ID / fingerprint on this device once.
@@ -5945,7 +6043,11 @@ async function ntSetupNext(){
 }
 // ── Data ──
 async function ntLoad(){
-  try{ const d=await ntApi('/api/notes'); _nt.notes=d.notes||[]; }catch(e){ if(e.message!=='locked') _nt.notes=[]; }
+  try{
+    const d=await ntApi('/api/notes');
+    // Older plain-text notes are shown formatted; they're saved as formatted the next time they change.
+    _nt.notes=(d.notes||[]).map(n=>({ ...n, body: n.fmt==='html' ? ntSanitize(n.body) : ntTextToHtml(n.body), fmt:'html' }));
+  }catch(e){ if(e.message!=='locked') _nt.notes=[]; }
 }
 function ntTop(title, right){
   return '<div class="nt-top"><button class="pad-x" onclick="'+(_nt.view==='edit'?'ntBack()':'ntClose()')+'" aria-label="'+(_nt.view==='edit'?'Back':'Close')+'"><i class="ti '+(_nt.view==='edit'?'ti-arrow-left':'ti-x')+'"></i></button><b>'+title+'</b>'+right+'</div>';
@@ -5956,17 +6058,6 @@ function ntRel(ts){ const s=(Date.now()-ts)/1000; if(s<60) return 'just now'; if
 // Search ignores case, accents (ă/ș/ț…) and punctuation: “wifi” finds “Wi-Fi”.
 function ntNorm(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,''); }
 function ntLink(t){ return t.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" onclick="event.stopPropagation()">$1</a>'); }
-function ntPreview(n, lines){
-  const L=String(n.body||'').split('\n'); const out=[]; let shown=0;
-  for(let i=0;i<L.length && shown<lines;i++){
-    const m=L[i].match(/^\s*[-*] \[( |x|X)\] ?(.*)$/);
-    if(m){ const on=m[1]!==' '; out.push('<div class="nt-ck'+(on?' on':'')+'"><button onclick="event.stopPropagation();ntTick(\''+n.id+'\','+i+')" aria-label="Tick"><i class="ti '+(on?'ti-square-check-filled':'ti-square')+'"></i></button><span>'+ntLink(escHtml(m[2]))+'</span></div>'); shown++; continue; }
-    if(!L[i].trim() && !out.length) continue;
-    out.push('<div>'+(L[i].trim()?ntLink(escHtml(L[i])):'&nbsp;')+'</div>'); shown++;
-  }
-  const more=L.filter(x=>x.trim()).length - out.length;
-  return out.join('')+(more>0?'<div class="nt-more">+'+more+' more</div>':'');
-}
 // ── List ──
 function ntShowList(){
   const o=document.getElementById('ntWrap'); if(!o) return;
@@ -5985,106 +6076,321 @@ function ntRenderCards(){
   if(_nt.bin){
     const del=_nt.notes.filter(n=>n.deleted).sort((a,b)=>b.deleted-a.deleted);
     box.innerHTML='<button class="nt-binlink" onclick="_nt.bin=false;ntShowList()"><i class="ti ti-arrow-left"></i> Back to notes</button>'+
-      (del.length?'<div class="nt-binnote">Deleted notes stay here for 30 days.</div>'+del.map(n=>'<div class="nt-card" style="--nc:'+NT_COLORS[n.color||'']+'"><b>'+escHtml(n.title||'Untitled')+'</b><div class="nt-prev">'+ntPreview(n,3)+'</div>'+
+      (del.length?'<div class="nt-binnote">Deleted notes stay here for 30 days.</div>'+del.map(n=>'<div class="nt-card" style="--nc:'+NT_COLORS[n.color||'']+'"><b>'+escHtml(n.title||'Untitled')+'</b>'+ntPreview(n)+
         '<div class="nt-binacts"><button class="btn sm" onclick="ntRestore(\''+n.id+'\')"><i class="ti ti-arrow-back-up"></i> Restore</button><button class="btn sm red" onclick="ntForever(\''+n.id+'\',this)"><i class="ti ti-trash-x"></i> Delete forever</button></div></div>').join('')
         :'<div class="nt-empty"><i class="ti ti-trash"></i><span>The bin is empty.</span></div>');
     return;
   }
-  const live=_nt.notes.filter(n=>!n.deleted && (!q || ntNorm(n.title+' '+n.body).includes(q)));
+  const live=_nt.notes.filter(n=>!n.deleted && (!q || ntNorm(n.title+' '+ntPlain(n)).includes(q)));
   const sort=(a,b)=>b.updated-a.updated;
   const pin=live.filter(n=>n.pinned).sort(sort), rest=live.filter(n=>!n.pinned).sort(sort);
-  const card=n=>'<div class="nt-card" style="--nc:'+NT_COLORS[n.color||'']+'" role="button" tabindex="0" onclick="ntOpen(\''+n.id+'\')" onkeydown="if(event.key===\'Enter\')ntOpen(\''+n.id+'\')">'+
+  const card=n=>'<div class="nt-card" style="--nc:'+NT_COLORS[n.color||'']+'" role="button" tabindex="0" onclick="if(!event.target.closest(\'a\')&&!ntPrevTap(event))ntOpen(\''+n.id+'\')" onkeydown="if(event.key===\'Enter\')ntOpen(\''+n.id+'\')">'+
     (n.pinned?'<i class="ti ti-pin-filled nt-pinic"></i>':'')+(n.title?'<b>'+escHtml(n.title)+'</b>':'')+
-    '<div class="nt-prev">'+ntPreview(n,8)+'</div><div class="nt-when">'+ntRel(n.updated)+'</div></div>';
+    ntPreview(n)+'<div class="nt-when">'+ntRel(n.updated)+'</div></div>';
   const binN=_nt.notes.filter(n=>n.deleted).length;
   box.innerHTML = !live.length
     ? '<div class="nt-empty"><i class="ti ti-notes"></i><span>'+(q?'No notes match “'+escHtml(_nt.q)+'”.':'No notes yet — tap <b>+</b> to write one.')+'</span></div>'
     : (pin.length?'<div class="nt-sec">Pinned</div><div class="nt-grid">'+pin.map(card).join('')+'</div>'+(rest.length?'<div class="nt-sec">Others</div>':''):'')+
       '<div class="nt-grid">'+rest.map(card).join('')+'</div>';
   if(binN) box.innerHTML+='<button class="nt-binlink" onclick="_nt.bin=true;ntShowList()"><i class="ti ti-trash"></i> Bin ('+binN+')</button>';
+  box.querySelectorAll('.nt-prev').forEach(ntLinkifyEl);
 }
-async function ntTick(id, line){
+// ── Formatted notes ──
+// Notes are stored as simple HTML made by the editor. Anything coming from
+// the server or the clipboard is cleaned first: only formatting tags stay,
+// and pictures are referenced by id (<img data-nimg>), their address added
+// here with the notes token.
+const NT_FONTS={ sans:'-apple-system, Segoe UI, Roboto, sans-serif', serif:'Georgia, Times New Roman, serif', mono:'ui-monospace, Menlo, Consolas, monospace', hand:'Bradley Hand, Segoe Print, Comic Sans MS, cursive' };
+const NT_TEXTCOL=['#e8ecf8','#facc15','#4ade80','#60a5fa','#c084fc','#f472b6','#fb923c','#f87171','#94a3b8'];
+const NT_TAGS=new Set(['DIV','P','BR','B','STRONG','I','EM','U','S','STRIKE','FONT','SPAN','UL','OL','LI','H1','H2','H3','BLOCKQUOTE','A','IMG']);
+function ntSanitize(html){
+  const doc=new DOMParser().parseFromString('<div>'+String(html||'')+'</div>','text/html');
+  const root=doc.body.firstChild;
+  const clean=node=>{
+    for(const ch of [...node.childNodes]){
+      if(ch.nodeType===3) continue;
+      if(ch.nodeType!==1){ ch.remove(); continue; }
+      if(!NT_TAGS.has(ch.tagName)){
+        if(/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|SVG|MATH|TEMPLATE|NOSCRIPT|TITLE|HEAD|META|LINK)$/.test(ch.tagName)){ ch.remove(); continue; }
+        clean(ch); ch.replaceWith(...ch.childNodes); continue;                  // unknown tag: keep its text
+      }
+      for(const at of [...ch.attributes]){
+        const n=at.name.toLowerCase(), v=at.value;
+        let ok=false;
+        if(n==='class') ok=true;
+        else if(n==='face' && ch.tagName==='FONT') ok=/^[\w ,\-]+$/.test(v);
+        else if(n==='color' && ch.tagName==='FONT') ok=/^(#[0-9a-f]{3,8}|rgb\([\d, ]+\))$/i.test(v);
+        else if(n==='size' && ch.tagName==='FONT') ok=/^[1-7]$/.test(v);
+        else if(n==='href' && ch.tagName==='A') ok=/^(https?:|mailto:|tel:)/i.test(v);
+        else if(n==='data-nimg' && ch.tagName==='IMG') ok=/^i[0-9a-f]{18}$/.test(v);
+        else if(n==='style'){ const keep=String(v).split(';').map(x=>x.trim()).filter(x=>/^(color|font-weight|font-style|text-decoration(-line)?|font-family|font-size)\s*:\s*[#\w\s,.%()\-"']+$/i.test(x) && !/url|expression/i.test(x)); if(keep.length){ ch.setAttribute('style',keep.join(';')); } else ch.removeAttribute('style'); continue; }
+        if(!ok) ch.removeAttribute(at.name);
+      }
+      if(ch.hasAttribute('class')){ const c=ch.getAttribute('class').split(/\s+/).filter(x=>x==='ck'||x==='on'); if(c.length) ch.setAttribute('class',c.join(' ')); else ch.removeAttribute('class'); }
+      if(ch.tagName==='IMG' && !ch.getAttribute('data-nimg')){ ch.remove(); continue; }
+      if(ch.tagName==='A'){ ch.setAttribute('target','_blank'); ch.setAttribute('rel','noopener'); }
+      clean(ch);
+    }
+  };
+  clean(root);
+  return root.innerHTML;
+}
+// Plain-text notes from before formatting: "- [ ] x" lines become tick-boxes.
+function ntTextToHtml(t){
+  const L=String(t||'').split('\n'); let out='', ul=false;
+  for(const line of L){
+    const ck=line.match(/^\s*[-*] \[( |x|X)\] ?(.*)$/), bl=line.match(/^\s*[•*-] (.*)$/);
+    if(bl && !ck){ if(!ul){ out+='<ul>'; ul=true; } out+='<li>'+escHtml(bl[1])+'</li>'; continue; }
+    if(ul){ out+='</ul>'; ul=false; }
+    if(ck) out+='<div class="ck'+(ck[1]!==' '?' on':'')+'">'+(escHtml(ck[2])||'<br>')+'</div>';
+    else out+='<div>'+(line.trim()?escHtml(line):'<br>')+'</div>';
+  }
+  if(ul) out+='</ul>';
+  return out;
+}
+function ntImgSrc(id){ return '/api/notes/img/'+id+'?t='+encodeURIComponent(_nt.tok||''); }
+function ntWithImgs(html){ return String(html||'').replace(/<img data-nimg="(i[0-9a-f]{18})">/g,(m,id)=>'<img data-nimg="'+id+'" src="'+ntImgSrc(id)+'" alt="" loading="lazy">'); }
+function ntPlain(n){ return String(n.body||'').replace(/<(br|\/div|\/p|\/li|\/h\d)[^>]*>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"'); }
+// Links in card previews become tappable.
+function ntLinkifyEl(el){
+  const w=document.createTreeWalker(el, NodeFilter.SHOW_TEXT); const hits=[];
+  while(w.nextNode()){ const t=w.currentNode; if(t.parentElement.closest('a')) continue; if(/https?:\/\/\S/.test(t.nodeValue)) hits.push(t); }
+  hits.forEach(t=>{ const span=document.createElement('span'); span.innerHTML=ntLink(escHtml(t.nodeValue)); t.replaceWith(...span.childNodes); });
+}
+function ntPreview(n){
+  return '<div class="nt-prev nt-rich" data-id="'+n.id+'">'+ntWithImgs(n.body)+'</div>';
+}
+// Ticking a box straight from the card.
+function ntPrevTap(e){
+  const ck=e.target.closest('.nt-prev .ck'); if(!ck) return false;
+  const r=ck.getBoundingClientRect(); if(e.clientX - r.left > 34) return false;
+  e.preventDefault(); e.stopPropagation();
+  const prev=ck.closest('.nt-prev'), idx=[...prev.querySelectorAll('.ck')].indexOf(ck);
+  ntToggleTick(prev.dataset.id, idx); return true;
+}
+async function ntToggleTick(id, idx){
   const n=_nt.notes.find(x=>x.id===id); if(!n) return;
-  const L=n.body.split('\n'); L[line]=L[line].replace(/\[( |x|X)\]/, m=>m==='[ ]'?'[x]':'[ ]'); n.body=L.join('\n');
-  const base=n.updated; n.updated=Date.now();
-  if(_nt.view==='list') ntRenderCards();
+  const box=document.createElement('div'); box.innerHTML=n.body;
+  const ck=box.querySelectorAll('.ck')[idx]; if(!ck) return;
+  ck.classList.toggle('on');
+  n.body=box.innerHTML; const base=n.updated; n.updated=Date.now();
+  ntRenderCards();
   if(navigator.vibrate) navigator.vibrate(6);
-  try{ const d=await ntApi('/api/notes/save',{ note:{ ...n, base } }); if(d.note){ Object.assign(n,d.note); if(d.conflict){ await ntLoad(); ntRenderCards(); } } }catch(e){}
+  try{ const d=await ntApi('/api/notes/save',{ note:{ id:n.id, title:n.title, body:n.body, fmt:'html', color:n.color, pinned:n.pinned, base } }); if(d.note){ if(d.conflict){ await ntLoad(); ntRenderCards(); } else { n.updated=d.note.updated; } } }catch(e){}
 }
 // ── Editor ──
 function ntNew(){ _nt.cur={ id:null, title:'', body:'', color:'', pinned:false, updated:Date.now(), base:0 }; ntShowEdit(true); }
 function ntOpen(id){ const n=_nt.notes.find(x=>x.id===id); if(!n) return; _nt.cur={ ...n, base:n.updated }; ntShowEdit(false); }
+const NT_TB=[
+  ['bold','ti-bold','Bold'],['italic','ti-italic','Italic'],['underline','ti-underline','Underline'],['strikeThrough','ti-strikethrough','Strikethrough'],
+  ['|'],['@font','ti-typography','Font'],['@size','ti-text-size','Text size'],['@color','ti-palette','Text colour'],
+  ['|'],['@check','ti-checkbox','Tick-box'],['insertUnorderedList','ti-list','Bullet list'],['insertOrderedList','ti-list-numbers','Numbered list'],
+  ['|'],['@img','ti-photo','Picture'],['@date','ti-calendar','Date'],['removeFormat','ti-clear-formatting','Clear formatting']
+];
 function ntShowEdit(isNew){
   const o=document.getElementById('ntWrap'); if(!o||!_nt.cur) return;
   _nt.view='edit';
   const n=_nt.cur;
   const right='<span class="nt-saved" id="ntSaved"></span>'+
     '<button class="pad-ic'+(n.pinned?' on':'')+'" id="ntPinBtn" onclick="ntPin()" aria-label="Pin"><i class="ti '+(n.pinned?'ti-pin-filled':'ti-pin')+'"></i></button>'+
-    '<button class="pad-ic" onclick="ntColorMenu()" aria-label="Colour"><span class="nt-dot" id="ntDotBtn" style="background:'+NT_DOT[n.color||'']+'"></span></button>'+
+    '<button class="pad-ic" onclick="ntColorMenu()" aria-label="Note colour"><span class="nt-dot" id="ntDotBtn" style="background:'+NT_DOT[n.color||'']+'"></span></button>'+
     (navigator.share?'<button class="pad-ic" onclick="ntShare()" aria-label="Share"><i class="ti ti-share"></i></button>':'')+
     '<button class="pad-ic" onclick="ntDelete()" aria-label="Delete"><i class="ti ti-trash"></i></button>';
   o.innerHTML=ntTop('', right)+
     '<div id="ntColors" class="nt-colors" hidden>'+Object.keys(NT_DOT).map(c=>'<button style="background:'+NT_DOT[c]+'" onclick="ntColor(\''+c+'\')" aria-label="'+(c||'default')+'"></button>').join('')+'</div>'+
-    '<div class="nt-edit" style="--nc:'+NT_COLORS[n.color||'']+'">'+
+    '<div class="nt-edit" id="ntScrollEd" style="--nc:'+NT_COLORS[n.color||'']+'">'+
       '<input id="ntTitle" class="nt-title" placeholder="Title" value="'+escHtml(n.title)+'" oninput="ntChanged()" maxlength="200">'+
-      '<textarea id="ntBody" class="nt-body" placeholder="Write something…" oninput="ntChanged()">'+escHtml(n.body)+'</textarea>'+
+      '<div class="nt-meta">'+(n.created?'Edited '+ntRel(n.updated):'New note')+'</div>'+
+      '<div id="ntBody" class="nt-body nt-rich" contenteditable="true" role="textbox" aria-multiline="true" data-ph="Write something…"></div>'+
     '</div>'+
-    '<div class="nt-tools"><button onclick="ntCheck()"><i class="ti ti-checkbox"></i> Tick-box</button><button onclick="ntBullet()"><i class="ti ti-list"></i> List</button><button onclick="ntStamp()"><i class="ti ti-calendar"></i> Date</button>'+
-      '<span class="nt-meta">'+(n.created?'Edited '+ntRel(n.updated):'New note')+'</span></div>';
+    '<div class="nt-pop" id="ntPop" hidden></div>'+
+    '<div class="nt-tools" id="ntTools">'+NT_TB.map(b=>b[0]==='|'?'<span class="nt-sep"></span>':'<button data-cmd="'+b[0]+'" aria-label="'+b[2]+'" title="'+b[2]+'"><i class="ti '+b[1]+'"></i></button>').join('')+'</div>'+
+    '<input type="file" id="ntFile" accept="image/*" hidden>';
   const b=document.getElementById('ntBody');
-  b.addEventListener('keydown', ntListEnter);
-  setTimeout(()=>{ (isNew?document.getElementById('ntTitle'):null)?.focus(); },60);
+  b.innerHTML=ntWithImgs(n.body);
+  ntMarkEmpty();
+  try{ document.execCommand('styleWithCSS', false, false); document.execCommand('defaultParagraphSeparator', false, 'div'); }catch(e){}
+  b.addEventListener('input', ()=>{ ntMarkEmpty(); ntChanged(); ntCaretIntoView(); });
+  b.addEventListener('keydown', ntEdKey);
+  b.addEventListener('paste', ntPaste);
+  b.addEventListener('click', ntEdClick);
+  b.addEventListener('mousedown', e=>{ if(ntCkHit(e)) e.preventDefault(); });
+  b.addEventListener('touchstart', e=>{ if(ntCkHit(e.touches[0], e.target)){ e.preventDefault(); _ntCkTouchAt=Date.now(); ntCkToggleAt(e.touches[0], e.target); } }, {passive:false});
+  const tools=document.getElementById('ntTools');
+  // Pressing a toolbar button must not take the cursor out of the text.
+  tools.addEventListener('mousedown', e=>{ if(e.target.closest('button')) e.preventDefault(); });
+  tools.addEventListener('touchstart', e=>{ if(e.target.closest('button')){ ntSaveSel(); } }, {passive:true});
+  tools.addEventListener('click', e=>{ const btn=e.target.closest('button'); if(btn) ntTool(btn.dataset.cmd, btn); });
+  document.getElementById('ntFile').addEventListener('change', ntPickedImage);
+  document.addEventListener('selectionchange', ntSelChanged);
+  if(isNew) setTimeout(()=>document.getElementById('ntTitle')?.focus(),60);
 }
-// Enter on a tick-box or list line starts the next one; Enter on an empty one ends the list.
-function ntListEnter(e){
-  if(e.key!=='Enter' || e.shiftKey) return;
-  const t=e.target, v=t.value, pos=t.selectionStart;
-  const ls=v.lastIndexOf('\n', pos-1)+1, line=v.slice(ls, pos);
-  const m=line.match(/^(\s*)([-*] \[( |x|X)\] |[-*•] )(.*)$/); if(!m) return;
+function ntMarkEmpty(){ const b=document.getElementById('ntBody'); if(b) b.classList.toggle('empty', !b.textContent.trim() && !b.querySelector('img,.ck,li')); }
+let _ntSel=null;
+function ntSaveSel(){ const s=getSelection(); const b=document.getElementById('ntBody'); if(s.rangeCount && b && b.contains(s.anchorNode)) _ntSel=s.getRangeAt(0).cloneRange(); }
+function ntRestoreSel(){ const b=document.getElementById('ntBody'); if(!b) return;
+  // Already typing in the note: leave the cursor alone (re-setting it would drop a just-chosen style).
+  if(document.activeElement===b && getSelection().rangeCount && b.contains(getSelection().anchorNode)) return;
+  b.focus({preventScroll:true}); if(_ntSel){ const s=getSelection(); s.removeAllRanges(); s.addRange(_ntSel); } }
+function ntSelChanged(){
+  const b=document.getElementById('ntBody'); if(!b){ document.removeEventListener('selectionchange', ntSelChanged); return; }
+  ntSaveSel();
+  // Light up the buttons whose style is on at the cursor.
+  const t=document.getElementById('ntTools'); if(!t || !b.contains(getSelection().anchorNode)) return;
+  ['bold','italic','underline','strikeThrough','insertUnorderedList','insertOrderedList'].forEach(c=>{ const x=t.querySelector('[data-cmd="'+c+'"]'); if(x) x.classList.toggle('on', document.queryCommandState(c)); });
+  const blk=ntBlock(); const x=t.querySelector('[data-cmd="@check"]'); if(x) x.classList.toggle('on', !!(blk && blk.classList.contains('ck')));
+}
+// The block (line) the cursor is in.
+function ntBlock(){
+  const b=document.getElementById('ntBody'), s=getSelection(); if(!b || !s.rangeCount) return null;
+  let n=s.anchorNode; if(!b.contains(n)) return null;
+  while(n && n.parentNode!==b){ n=n.parentNode; }
+  return n && n.nodeType===1 ? n : null;
+}
+function ntTool(cmd, btn){
+  const pop=document.getElementById('ntPop');
+  if(cmd[0]!=='@' || cmd==='@check' || cmd==='@date') pop.hidden=true;
+  ntRestoreSel();
+  if(cmd[0]!=='@'){ document.execCommand(cmd, false, null); ntAfterEdit(); return; }
+  if(cmd==='@check') return ntCheckLine();
+  if(cmd==='@date'){ document.execCommand('insertText', false, new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+' '); return ntAfterEdit(); }
+  if(cmd==='@img'){ ntSaveSel(); document.getElementById('ntFile').click(); return; }
+  // Small pop-overs: font, size, colour.
+  if(!pop.hidden && pop.dataset.kind===cmd){ pop.hidden=true; return; }
+  pop.dataset.kind=cmd; pop.hidden=false;
+  if(cmd==='@font') pop.innerHTML=[['sans','Sans'],['serif','Serif'],['mono','Mono'],['hand','Hand']].map(f=>'<button style="font-family:'+NT_FONTS[f[0]]+'" data-v="'+f[0]+'">'+f[1]+'</button>').join('');
+  if(cmd==='@size') pop.innerHTML=[['2','Small','13px'],['3','Normal','16px'],['5','Large','21px'],['6','Huge','27px']].map(f=>'<button data-v="'+f[0]+'" style="font-size:'+f[2]+'">'+f[1]+'</button>').join('');
+  if(cmd==='@color') pop.innerHTML=NT_TEXTCOL.map(c=>'<button class="nt-swatch" data-v="'+c+'" style="background:'+c+'" aria-label="Colour '+c+'"></button>').join('');
+  pop.onmousedown=e=>e.preventDefault();
+  pop.onclick=e=>{ const x=e.target.closest('button'); if(!x) return; ntRestoreSel();
+    if(cmd==='@font') document.execCommand('fontName', false, NT_FONTS[x.dataset.v]);
+    if(cmd==='@size') document.execCommand('fontSize', false, x.dataset.v);
+    if(cmd==='@color') document.execCommand('foreColor', false, x.dataset.v);
+    pop.hidden=true; ntAfterEdit(); };
+}
+function ntAfterEdit(){ ntMarkEmpty(); ntChanged(); ntSelChanged(); }
+// Turns the current line(s) into tick-boxes, or back to plain lines.
+function ntCheckLine(){
+  const b=document.getElementById('ntBody');
+  let blk=ntBlock();
+  if(!blk || blk.tagName==='BR' || !/^(DIV|P|H1|H2|H3)$/.test(blk.tagName)){ document.execCommand('formatBlock', false, 'div'); blk=ntBlock(); }
+  if(!blk){ b.insertAdjacentHTML('beforeend','<div class="ck"><br></div>'); blk=b.lastChild; const r=document.createRange(); r.setStart(blk,0); r.collapse(true); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }
+  else if(blk.classList.contains('ck')){ blk.classList.remove('ck','on'); }
+  else blk.classList.add('ck');
+  ntAfterEdit();
+}
+function ntCkHit(pt, target){
+  const ck=(target||pt.target)?.closest && (target||pt.target).closest('#ntBody .ck'); if(!ck) return false;
+  const r=ck.getBoundingClientRect(); return pt.clientX - r.left <= 32 ? ck : false;
+}
+let _ntCkTouchAt=0;
+function ntCkToggleAt(pt, target){ const ck=ntCkHit(pt, target); if(!ck) return; ck.classList.toggle('on'); if(navigator.vibrate) navigator.vibrate(6); ntChanged(true); }
+function ntEdClick(e){
+  if(ntCkHit(e)){ if(Date.now()-_ntCkTouchAt > 700) ntCkToggleAt(e); return; }   // a tap already toggled it in touchstart
+  const img=e.target.closest('#ntBody img');
+  document.querySelectorAll('#ntBody img.sel').forEach(x=>{ if(x!==img) x.classList.remove('sel'); });
+  if(img){ img.classList.toggle('sel'); ntImgBar(img.classList.contains('sel')?img:null); } else ntImgBar(null);
+}
+// A tapped picture gets a small bar to remove it.
+function ntImgBar(img){
+  const pop=document.getElementById('ntPop'); if(!pop) return;
+  if(!img){ if(pop.dataset.kind==='@imgsel') pop.hidden=true; return; }
+  pop.dataset.kind='@imgsel'; pop.hidden=false;
+  pop.innerHTML='<button class="red" id="ntImgDel"><i class="ti ti-trash"></i> Remove picture</button>';
+  pop.onclick=e=>{ if(e.target.closest('#ntImgDel')){ img.remove(); pop.hidden=true; ntAfterEdit(); } };
+}
+function ntEdKey(e){
+  if(e.key==='Enter' && !e.shiftKey){
+    const blk=ntBlock();
+    if(blk && blk.classList.contains('ck')){
+      if(!blk.textContent.trim()){ e.preventDefault(); blk.classList.remove('ck','on'); ntAfterEdit(); return; }   // empty tick-box ends the list
+      // The new line copies the old one: make sure it starts unticked.
+      setTimeout(()=>{ const nb=ntBlock(); if(nb && nb!==blk) nb.classList.remove('on'); ntCaretIntoView(); ntChanged(); }, 0);
+    }
+    setTimeout(ntCaretIntoView, 30);
+  }
+  if((e.metaKey||e.ctrlKey) && /^[biu]$/i.test(e.key)){ e.preventDefault(); document.execCommand({b:'bold',i:'italic',u:'underline'}[e.key.toLowerCase()]); ntAfterEdit(); }
+}
+// Keep the line being typed visible above the keyboard.
+function ntCaretIntoView(){
+  const sc=document.getElementById('ntScrollEd'), s=getSelection(); if(!sc || !s.rangeCount) return;
+  const r=s.getRangeAt(0).cloneRange(); let rect=r.getBoundingClientRect();
+  if(!rect || (!rect.height && !rect.top)){ const blk=ntBlock(); if(!blk) return; rect=blk.getBoundingClientRect(); }
+  const box=sc.getBoundingClientRect();
+  const bottom=box.bottom-24, top=box.top+8;
+  if(rect.bottom > bottom) sc.scrollTop += rect.bottom-bottom;
+  else if(rect.top < top) sc.scrollTop -= top-rect.top;
+}
+// Pasting keeps the words, not the other app's styling; pasted pictures are added as pictures.
+function ntPaste(e){
+  const cd=e.clipboardData; if(!cd) return;
+  const file=[...(cd.files||[])].find(f=>/^image\//.test(f.type));
   e.preventDefault();
-  if(!m[4].trim()){ t.value=v.slice(0,ls)+v.slice(pos); t.selectionStart=t.selectionEnd=ls; }
-  else { const pre='\n'+m[1]+(m[2].includes('[')?'- [ ] ':m[2]); t.value=v.slice(0,pos)+pre+v.slice(pos); t.selectionStart=t.selectionEnd=pos+pre.length; }
-  ntChanged();
+  if(file){ ntSaveSel(); ntAddImage(file); return; }
+  const t=cd.getData('text/plain'); if(t) document.execCommand('insertText', false, t);
+  ntAfterEdit();
 }
-function ntLinePrefix(fn){
-  const t=document.getElementById('ntBody'); if(!t) return;
-  const v=t.value, pos=t.selectionStart, ls=v.lastIndexOf('\n', pos-1)+1, le=(v.indexOf('\n',pos)+1||v.length+1)-1;
-  const line=v.slice(ls,le), nl=fn(line);
-  t.value=v.slice(0,ls)+nl+v.slice(le); const np=Math.max(ls, pos+(nl.length-line.length)); t.focus(); t.selectionStart=t.selectionEnd=np;
-  ntChanged();
+function ntPickedImage(e){ const f=e.target.files && e.target.files[0]; e.target.value=''; if(f) ntAddImage(f); }
+// Pictures are shrunk on the phone first (longest side 1600 px, JPEG) so
+// they upload quickly and stay small on the server.
+async function ntAddImage(file){
+  ntSavedLabel('Adding picture…');
+  try{
+    let bmp; try{ bmp=await createImageBitmap(file, { imageOrientation:'from-image' }); }catch(e){ bmp=await new Promise((ok,no)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=URL.createObjectURL(file); }); }
+    const W=bmp.width, H=bmp.height; let sc=Math.min(1, 1600/Math.max(W,H));
+    let data='';
+    for(let q=0.82, k=0; k<5; k++){
+      const c=document.createElement('canvas'); c.width=Math.round(W*sc); c.height=Math.round(H*sc);
+      c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+      data=c.toDataURL('image/jpeg', q);
+      if(data.length < 1100000) break;
+      q-=0.12; sc*=0.85;
+    }
+    const d=await ntApi('/api/notes/img',{ data });
+    if(!d.id) throw new Error(d.error||'Upload failed');
+    ntRestoreSel();
+    document.execCommand('insertHTML', false, '<img data-nimg="'+d.id+'" src="'+ntImgSrc(d.id)+'" alt=""><div><br></div>');
+    ntAfterEdit(); setTimeout(ntCaretIntoView, 300);
+  }catch(e){ if(e.message!=='locked') ntSavedLabel('Picture not added — '+(e.message||'try again')); }
 }
-function ntCheck(){ ntLinePrefix(l=>/^\s*[-*] \[( |x|X)\] /.test(l)?l.replace(/^(\s*)[-*] \[( |x|X)\] /,'$1'):l.replace(/^(\s*)(?:[-*•] )?/,'$1- [ ] ')); }
-function ntBullet(){ ntLinePrefix(l=>/^\s*[-*•] (?!\[)/.test(l)?l.replace(/^(\s*)[-*•] /,'$1'):l.replace(/^(\s*)(?:[-*] \[( |x|X)\] )?/,'$1• ')); }
-function ntStamp(){ const t=document.getElementById('ntBody'); if(!t) return; const s=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+' '; const p=t.selectionStart; t.value=t.value.slice(0,p)+s+t.value.slice(t.selectionEnd); t.focus(); t.selectionStart=t.selectionEnd=p+s.length; ntChanged(); }
+// The editor's HTML as stored: picture addresses (which carry the token) removed.
+function ntEditorHtml(){
+  const b=document.getElementById('ntBody'); if(!b) return _nt.cur ? _nt.cur.body : '';
+  const c=b.cloneNode(true);
+  c.querySelectorAll('img').forEach(i=>{ i.removeAttribute('src'); i.removeAttribute('alt'); i.removeAttribute('loading'); i.classList.remove('sel'); if(!i.className) i.removeAttribute('class'); });
+  let h=ntSanitize(c.innerHTML);
+  if(!c.textContent.trim() && !c.querySelector('img,.ck')) h='';
+  return h;
+}
 function ntPin(){ _nt.cur.pinned=!_nt.cur.pinned; const b=document.getElementById('ntPinBtn'); if(b){ b.classList.toggle('on',_nt.cur.pinned); b.innerHTML='<i class="ti '+(_nt.cur.pinned?'ti-pin-filled':'ti-pin')+'"></i>'; } ntChanged(true); }
 function ntColorMenu(){ const c=document.getElementById('ntColors'); if(c) c.hidden=!c.hidden; }
 function ntColor(c){ _nt.cur.color=c; const e=document.querySelector('.nt-edit'); if(e) e.style.setProperty('--nc',NT_COLORS[c]); const d=document.getElementById('ntDotBtn'); if(d) d.style.background=NT_DOT[c]; ntColorMenu(); ntChanged(true); }
-async function ntShare(){ ntFlush(); try{ await navigator.share({ title:_nt.cur.title||'Note', text:(_nt.cur.title?_nt.cur.title+'\n\n':'')+_nt.cur.body }); }catch(e){} }
+async function ntShare(){ ntFlush(); const t=(document.getElementById('ntBody')||{}).innerText||ntPlain(_nt.cur); try{ await navigator.share({ title:_nt.cur.title||'Note', text:(_nt.cur.title?_nt.cur.title+'\n\n':'')+t }); }catch(e){} }
 function ntChanged(now){
   const n=_nt.cur; if(!n) return;
-  const t=document.getElementById('ntTitle'), b=document.getElementById('ntBody');
-  if(t) n.title=t.value; if(b) n.body=b.value;
+  const t=document.getElementById('ntTitle');
+  if(t) n.title=t.value; n.body=ntEditorHtml();
   _nt.dirty=true; ntSavedLabel('Saving…');
   clearTimeout(_nt.saveT); _nt.saveT=setTimeout(ntSave, now?50:700);
 }
 function ntSavedLabel(t){ const e=document.getElementById('ntSaved'); if(e) e.textContent=t; }
 async function ntSave(){
   const n=_nt.cur; if(!n || !_nt.dirty || !_nt.tok) return;
-  if(!n.id && !n.title.trim() && !n.body.trim()){ _nt.dirty=false; ntSavedLabel(''); return; }    // don't keep empty new notes
+  if(!n.id && !n.title.trim() && !n.body){ _nt.dirty=false; ntSavedLabel(''); return; }    // don't keep empty new notes
   if(_nt.saving){ clearTimeout(_nt.saveT); _nt.saveT=setTimeout(ntSave,300); return; }
   _nt.saving=true; _nt.dirty=false;
   try{
-    const d=await ntApi('/api/notes/save',{ note:{ id:n.id, title:n.title, body:n.body, color:n.color, pinned:n.pinned, base:n.base } });
+    const d=await ntApi('/api/notes/save',{ note:{ id:n.id, title:n.title, body:n.body, fmt:'html', color:n.color, pinned:n.pinned, base:n.base } });
     if(d.error) throw new Error(d.error);
-    if(d.conflict){ ntSavedLabel('Saved as a copy'); await ntLoad(); const c=d.note; _nt.cur={ ...c, base:c.updated }; }
+    if(d.conflict){ ntSavedLabel('Saved as a copy'); await ntLoad(); const c=_nt.notes.find(x=>x.id===d.note.id)||d.note; _nt.cur={ ...c, base:c.updated }; }
     else { n.id=d.note.id; n.base=d.note.updated; n.updated=d.note.updated; n.created=d.note.created;
-      const i=_nt.notes.findIndex(x=>x.id===n.id); const keep={ ...d.note }; if(i>=0) _nt.notes[i]=keep; else _nt.notes.push(keep);
+      const keep={ ...d.note, body:n.body, fmt:'html' }; const i=_nt.notes.findIndex(x=>x.id===n.id); if(i>=0) _nt.notes[i]=keep; else _nt.notes.push(keep);
       if(!_nt.dirty) ntSavedLabel('Saved ✓'); }
   }catch(e){ if(e.message!=='locked'){ _nt.dirty=true; ntSavedLabel('Not saved — retrying'); _nt.saveT=setTimeout(ntSave,3000); } }
   _nt.saving=false;
 }
-function ntFlush(sync){ if(_nt.dirty && _nt.cur){ clearTimeout(_nt.saveT); ntSave(); } }
-async function ntBack(){ clearTimeout(_nt.saveT); await ntSave(); ntShowList(); }
+function ntFlush(){ if(_nt.dirty && _nt.cur){ clearTimeout(_nt.saveT); ntSave(); } }
+async function ntBack(){ clearTimeout(_nt.saveT); if(_nt.cur && document.getElementById('ntBody')){ _nt.cur.body=ntEditorHtml(); } await ntSave(); ntShowList(); }
 async function ntDelete(){
   const n=_nt.cur; clearTimeout(_nt.saveT);
   if(n.id){ try{ await ntApi('/api/notes/delete',{ id:n.id }); const x=_nt.notes.find(k=>k.id===n.id); if(x) x.deleted=Date.now(); }catch(e){ return; } }
@@ -6117,14 +6423,199 @@ async function ntBioRemove(id){
   ntMenu(true);
 }
 function ntChangePin(){ _nt.pin1=null; ntShowSetup('Choose a new PIN. You’ll confirm with your private-settings password.'); }
-function ntExport(){
+// Everything in one web page (opens in any browser), pictures included.
+async function ntExport(){
   const live=_nt.notes.filter(n=>!n.deleted).sort((a,b)=>b.updated-a.updated);
-  const txt=live.map(n=>'# '+(n.title||'Untitled')+'\n'+new Date(n.updated).toLocaleString('en-GB')+'\n\n'+n.body).join('\n\n-----\n\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'})); a.download='organizer-notes-'+TODAY+'.txt';
+  const imgs={};
+  for(const n of live) for(const m of n.body.matchAll(/data-nimg="(i[0-9a-f]{18})"/g)){
+    if(imgs[m[1]]) continue;
+    try{ const b=await (await fetch(ntImgSrc(m[1]))).blob(); imgs[m[1]]=await new Promise(ok=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.readAsDataURL(b); }); }catch(e){}
+  }
+  const body=live.map(n=>'<article style="background:'+(n.color?NT_DOT[n.color]+'22':'#f4f4f6')+'"><h2>'+escHtml(n.title||'Untitled')+'</h2><time>'+new Date(n.updated).toLocaleString('en-GB')+'</time>'+
+    n.body.replace(/<img data-nimg="(i[0-9a-f]{18})">/g,(m,id)=>imgs[id]?'<img src="'+imgs[id]+'">':'')+'</article>').join('');
+  const html='<!doctype html><meta charset="utf-8"><title>My notes</title><style>body{font:16px/1.5 -apple-system,Segoe UI,sans-serif;max-width:760px;margin:30px auto;padding:0 16px;color:#1a1a2e}article{border-radius:14px;padding:16px 18px;margin:0 0 16px}h2{margin:0 0 2px;font-size:19px}time{font-size:12px;color:#666}img{max-width:100%;border-radius:10px}.ck{padding-left:26px;position:relative}.ck::before{content:"☐";position:absolute;left:0}.ck.on::before{content:"☑"}.ck.on{text-decoration:line-through;color:#777}</style><h1>My notes</h1>'+body;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'})); a.download='organizer-notes-'+TODAY+'.html';
   document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
 }
 window.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.getElementById('ntWrap')){ if(_nt.view==='edit') ntBack(); else ntClose(); } });
 
+// ─── VERSE WALLPAPER ─────────────────────────────────────
+// Black 4K wallpapers with a verse in English (T4T), Hebrew written in Latin
+// letters, and Romanian (Cornilescu) — or a single quote. Type the T4T
+// reference; the server fetches all three. Every text stays editable, and
+// the picture is drawn here at full resolution, then saved or shared.
+const BW_SIZES=[
+  { id:'16:9', w:3840, h:2160, label:'16:9 · 4K' }, { id:'16:10', w:3840, h:2400, label:'16:10' }, { id:'21:9', w:5120, h:2160, label:'21:9 wide' },
+  { id:'4:3', w:3840, h:2880, label:'4:3' }, { id:'1:1', w:3840, h:3840, label:'1:1' }, { id:'3:4', w:2880, h:3840, label:'3:4' },
+  { id:'9:16', w:2160, h:3840, label:'9:16' }, { id:'iphone', w:1800, h:3900, label:'iPhone' }
+];
+const BW_STYLE={
+  en:{ font:'"EB Garamond", Garamond, Georgia, serif', style:'normal', weight:400, color:'#F3F0E8', scale:1 },
+  he:{ font:'"Cormorant Garamond", "EB Garamond", Georgia, serif', style:'italic', weight:500, color:'#E2C08D', scale:1.07 },   // Cormorant runs small: same visual size
+  ro:{ font:'"Crimson Pro", "EB Garamond", Georgia, serif', style:'italic', weight:400, color:'#E4E1DA', scale:1 },
+  ref:{ font:'"EB Garamond", Georgia, serif', style:'normal', weight:400, color:'#D6B47E', scale:.64 },
+  q:{ font:'"EB Garamond", Georgia, serif', style:'italic', weight:400, color:'#F3F0E8', scale:1.25 }
+};
+let _bw={ mode:'verse', ref:'', label:'', en:'', he:'', ro:'', hebrew:'', show:{en:true,he:true,ro:true}, quote:'', author:'', size:'16:9', pos:'br', scale:1, busy:false, msg:'', drawT:null };
+try{ Object.assign(_bw, JSON.parse(localStorage.getItem('org:bw')||'{}'), { busy:false, msg:'' }); }catch(e){}
+function bwKeep(){ try{ const { drawT, busy, msg, ...keep }=_bw; localStorage.setItem('org:bw', JSON.stringify(keep)); }catch(e){} }
+let _bwFonts=null;
+function bwFonts(){
+  if(_bwFonts) return _bwFonts;
+  if(!document.getElementById('bwFontCss')){
+    const l=document.createElement('link'); l.id='bwFontCss'; l.rel='stylesheet';
+    l.href='https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@1,500&family=Crimson+Pro:ital,wght@1,400&display=swap';
+    document.head.appendChild(l);
+  }
+  const s='Aa ăâîșț’ — 12:9';
+  _bwFonts=Promise.race([
+    Promise.all(['400 40px "EB Garamond"','italic 400 40px "EB Garamond"','italic 500 40px "Cormorant Garamond"','italic 400 40px "Crimson Pro"'].map(f=>document.fonts.load(f, s).catch(()=>{}))),
+    new Promise(ok=>setTimeout(ok, 4000))
+  ]);
+  return _bwFonts;
+}
+function openVerse(){
+  closeModal();
+  let o=document.getElementById('bwWrap');
+  if(!o){ o=document.createElement('div'); o.id='bwWrap'; o.className='nt-wrap bw-wrap'; document.body.appendChild(o); lockPageScroll(); }
+  bwRender();
+  bwFonts().then(()=>bwDraw());
+}
+// A font arriving late redraws the preview.
+if(document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', ()=>{ if(document.getElementById('bwWrap')) bwDraw(); });
+function bwClose(){ bwKeep(); const o=document.getElementById('bwWrap'); if(o) o.remove(); unlockPageScroll(); }
+function bwRender(){
+  const o=document.getElementById('bwWrap'); if(!o) return;
+  const v=_bw.mode==='verse';
+  const recent=(()=>{ try{ return JSON.parse(localStorage.getItem('org:bwRecent')||'[]'); }catch(e){ return []; } })();
+  const field=(k,label,ph,note)=>'<label class="bw-f"><span><input type="checkbox" '+(_bw.show[k]?'checked':'')+' onchange="_bw.show.'+k+'=this.checked;bwDraw()" aria-label="Show '+label+'"> '+label+'</span>'+
+    '<textarea rows="3" placeholder="'+ph+'" oninput="_bw.'+k+'=this.value;bwDraw()">'+escHtml(_bw[k])+'</textarea>'+(note?'<em>'+note+'</em>':'')+'</label>';
+  o.innerHTML='<div class="nt-top"><button class="pad-x" onclick="bwClose()" aria-label="Close"><i class="ti ti-x"></i></button><b>Verse wallpaper</b>'+
+      '<button class="btn acc" onclick="bwSave()"><i class="ti ti-download"></i> Save</button></div>'+
+    '<div class="bw-scroll">'+
+      '<div class="bw-prev"><canvas id="bwCanvas"></canvas><div class="bw-dim" id="bwDim"></div></div>'+
+      '<div class="sh-chips bw-seg"><button class="sh-chip'+(v?' on':'')+'" onclick="_bw.mode=\'verse\';bwRender();bwDraw()"><i class="ti ti-book-2"></i> Bible verse · 3 languages</button><button class="sh-chip'+(!v?' on':'')+'" onclick="_bw.mode=\'quote\';bwRender();bwDraw()"><i class="ti ti-quote"></i> Quote</button></div>'+
+      (v?
+        '<div class="bw-ref"><input id="bwRef" class="cc-input" placeholder="T4T reference, e.g. Prov 12:9" value="'+escHtml(_bw.ref)+'" onkeydown="if(event.key===\'Enter\')bwFetch()" autocomplete="off" autocapitalize="words"><button class="btn acc" onclick="bwFetch()" '+(_bw.busy?'disabled':'')+'>'+(_bw.busy?'<i class="ti ti-loader-2 spin"></i>':'Get verse')+'</button></div>'+
+        (recent.length?'<div class="sh-chips bw-recent">'+recent.map(r=>'<button class="sh-chip" onclick="document.getElementById(\'bwRef\').value=\''+escHtml(r).replace(/'/g,'')+'\';bwFetch()">'+escHtml(r)+'</button>').join('')+'</div>':'')+
+        '<div class="bw-msg" id="bwMsg">'+(_bw.msg||'')+'</div>'+
+        field('en','English · T4T','The verse in English')+
+        field('he','Hebrew · in Latin letters','Transliterated Hebrew', _bw.hebrew?'<span dir="rtl" lang="he">'+escHtml(_bw.hebrew)+'</span>':'')+
+        field('ro','Romanian · Cornilescu','Versetul în română')+
+        '<label class="bw-f"><span>Reference</span><input class="cc-input" value="'+escHtml(_bw.label)+'" oninput="_bw.label=this.value;bwDraw()" placeholder="Prov. 12:9"></label>'
+      :
+        '<label class="bw-f"><span>Quote</span><textarea rows="4" placeholder="Your quote" oninput="_bw.quote=this.value;bwDraw()">'+escHtml(_bw.quote)+'</textarea></label>'+
+        '<label class="bw-f"><span>Author (optional)</span><input class="cc-input" value="'+escHtml(_bw.author)+'" oninput="_bw.author=this.value;bwDraw()" placeholder="Who said it"></label>'
+      )+
+      '<div class="bw-sec">Size</div><div class="sh-chips">'+BW_SIZES.map(s=>'<button class="sh-chip'+(s.id===_bw.size?' on':'')+'" onclick="_bw.size=\''+s.id+'\';bwRender();bwDraw()">'+s.label+'</button>').join('')+'</div>'+
+      '<div class="bw-sec">Text position</div><div class="sh-chips">'+[['br','Bottom right'],['bl','Bottom left'],['c','Centre'],['tr','Top right']].map(p=>'<button class="sh-chip'+(p[0]===_bw.pos?' on':'')+'" onclick="_bw.pos=\''+p[0]+'\';bwRender();bwDraw()">'+p[1]+'</button>').join('')+'</div>'+
+      '<div class="bw-sec">Text size</div><input type="range" min="0.7" max="1.5" step="0.05" value="'+_bw.scale+'" oninput="_bw.scale=+this.value;bwDraw()" class="bw-range" aria-label="Text size">'+
+      '<div class="bw-foot">English: Translation for Translators (T4T) · Hebrew: Westminster Leningrad Codex'+' / Delitzsch (New Testament), written in Latin letters · Romanian: Cornilescu. EDCR isn’t freely available, so Cornilescu is used.</div>'+
+    '</div>';
+}
+async function bwFetch(){
+  const inp=document.getElementById('bwRef'); const ref=(inp?inp.value:_bw.ref).trim(); if(!ref) return;
+  _bw.ref=ref; _bw.busy=true; _bw.msg=''; bwRender();
+  try{
+    const r=await fetch('/api/verse?ref='+encodeURIComponent(ref)); const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Couldn’t get the verse.');
+    _bw.label=d.ref; _bw.en=d.en||''; _bw.he=d.he||''; _bw.ro=d.ro||''; _bw.hebrew=d.hebrew||'';
+    const errs=Object.values(d.errors||{});
+    _bw.msg=errs.length?'<span style="color:#fca5a5">'+escHtml(errs.join(' · '))+' — you can type it in.</span>':'<span style="color:var(--green)"><i class="ti ti-circle-check"></i> '+escHtml(d.ref)+' — check the texts, then Save.</span>';
+    try{ let rec=JSON.parse(localStorage.getItem('org:bwRecent')||'[]'); rec=[d.ref,...rec.filter(x=>x!==d.ref)].slice(0,6); localStorage.setItem('org:bwRecent',JSON.stringify(rec)); }catch(e){}
+  }catch(e){ _bw.msg='<span style="color:#fca5a5">'+escHtml(e.message)+'</span>'; }
+  _bw.busy=false; bwKeep(); bwRender(); bwDraw(true);
+}
+// Splits text into lines that fit the width; the text's own line breaks are kept.
+function bwWrapPara(ctx, words, maxW){
+  const out=[]; let line='';
+  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width<=maxW || !line) line=t; else { out.push(line); line=w; } }
+  if(line) out.push(line);
+  return out;
+}
+// Lines are balanced (no single word left alone on the last line): the
+// narrowest width that needs no extra line is used.
+function bwWrap(ctx, text, maxW){
+  const out=[];
+  for(const para of String(text||'').split('\n')){
+    const words=para.trim().split(/\s+/).filter(Boolean); if(!words.length) continue;
+    const n=bwWrapPara(ctx, words, maxW).length;
+    let lo=maxW*0.45, hi=maxW;
+    if(n>1) for(let i=0;i<14;i++){ const mid=(lo+hi)/2; if(bwWrapPara(ctx, words, mid).length<=n) hi=mid; else lo=mid; }
+    out.push(...bwWrapPara(ctx, words, n>1?hi:maxW));
+  }
+  return out;
+}
+function bwDraw(now){
+  clearTimeout(_bw.drawT);
+  _bw.drawT=setTimeout(()=>{ bwPaint(document.getElementById('bwCanvas')); bwKeep(); }, now?0:180);
+}
+function bwPaint(cv){
+  if(!cv) return;
+  const S=BW_SIZES.find(s=>s.id===_bw.size)||BW_SIZES[0];
+  cv.width=S.w; cv.height=S.h;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,S.w,S.h);
+  const portrait=S.h>S.w;
+  const minSide=Math.min(S.w,S.h);
+  const marginX=portrait?S.w*0.07:S.w*0.03, marginB=S.h*(portrait?0.14:0.12), marginT=S.h*(portrait?0.24:0.12);
+  const maxW=portrait?S.w*0.86:(S.w/S.h>2?S.w*0.40:S.w*0.48);
+  // Blocks to draw, in order.
+  const blocks=[];
+  if(_bw.mode==='verse'){
+    ['en','he','ro'].forEach(k=>{ if(_bw.show[k] && String(_bw[k]).trim()) blocks.push({ k, text:_bw[k] }); });
+    if(String(_bw.label).trim()) blocks.push({ k:'ref', text:'—  '+_bw.label.trim()+'  —' });
+  } else {
+    if(String(_bw.quote).trim()) blocks.push({ k:'q', text:_bw.quote.trim() });
+    if(String(_bw.author).trim()) blocks.push({ k:'ref', text:'—  '+_bw.author.trim()+'  —' });
+  }
+  const dim=document.getElementById('bwDim'); if(dim) dim.textContent=S.w+' × '+S.h;
+  if(!blocks.length){ ctx.fillStyle='#333'; ctx.font='italic '+Math.round(minSide*0.03)+'px Georgia'; ctx.textAlign='center'; ctx.fillText(_bw.mode==='verse'?'Type a reference, e.g. Prov 12:9':'Type your quote', S.w/2, S.h/2); return; }
+  // Fit: start from the chosen size and shrink until the whole text fits.
+  let base=minSide*0.0325*_bw.scale, lay;
+  for(let tries=0; tries<12; tries++){
+    lay=[]; let total=0;
+    blocks.forEach((b,i)=>{
+      const st=BW_STYLE[b.k], px=base*st.scale;
+      ctx.font=st.style+' '+st.weight+' '+px+'px '+st.font;
+      const lines=bwWrap(ctx, b.text, maxW);
+      const lh=px*(b.k==='ref'?1.4:1.3);
+      const gap=i===0?0:(b.k==='ref'?base*0.95:base*1.15);
+      lay.push({ ...b, st, px, lines, lh, gap }); total+=gap+lines.length*lh;
+    });
+    lay.total=total;
+    if(total <= S.h-(marginT+marginB)*(_bw.pos==='c'?0.6:1)) break;
+    base*=0.92;
+  }
+  const right=_bw.pos==='br'||_bw.pos==='tr', centre=_bw.pos==='c';
+  ctx.textAlign=centre?'center':right?'right':'left';
+  ctx.textBaseline='alphabetic';
+  const x=centre?S.w/2:right?S.w-marginX:marginX;
+  let y=_bw.pos==='c'?(S.h-lay.total)/2:_bw.pos==='tr'?marginT*0.6:S.h-marginB-lay.total;
+  for(const b of lay){
+    y+=b.gap;
+    ctx.font=b.st.style+' '+b.st.weight+' '+b.px+'px '+b.st.font; ctx.fillStyle=b.st.color;
+    if('letterSpacing' in ctx) ctx.letterSpacing=b.k==='ref'?(b.px*0.06)+'px':'0px';
+    for(const ln of b.lines){ y+=b.lh; ctx.fillText(ln, x, y-b.lh*0.24); }
+  }
+  if('letterSpacing' in ctx) ctx.letterSpacing='0px';
+}
+async function bwSave(){
+  await bwFonts();
+  const cv=document.createElement('canvas'); bwPaint(cv);
+  const S=BW_SIZES.find(s=>s.id===_bw.size)||BW_SIZES[0];
+  const name=((_bw.mode==='verse'?_bw.label:(_bw.author||'quote'))||'wallpaper').replace(/[^\w\-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')+'-'+S.w+'x'+S.h+'.png';
+  const blob=await new Promise(ok=>cv.toBlob(ok,'image/png'));
+  if(!blob){ bwAlert('Couldn’t make the picture on this device — try a smaller size.'); return; }
+  const file=new File([blob], name, { type:'image/png' });
+  // iPhone: the share sheet has “Save Image” (to Photos).
+  if(navigator.canShare && navigator.canShare({ files:[file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)){
+    try{ await navigator.share({ files:[file], title:name }); return; }catch(e){ if(e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+function bwAlert(t){ const m=document.getElementById('bwMsg'); if(m) m.innerHTML='<span style="color:#fca5a5">'+escHtml(t)+'</span>'; }
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
 // key). Windy's own API only returns real data on a paid plan, so each city
@@ -6891,7 +7382,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-23-notes';
+const APP_BUILD='2026-10-26-wallpaper-alerts';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -6926,6 +7417,8 @@ function handleOpenParams(){
     const d=q.get('d');
     if(d){
       openOnDate(d, q.get('ev'));
+      // From a reminder notification: show it, with Clear / Snooze.
+      if(q.get('alert') && q.get('ev')) setTimeout(()=>openAlerts(q.get('ev'), d), 500);
       // Tidy the address bar so a later refresh doesn't jump again.
       history.replaceState({}, '', location.pathname);
     }
@@ -6934,7 +7427,8 @@ function handleOpenParams(){
 // Already open: the service worker tells us which day to show.
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message', e=>{
-    if(e.data && e.data.type==='OPEN_DATE' && e.data.date) openOnDate(e.data.date, e.data.id);
+    if(e.data && e.data.type==='OPEN_DATE' && e.data.date){ openOnDate(e.data.date, e.data.id); if(e.data.alert && e.data.id) setTimeout(()=>openAlerts(e.data.id, e.data.date), 250); }
+    if(e.data && e.data.type==='ALERTS_CHANGED') loadAlerts();
     if(e.data && e.data.type==='OPEN_CONCERTS') openConcerts();
   });
 }
@@ -7125,41 +7619,123 @@ async function ensurePushSubscription(){
   }catch(e){ console.log('Push re-subscribe failed:', e.message); }
 }
 
-// App-icon badge. The service worker records every delivered reminder
-// ({id,date,tag}) in the 'organizer-badge' cache. Opening the app no longer
-// clears it: a task's dot stays until that task is marked Done. Reminders
-// that aren't tasks (sport events, the delivery test) have no Done button,
-// so those are cleared when the app is opened, as before.
-var _badgeDataReady=false;
-async function syncAppBadge(){
-  if(!_badgeDataReady || !('caches' in window)) return;
+// ─── NOTIFICATION CENTRE ─────────────────────────────────
+// Every reminder that reached a device waits here until you clear or
+// snooze it — clearing never ticks the task off. The bell shows how many
+// events are waiting; so does the app-icon badge. Tapping a notification
+// opens that event's card here.
+let _al={ active:[], snoozed:[], count:0, focus:null, t:null };
+async function loadAlerts(){
   try{
-    const c=await caches.open('organizer-badge');
-    const r=await c.match('items');
-    let items=[];
-    try{ items=r?JSON.parse(await r.text()):[]; }catch(e){}
-    if(!Array.isArray(items)) items=[];
-    const keep=items.filter(x=>{
-      const t=x&&x.id&&S.tasks.find(t=>t.id===x.id);
-      if(!t || isDoneOn(t, x.date||t.date)) return false;
-      // Postponed (+1d) or moved to another day: that reminder is dealt with.
-      if(x.date && (!t.freq || t.freq==='none') && t.date !== x.date) return false;
-      if(x.date && t.freq && t.freq!=='none' && !matchesDate(t, x.date)) return false;
-      return true;
-    });
-    if(keep.length!==items.length) await c.put('items', new Response(JSON.stringify(keep)));
-    // Close the notifications of tasks just marked Done too — on Android
-    // the icon dot follows what's still sitting in the notification shade.
-    const doneTags=new Set(items.filter(x=>x&&x.id&&!keep.includes(x)&&S.tasks.some(t=>t.id===x.id)).map(x=>x.tag));
-    if(doneTags.size && navigator.serviceWorker){
-      const reg=await navigator.serviceWorker.getRegistration();
-      if(reg && reg.getNotifications)
-        (await reg.getNotifications()).forEach(n=>{ if(doneTags.has(n.tag)) n.close(); });
-    }
-    if(keep.length){ if(navigator.setAppBadge) await navigator.setAppBadge(keep.length); }
+    const d=await (await fetch('/api/alerts')).json();
+    _al.active=d.active||[]; _al.snoozed=d.snoozed||[]; _al.count=d.count||0;
+  }catch(e){ return; }
+  alRenderBell(); alSyncDevice();
+  if(document.getElementById('modal').classList.contains('open') && document.getElementById('alBody')) alRenderBody();
+}
+function alRenderBell(){
+  const b=document.getElementById('bellBtn'); if(!b) return;
+  const n=_al.count;
+  b.classList.toggle('on', n>0);
+  b.querySelector('.bcount').textContent=n>99?'99+':(n||'');
+  b.setAttribute('aria-label', n ? n+' notification'+(n===1?'':'s')+' waiting' : 'Notifications');
+}
+// App-icon badge = events still waiting; notifications already dealt with
+// are removed from the phone's notification list too.
+async function alSyncDevice(){
+  try{
+    if(_al.count){ if(navigator.setAppBadge) await navigator.setAppBadge(_al.count); }
     else if(navigator.clearAppBadge) await navigator.clearAppBadge();
+    if('caches' in window){ const c=await caches.open('organizer-badge'); await c.put('items', new Response('[]')); }   // old badge list, no longer used
+    const reg=navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if(reg && reg.getNotifications){
+      const keep=new Set(_al.active.map(a=>'rem-'+a.evId+'-'+a.date+(a.leave?'-leave':'')));
+      (await reg.getNotifications()).forEach(n=>{ if(String(n.tag||'').startsWith('rem-') && !keep.has(n.tag)) n.close(); });
+    }
   }catch(e){}
 }
+// Replaces the old badge logic: renderAll() calls it after every change
+// (e.g. a task marked Done), so the count is fetched a moment later, once
+// the change has reached the server.
+var _badgeDataReady=false;
+function syncAppBadge(){ clearTimeout(_al.t); _al.t=setTimeout(loadAlerts, 1500); }
+function alDayLabel(ds){ if(ds===TODAY) return 'Today'; const t=new Date(parseD(TODAY)); t.setDate(t.getDate()+1); const tm=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); return ds===tm?'Tomorrow':fmtShort(parseD(ds)); }
+function alClock(ms){ return new Date(ms).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function alGroups(list){
+  const g=new Map();
+  for(const a of list){ const k=a.evId+'|'+a.date; if(!g.has(k)) g.set(k,{ key:k, evId:a.evId, date:a.date, items:[] }); g.get(k).items.push(a); }
+  return [...g.values()];
+}
+function alRemLabel(a){
+  if(a.leave) return '<i class="ti ti-car"></i> Time to leave';
+  if(/^🔔/.test(a.title||'')) return '<i class="ti ti-alarm-snooze"></i> Snoozed reminder';
+  return '<i class="ti ti-bell-ringing"></i> '+(a.mins ? escHtml(remLabelShort(a.mins))+' before' : 'Reminder');
+}
+function remLabelShort(m){ m=+m; if(m%43200===0) return (m/43200)+' month'+(m>43200?'s':''); if(m%10080===0) return (m/10080)+' week'+(m>10080?'s':''); if(m>=1440) return Math.round(m/1440)+' day'+(m>=2880?'s':''); if(m>=60) return (m%60? (m/60).toFixed(1).replace('.0','') : m/60)+' hour'+(m>60?'s':''); return m+' min'; }
+function alCard(g, focus){
+  const a=g.items[0], sport=a.type==='sport', col=a.color||'#60a5fa';
+  const ev=(sport?S.sportEvents:S.tasks).find(x=>x.id===g.evId);
+  const pri=a.priority||'normal';
+  let meta='<span style="color:var(--txt3)">'+escHtml(alDayLabel(a.date))+' · '+(a.time?fmtTime(a.time):'All day')+'</span>';
+  if(!sport) meta+='<span class="plabel '+pri+'">'+(pri==='very'?'URGENT':pri)+'</span>';
+  if(a.location) meta+='<span style="color:var(--txt3)"><i class="ti ti-map-pin"></i> '+escHtml(a.location)+'</span>';
+  const rems=g.items.map(x=>'<span class="al-rem">'+alRemLabel(x)+' <em>· '+alClock(x.at)+'</em></span>').join('');
+  const k=escHtml(g.evId)+'\',\''+g.date;
+  return '<div class="ecard '+(sport?'sport':'task')+' al-card'+(focus?' focus':'')+'" data-key="'+escHtml(g.key)+'">'+
+    '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div><div class="ec-body">'+
+      '<div class="ec-title">'+escHtml(a.name||'Event')+'</div><div class="ec-meta">'+meta+'</div>'+
+      (a.notes?'<div class="ec-notes">'+escHtml(a.notes)+'</div>':'')+
+      '<div class="al-rems">'+rems+'</div></div></div>'+
+    '<div class="ec-actions">'+
+      '<button class="ea grn" onclick="alClear(\''+k+'\')"><i class="ti ti-checks"></i>Clear</button>'+
+      '<button class="ea ylw" onclick="alSnoozeMenu(this)"><i class="ti ti-alarm-snooze"></i>Snooze</button>'+
+      '<button class="ea" onclick="alOpen(\''+k+'\')"><i class="ti ti-external-link"></i>Open</button>'+
+      (!sport && ev && !isDoneOn(ev, a.date) ? '<button class="ea" onclick="alDone(\''+k+'\')" title="Marks the task itself as done"><i class="ti ti-check"></i>Task done</button>' : '')+
+    '</div>'+
+    '<div class="al-snooze" hidden>'+[[10,'10 min'],[30,'30 min'],[60,'1 hour'],[180,'3 hours'],['tm','Tomorrow 9:00']].map(s=>'<button class="sh-chip" onclick="alSnooze(\''+k+'\',\''+s[0]+'\')">'+s[1]+'</button>').join('')+'</div>'+
+  '</div>';
+}
+function alRenderBody(){
+  const box=document.getElementById('alBody'); if(!box) return;
+  const groups=alGroups(_al.active);
+  const f=_al.focus;
+  groups.sort((x,y)=>(f && x.key===f ? -1 : f && y.key===f ? 1 : 0));
+  let h='';
+  if(!groups.length && !_al.snoozed.length) h='<div class="al-empty"><i class="ti ti-bell-off"></i><span>Nothing waiting. Reminders you haven’t cleared show up here.</span></div>';
+  h+=groups.map(g=>alCard(g, f && g.key===f)).join('');
+  if(_al.snoozed.length){
+    h+='<div class="al-sec">Snoozed</div>'+_al.snoozed.map(a=>'<div class="al-srow"><i class="ti ti-alarm-snooze"></i><span><b>'+escHtml(a.name)+'</b> — back at '+alClock(a.snooze)+(new Date(a.snooze).toDateString()!==new Date().toDateString()?' '+fmtShort(new Date(a.snooze)):'')+'</span><button class="pl-x" onclick="alClear(\''+escHtml(a.evId)+'\',\''+a.date+'\')" aria-label="Clear"><i class="ti ti-x"></i></button></div>').join('');
+  }
+  box.innerHTML=h;
+  const acts=document.getElementById('mActs');
+  if(acts) acts.innerHTML=(groups.length>1?'<button class="btn" onclick="alClearAll()"><i class="ti ti-checks"></i> Clear all</button>':'')+'<span class="msp"></span><button class="btn acc" onclick="closeModal()">Close</button>';
+}
+function openAlerts(evId, date){
+  _al.focus = evId && date ? evId+'|'+date : null;
+  showModal(_al.focus ? 'Reminder' : 'Notifications', '<div id="alBody"></div>', '');
+  alRenderBody();
+  loadAlerts();
+}
+function alSnoozeMenu(btn){ const c=btn.closest('.al-card').querySelector('.al-snooze'); c.hidden=!c.hidden; }
+async function alPost(url, body){
+  try{ const d=await (await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+    if(d.active){ _al.active=d.active; _al.snoozed=d.snoozed||[]; _al.count=d.count||0; }
+  }catch(e){}
+  alRenderBell(); alSyncDevice(); alRenderBody();
+  // Opened from a notification and nothing else is waiting: done here.
+  if(_al.focus && !_al.active.length && !_al.snoozed.length) setTimeout(closeModal, 350);
+}
+function alClear(evId, date){ return alPost('/api/alerts/clear',{ evId, date }); }
+function alClearAll(){ return alPost('/api/alerts/clear',{ all:true }); }
+function alSnooze(evId, date, v){
+  let mins=+v;
+  if(v==='tm'){ const t=new Date(); t.setDate(t.getDate()+1); t.setHours(9,0,0,0); mins=Math.max(1,Math.round((t-Date.now())/60000)); }
+  return alPost('/api/alerts/snooze',{ evId, date, mins });
+}
+function alOpen(evId, date){ closeModal(); openOnDate(date, evId); }
+function alDone(evId, date){ markDone(evId, date); setTimeout(loadAlerts, 1500); setTimeout(loadAlerts, 4000); }
+setInterval(()=>{ if(!document.hidden) loadAlerts(); }, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) loadAlerts(); });
 
 async function refreshPushStatus(){
   const el=document.getElementById('pushStatus');
