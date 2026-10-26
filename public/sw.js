@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v15';
+const CACHE = 'organizer-shell-v16';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -56,8 +56,22 @@ self.addEventListener('push', event => {
       badge: '/icon-192.png',
       tag: data.tag || 'organizer',
       renotify: true,
-      data
+      data,
+      // Buttons on the notification itself (Android, Windows, Mac; iPhone
+      // doesn't show them — there, tapping opens the reminder in the app).
+      ...(data.alertId ? { actions: [ { action:'snooze', title:'Snooze 10 min' }, { action:'clear', title:'Clear' } ] } : {})
     });
+    // An open app updates its bell straight away.
+    try { (await clients.matchAll({ type:'window', includeUncontrolled:true })).forEach(c => c.postMessage({ type:'ALERTS_CHANGED' })); } catch (e) {}
+    // Reminders carry the server's count of events still waiting, which is
+    // what the app-icon badge shows (cleared/snoozed ones don't count).
+    if (typeof data.badge === 'number') {
+      try {
+        if (data.badge > 0 && self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(data.badge);
+        else if (self.navigator && self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
+      } catch (e) {}
+      return;
+    }
     // App-icon badge (the dot/number like WhatsApp). Each delivered
     // reminder is remembered as {id,date,tag}; the badge shows how many are
     // still open. A task's entry is removed only when that task is marked
@@ -105,13 +119,29 @@ self.addEventListener('message', event => {
 // new tabs each time.
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  const nd = event.notification.data || {};
+  // Snooze / Clear buttons: done without opening the app.
+  if (nd.alertId && (event.action === 'snooze' || event.action === 'clear')) {
+    event.waitUntil((async () => {
+      try {
+        const r = await fetch(event.action === 'snooze' ? '/api/alerts/snooze' : '/api/alerts/clear', {
+          method:'POST', headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ evId: nd.id, date: nd.date, mins: 10 })
+        });
+        const j = await r.json();
+        if (self.navigator && self.navigator.setAppBadge) { if (j.count) await self.navigator.setAppBadge(j.count); else await self.navigator.clearAppBadge(); }
+        (await clients.matchAll({ type:'window', includeUncontrolled:true })).forEach(c => c.postMessage({ type:'ALERTS_CHANGED' }));
+      } catch (e) {}
+    })());
+    return;
+  }
   // Carry the reminder's date and event through, so the app can open on the
   // right day instead of today — a "1 day before" reminder is about
   // tomorrow, and landing on today showed the wrong events entirely.
   const d = (event.notification.data) || {};
   // A new-concert notification opens the Concerts widget instead of a day.
   const qs = d.concert ? '?concerts=1'
-    : d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '')) : '';
+    : d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '') + (d.alertId ? '&alert=1' : '')) : '';
   const target = new URL('/' + qs, self.location.origin).href;
   event.waitUntil((async () => {
     const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
@@ -125,7 +155,7 @@ self.addEventListener('notificationclick', event => {
           // An already-open window is told which day to show, rather than
           // being navigated — reloading would lose any unsaved state.
           try {
-            c.postMessage(d.concert ? { type:'OPEN_CONCERTS' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null });
+            c.postMessage(d.concert ? { type:'OPEN_CONCERTS' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null, alert: !!d.alertId });
           } catch (e) {}
           return c.focus();
         }
