@@ -1048,7 +1048,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-26-wallpaper-alerts';
+const BUILD_VERSION = '2026-10-26-cornilescu';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -5041,8 +5041,8 @@ function hebVerse(r, v){
 function transliterateHebrew(input){
   const H = String(input||'')
     .replace(/<[^>]+>/g,'')
-    .replace(/[֑-ֽֿ֯׀ׅׄ׆]/g,'')   // cantillation, meteg, rafe, paseq…
-    .replace(/־/g,'-').replace(/׃/g,'.').replace(/[׳]/g,"'").replace(/[״]/g,'"')
+    .replace(/[֑-ֽֿ֯׀ׅׄ׆]/g,'')   // cantillation, meteg, rafe, paseq…
+    .replace(/־/g,'-').replace(/׃/g,'').replace(/[׳]/g,"'").replace(/[״]/g,'"')
     .replace(/ׇ/g,'ָ');                                       // qamats qatan → qamats
   const V = { 'ְ':'@', 'ֱ':'e', 'ֲ':'a', 'ֳ':'o', 'ִ':'i', 'ֵ':'e', 'ֶ':'e', 'ַ':'a', 'ָ':'a', 'ֹ':'o', 'ֺ':'o', 'ֻ':'u' };
   const isL = c => c >= 'א' && c <= 'ת';
@@ -5082,6 +5082,7 @@ function transliterateHebrew(input){
         case 'י':
           if(!x.v && !x.dag && pv && pv.v==='i') continue;                                   // i written with yod
           if(!x.v && !x.dag && pv && pv.v==='e'){ if(!/ei$/.test(s)) s += 'i'; continue; }     // tsere + yod → ei
+          if(!x.v && !x.dag && nx && nx.c==='\u05D5' && !nx.v && !nx.dag && i===L.length-2) continue;   // -ָיו is read "-av": panav
           if(!x.v && !x.dag && pv && (pv.v==='a' || pv.v==='o' || pv.v==='u')){ s += 'i'; continue; }
           c = 'y'; break;
         case 'כ': case 'ך': c = x.dag || first ? 'k' : 'ch'; break;
@@ -5096,7 +5097,9 @@ function transliterateHebrew(input){
       s += c;
       if(x.v==='@'){
         // Vocal shva at the start of a word, after a silent shva, or under a doubled letter.
-        const vocal = !last && (first || prevSilentShva || (x.dag && !first && !!pv && !!pv.v && pv.v!=='@'));
+        // …and before the ending ־ךָ ("-echa": yevarechecha, veyishmerecha), as it's commonly read.
+        const beforeKha = !!nx && nx.c==='\u05DA' && nx.v==='a' && i===L.length-2;
+        const vocal = !last && (first || prevSilentShva || beforeKha || (x.dag && !first && !!pv && !!pv.v && pv.v!=='@'));
         if(vocal){ s += 'e'; prevSilentShva = false; } else prevSilentShva = true;
       } else { s += x.v; prevSilentShva = false; }
       if(x.c==='ו' && first && x.v==='@'){ /* ve- */ }
@@ -5184,7 +5187,16 @@ async function bollsChapter(tr, book, ch){
   const arr = await bibleFetchJson(BIBLE_BOLLS+'/get-text/'+tr+'/'+book+'/'+ch+'/');
   return Array.isArray(arr) ? arr : [];
 }
+// Standard Cornilescu (1924) from getBible; bolls.life only has the later
+// "literal" Cornilescu edition, which reads differently, so it's a fallback.
+const BIBLE_GETBIBLE = 'https://api.getbible.net';
 async function romanianVDC(r){
+  try{
+    const j = await bibleFetchJson(BIBLE_GETBIBLE+'/v2/cornilescu/'+r.num+'/'+r.ch+'.json');
+    const arr = (j && j.verses) || [];
+    const vs = arr.filter(x => x.verse >= r.v1 && x.verse <= r.v2).map(x => String(x.text||'').replace(/\s+/g,' ').trim());
+    if(vs.length) return { text: vs.join(' '), count: arr.length };
+  }catch(e){}
   const arr = await bollsChapter('VDCL', r.num, r.ch);
   const vs = arr.filter(x => x.verse >= r.v1 && x.verse <= r.v2).map(x => stripBolls(x.text));
   if(!vs.length) throw new Error('Romanian verse not found');
@@ -5204,7 +5216,9 @@ async function hebrewTranslit(r, roCount){
   if(!out.length) throw new Error('Hebrew verse not found');
   const heb = out.join(' ');
   // The Hebrew itself is shown with vowels but without the chanting marks.
-  return { hebrew: heb.replace(/[\u0591-\u05AF\u05BD]/g,''), text: transliterateHebrew(heb) };
+  // Hebrew letters with vowel points, without the chanting marks (and the
+  // paseq divider), e.g. יֵשׁוּעַ. The Latin-letter version is kept as heLatin.
+  return { hebrew: heb.replace(/[\u0591-\u05AF\u05BD\u05C0]/g,'').replace(/\s+/g,' ').trim(), text: transliterateHebrew(heb) };
 }
 app.get('/api/verse', async (req, res) => {
   const r = parseBibleRef(req.query.ref);
@@ -5213,7 +5227,7 @@ app.get('/api/verse', async (req, res) => {
   const [en, ro] = await Promise.allSettled([ englishT4T(r), romanianVDC(r) ]);
   if(en.status==='fulfilled') out.en = en.value; else out.errors.en = 'English (T4T) unavailable right now';
   if(ro.status==='fulfilled') out.ro = ro.value.text; else out.errors.ro = 'Romanian (Cornilescu) unavailable right now';
-  try{ const he = await hebrewTranslit(r, ro.status==='fulfilled' ? ro.value.count : 0); out.he = he.text; out.hebrew = he.hebrew; }
+  try{ const he = await hebrewTranslit(r, ro.status==='fulfilled' ? ro.value.count : 0); out.he = he.hebrew; out.hebrew = he.hebrew; out.heLatin = he.text; }
   catch(e){ out.errors.he = 'Hebrew unavailable right now'; }
   if(!out.en && !out.ro && !out.he) return res.status(502).json({ error:'Couldn’t reach the Bible sources — check the connection and try again.', ref:r.label });
   res.json(out);
