@@ -1179,6 +1179,7 @@ select option:checked{background:#2E3A78;color:#fff}
 .bw-f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--txt2)}
 .bw-f > span{display:flex;align-items:center;gap:6px;font-weight:600}
 .bw-f textarea,.bw-f input.cc-input{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:16px;line-height:1.4;padding:9px 11px;resize:vertical}
+.bw-f textarea.bw-he{font-family:"Noto Serif Hebrew","Times New Roman",serif;font-size:19px;line-height:1.6}
 .bw-f em{font-style:normal;font-size:14px;color:var(--txt3)}
 .bw-sec{font-size:12px;font-weight:650;color:var(--txt2);margin-top:4px}
 .bw-range{width:100%;accent-color:#E2C08D}
@@ -6451,12 +6452,13 @@ const BW_SIZES=[
 ];
 const BW_STYLE={
   en:{ font:'"EB Garamond", Garamond, Georgia, serif', style:'normal', weight:400, color:'#F3F0E8', scale:1 },
-  he:{ font:'"Cormorant Garamond", "EB Garamond", Georgia, serif', style:'italic', weight:500, color:'#E2C08D', scale:1.07 },   // Cormorant runs small: same visual size
+  he:{ font:'"Noto Serif Hebrew", "Frank Ruhl Libre", "Times New Roman", serif', style:'normal', weight:400, color:'#E2C08D', scale:0.95, rtl:true },   // Hebrew letters with vowel points, right to left
+  hl:{ font:'"Cormorant Garamond", "EB Garamond", Georgia, serif', style:'italic', weight:500, color:'#E2C08D', scale:1.07 },   // Cormorant runs small: same visual size
   ro:{ font:'"Crimson Pro", "EB Garamond", Georgia, serif', style:'italic', weight:400, color:'#E4E1DA', scale:1 },
   ref:{ font:'"EB Garamond", Georgia, serif', style:'normal', weight:400, color:'#D6B47E', scale:.64 },
   q:{ font:'"EB Garamond", Georgia, serif', style:'italic', weight:400, color:'#F3F0E8', scale:1.25 }
 };
-let _bw={ mode:'verse', ref:'', label:'', en:'', he:'', ro:'', hebrew:'', show:{en:true,he:true,ro:true}, quote:'', author:'', size:'16:9', pos:'br', scale:1, busy:false, msg:'', drawT:null };
+let _bw={ mode:'verse', ref:'', label:'', en:'', he:'', ro:'', hebrew:'', show:{en:true,he:true,hl:true,ro:true}, hl:'', quote:'', author:'', size:'16:9', pos:'br', scale:1, busy:false, msg:'', drawT:null };
 try{ Object.assign(_bw, JSON.parse(localStorage.getItem('org:bw')||'{}'), { busy:false, msg:'' }); }catch(e){}
 function bwKeep(){ try{ const { drawT, busy, msg, ...keep }=_bw; localStorage.setItem('org:bw', JSON.stringify(keep)); }catch(e){} }
 let _bwFonts=null;
@@ -6464,12 +6466,12 @@ function bwFonts(){
   if(_bwFonts) return _bwFonts;
   if(!document.getElementById('bwFontCss')){
     const l=document.createElement('link'); l.id='bwFontCss'; l.rel='stylesheet';
-    l.href='https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@1,500&family=Crimson+Pro:ital,wght@1,400&display=swap';
+    l.href='https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=Noto+Serif+Hebrew:wght@400&family=Cormorant+Garamond:ital,wght@1,500&family=Crimson+Pro:ital,wght@1,400&display=swap';
     document.head.appendChild(l);
   }
   const s='Aa ăâîșț’ — 12:9';
   _bwFonts=Promise.race([
-    Promise.all(['400 40px "EB Garamond"','italic 400 40px "EB Garamond"','italic 500 40px "Cormorant Garamond"','italic 400 40px "Crimson Pro"'].map(f=>document.fonts.load(f, s).catch(()=>{}))),
+    Promise.all(['400 40px "EB Garamond"','italic 400 40px "EB Garamond"','400 40px "Noto Serif Hebrew"','italic 500 40px "Cormorant Garamond"','italic 400 40px "Crimson Pro"'].map(f=>document.fonts.load(f, s).catch(()=>{}))),
     new Promise(ok=>setTimeout(ok, 4000))
   ]);
   return _bwFonts;
@@ -6489,7 +6491,7 @@ function bwRender(){
   const v=_bw.mode==='verse';
   const recent=(()=>{ try{ return JSON.parse(localStorage.getItem('org:bwRecent')||'[]'); }catch(e){ return []; } })();
   const field=(k,label,ph,note)=>'<label class="bw-f"><span><input type="checkbox" '+(_bw.show[k]?'checked':'')+' onchange="_bw.show.'+k+'=this.checked;bwDraw()" aria-label="Show '+label+'"> '+label+'</span>'+
-    '<textarea rows="3" placeholder="'+ph+'" oninput="_bw.'+k+'=this.value;bwDraw()">'+escHtml(_bw[k])+'</textarea>'+(note?'<em>'+note+'</em>':'')+'</label>';
+    '<textarea rows="3" placeholder="'+ph+'"'+(k==='he'?' dir="rtl" lang="he" class="bw-he"':'')+' oninput="_bw.'+k+'=this.value;bwDraw()">'+escHtml(_bw[k])+'</textarea>'+(note?'<em>'+note+'</em>':'')+'</label>';
   o.innerHTML='<div class="nt-top"><button class="pad-x" onclick="bwClose()" aria-label="Close"><i class="ti ti-x"></i></button><b>Verse wallpaper</b>'+
       '<button class="btn acc" onclick="bwSave()"><i class="ti ti-download"></i> Save</button></div>'+
     '<div class="bw-scroll">'+
@@ -6500,7 +6502,8 @@ function bwRender(){
         (recent.length?'<div class="sh-chips bw-recent">'+recent.map(r=>'<button class="sh-chip" onclick="document.getElementById(\'bwRef\').value=\''+escHtml(r).replace(/'/g,'')+'\';bwFetch()">'+escHtml(r)+'</button>').join('')+'</div>':'')+
         '<div class="bw-msg" id="bwMsg">'+(_bw.msg||'')+'</div>'+
         field('en','English · T4T','The verse in English')+
-        field('he','Hebrew · in Latin letters','Transliterated Hebrew', _bw.hebrew?'<span dir="rtl" lang="he">'+escHtml(_bw.hebrew)+'</span>':'')+
+        field('he','Hebrew','הטקסט בעברית')+
+        field('hl','Hebrew · how it’s read','Yevarechecha Adonai veyishmerecha')+
         field('ro','Romanian · Cornilescu','Versetul în română')+
         '<label class="bw-f"><span>Reference</span><input class="cc-input" value="'+escHtml(_bw.label)+'" oninput="_bw.label=this.value;bwDraw()" placeholder="Prov. 12:9"></label>'
       :
@@ -6510,7 +6513,7 @@ function bwRender(){
       '<div class="bw-sec">Size</div><div class="sh-chips">'+BW_SIZES.map(s=>'<button class="sh-chip'+(s.id===_bw.size?' on':'')+'" onclick="_bw.size=\''+s.id+'\';bwRender();bwDraw()">'+s.label+'</button>').join('')+'</div>'+
       '<div class="bw-sec">Text position</div><div class="sh-chips">'+[['br','Bottom right'],['bl','Bottom left'],['c','Centre'],['tr','Top right']].map(p=>'<button class="sh-chip'+(p[0]===_bw.pos?' on':'')+'" onclick="_bw.pos=\''+p[0]+'\';bwRender();bwDraw()">'+p[1]+'</button>').join('')+'</div>'+
       '<div class="bw-sec">Text size</div><input type="range" min="0.7" max="1.5" step="0.05" value="'+_bw.scale+'" oninput="_bw.scale=+this.value;bwDraw()" class="bw-range" aria-label="Text size">'+
-      '<div class="bw-foot">English: Translation for Translators (T4T) · Hebrew: Westminster Leningrad Codex'+' / Delitzsch (New Testament), written in Latin letters · Romanian: Cornilescu. EDCR isn’t freely available, so Cornilescu is used.</div>'+
+      '<div class="bw-foot">English: Translation for Translators (T4T) · Hebrew: Westminster Leningrad Codex'+' / Delitzsch (New Testament), with vowel points and how it’s read in Latin letters · Romanian: Cornilescu. EDCR isn’t freely available, so Cornilescu is used.</div>'+
     '</div>';
 }
 async function bwFetch(){
@@ -6519,7 +6522,7 @@ async function bwFetch(){
   try{
     const r=await fetch('/api/verse?ref='+encodeURIComponent(ref)); const d=await r.json();
     if(!r.ok) throw new Error(d.error||'Couldn’t get the verse.');
-    _bw.label=d.ref; _bw.en=d.en||''; _bw.he=d.he||''; _bw.ro=d.ro||''; _bw.hebrew=d.hebrew||'';
+    _bw.label=d.ref; _bw.en=d.en||''; _bw.he=d.he||''; _bw.hl=d.heLatin||''; _bw.ro=d.ro||''; _bw.hebrew=d.hebrew||'';
     const errs=Object.values(d.errors||{});
     _bw.msg=errs.length?'<span style="color:#fca5a5">'+escHtml(errs.join(' · '))+' — you can type it in.</span>':'<span style="color:var(--green)"><i class="ti ti-circle-check"></i> '+escHtml(d.ref)+' — check the texts, then Save.</span>';
     try{ let rec=JSON.parse(localStorage.getItem('org:bwRecent')||'[]'); rec=[d.ref,...rec.filter(x=>x!==d.ref)].slice(0,6); localStorage.setItem('org:bwRecent',JSON.stringify(rec)); }catch(e){}
@@ -6563,7 +6566,7 @@ function bwPaint(cv){
   // Blocks to draw, in order.
   const blocks=[];
   if(_bw.mode==='verse'){
-    ['en','he','ro'].forEach(k=>{ if(_bw.show[k] && String(_bw[k]).trim()) blocks.push({ k, text:_bw[k] }); });
+    ['en','he','hl','ro'].forEach(k=>{ if(_bw.show[k]!==false && String(_bw[k]||'').trim()) blocks.push({ k, text:_bw[k] }); });
     if(String(_bw.label).trim()) blocks.push({ k:'ref', text:'—  '+_bw.label.trim()+'  —' });
   } else {
     if(String(_bw.quote).trim()) blocks.push({ k:'q', text:_bw.quote.trim() });
@@ -6577,10 +6580,10 @@ function bwPaint(cv){
     lay=[]; let total=0;
     blocks.forEach((b,i)=>{
       const st=BW_STYLE[b.k], px=base*st.scale;
-      ctx.font=st.style+' '+st.weight+' '+px+'px '+st.font;
+      ctx.font=st.style+' '+st.weight+' '+px+'px '+st.font; ctx.direction=st.rtl?'rtl':'ltr';
       const lines=bwWrap(ctx, b.text, maxW);
-      const lh=px*(b.k==='ref'?1.4:1.3);
-      const gap=i===0?0:(b.k==='ref'?base*0.95:base*1.15);
+      const lh=px*(b.k==='ref'?1.4:st.rtl?1.55:1.3);       // vowel points need a little more room
+      const gap=i===0?0:(b.k==='ref'?base*0.95:(b.k==='hl' && blocks[i-1].k==='he')?base*0.35:base*1.15);   // the reading sits right under the Hebrew
       lay.push({ ...b, st, px, lines, lh, gap }); total+=gap+lines.length*lh;
     });
     lay.total=total;
@@ -6595,10 +6598,12 @@ function bwPaint(cv){
   for(const b of lay){
     y+=b.gap;
     ctx.font=b.st.style+' '+b.st.weight+' '+b.px+'px '+b.st.font; ctx.fillStyle=b.st.color;
+    ctx.direction=b.st.rtl?'rtl':'ltr';
     if('letterSpacing' in ctx) ctx.letterSpacing=b.k==='ref'?(b.px*0.06)+'px':'0px';
     for(const ln of b.lines){ y+=b.lh; ctx.fillText(ln, x, y-b.lh*0.24); }
   }
   if('letterSpacing' in ctx) ctx.letterSpacing='0px';
+  ctx.direction='ltr';
 }
 async function bwSave(){
   await bwFonts();
@@ -7382,7 +7387,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-26-wallpaper-alerts';
+const APP_BUILD='2026-10-26-cornilescu';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
