@@ -15,7 +15,8 @@ const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const SEED_FILE = path.join(__dirname, 'data.json'); // template shipped with the repo
 const APP_URL   = process.env.APP_URL || ''; // e.g. https://personal-organizer-xxx.up.railway.app
 
-app.use(express.json());
+// Note pictures arrive as JSON (base64), so allow bigger bodies than the 100 kB default.
+app.use(express.json({ limit:'12mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ═══════════════════════════════════════════════════
@@ -53,6 +54,10 @@ function requirePrivate(req, res, next){
   res.status(401).json({ error:'Private settings are locked — unlock them in Settings first.', locked:true });
 }
 // What any visitor gets: everything the calendar needs, minus secrets.
+// Kept only on the server and never replaced by a browser save, a backup
+// restore or a snapshot roll-back: notes (and their PIN/passkeys/pictures)
+// and the list of notifications still waiting to be cleared.
+const KEEP_SERVER_SIDE = ['notes','notesAuth','notesImgs','alerts'];
 function publicView(d){
   const out = { ...d };
   const st = { ...(d.settings||{}) };
@@ -61,7 +66,8 @@ function publicView(d){
   for(const k of PRIVATE_SETTING_KEYS) delete st[k];
   out.settings = st;
   delete out.pushSubs;
-  delete out.notes; delete out.notesAuth;           // only via /api/notes, behind the PIN
+  delete out.notes; delete out.notesAuth; delete out.notesImgs;   // only via /api/notes, behind the PIN
+  delete out.alerts;                                // served by /api/alerts
   if(d.travelCache){
     out.travelCache = {};
     for(const [k,v] of Object.entries(d.travelCache)){
@@ -1042,7 +1048,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-23-notes';
+const BUILD_VERSION = '2026-10-26-wallpaper-alerts';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1281,9 +1287,7 @@ app.post('/api/data', (req, res) => {
   const current = readData();
   const updated = {...current, ...req.body};
   // Notes are never written through here (the browser doesn't even have them).
-  updated.notes = current.notes; updated.notesAuth = current.notesAuth;
-  if(updated.notes === undefined) delete updated.notes;
-  if(updated.notesAuth === undefined) delete updated.notesAuth;
+  for(const k of KEEP_SERVER_SIDE){ updated[k] = current[k]; if(updated[k] === undefined) delete updated[k]; }
 
   // Settings must be MERGED, not replaced. The spread above is shallow, so
   // a client payload would otherwise drop every server-owned setting the
@@ -1736,7 +1740,7 @@ app.post('/api/restore', (req, res) => {
       ...(incoming.concerts ? { concerts: incoming.concerts } : {}),
       ...(incoming.tithe ? { tithe: incoming.tithe } : {}),
       ...(incoming.bible ? { bible: incoming.bible } : {}),
-      notes: current.notes, notesAuth: current.notesAuth,
+      notes: current.notes, notesAuth: current.notesAuth, notesImgs: current.notesImgs, alerts: current.alerts,
       tasks: Array.isArray(incoming.tasks) ? incoming.tasks : (current.tasks||[]),
       sportEvents: Array.isArray(incoming.sportEvents) ? incoming.sportEvents : (current.sportEvents||[]),
       groups: Array.isArray(incoming.groups) && incoming.groups.length ? incoming.groups : current.groups,
@@ -1796,7 +1800,7 @@ app.post('/api/snapshots/:id/restore', async (req, res) => {
     restored.pushSubs = cur.pushSubs || [];
     // Notes keep their current state: rolling the calendar back shouldn't
     // roll your notes back too.
-    if(cur.notes) restored.notes = cur.notes; if(cur.notesAuth) restored.notesAuth = cur.notesAuth;
+    for(const k of KEEP_SERVER_SIDE){ if(cur[k]) restored[k] = cur[k]; else delete restored[k]; }
     writeData(restored);
     setupCrons(restored.settings);
     res.json({
@@ -4234,7 +4238,7 @@ let _pinFails = 0, _pinLockUntil = 0;
 function notesAuthOf(d){ if(!d.notesAuth) d.notesAuth = { creds:[] }; d.notesAuth.creds = d.notesAuth.creds || []; return d.notesAuth; }
 function notesOf(d){ if(!d.notes) d.notes = { items:[] }; d.notes.items = d.notes.items || []; return d.notes; }
 function notesTokOk(req){
-  const t = req.get('X-Notes-Token') || '';
+  const t = req.get('X-Notes-Token') || (req.query && req.query.t) || '';
   const exp = t && _notesSessions.get(t);
   if(!exp) return false;
   if(exp < Date.now()){ _notesSessions.delete(t); return false; }
@@ -4263,6 +4267,7 @@ app.get('/api/notes/status', (req, res) => {
   res.json({ pinSet: !!(a.pin && a.pin.hash), unlocked: notesTokOk(req),
     bio: (a.creds||[]).map(c => ({ id:c.id, label:c.label, at:c.at })),
     count: ((d.notes && d.notes.items) || []).filter(n => !n.deleted).length,
+    pinLen: (a.pin && a.pin.len) || 0,
     lockedFor: _pinLockUntil > Date.now() ? Math.ceil((_pinLockUntil-Date.now())/1000) : 0 });
 });
 // Set (or change) the PIN: needs the private-settings password.
@@ -4271,7 +4276,7 @@ app.post('/api/notes/pin', requirePrivate, (req, res) => {
   if(!/^\d{4,8}$/.test(pin)) return res.status(400).json({ error:'The PIN must be 4 to 8 digits.' });
   const d = readData(); const a = notesAuthOf(d);
   const salt = crypto.randomBytes(16).toString('hex');
-  a.pin = { salt, hash: crypto.scryptSync(pin, salt, 64).toString('hex'), at: new Date().toISOString() };
+  a.pin = { salt, hash: crypto.scryptSync(pin, salt, 64).toString('hex'), at: new Date().toISOString(), len: pin.length };
   writeData(d);
   _notesSessions.clear(); _pinFails = 0; _pinLockUntil = 0;
   res.json({ ok:true, token: notesNewSession() });
@@ -4283,7 +4288,13 @@ app.post('/api/notes/unlock', (req, res) => {
   if(!a.pin || !a.pin.hash) return res.status(400).json({ error:'No PIN set yet.', needsSetup:true });
   const pin = String((req.body||{}).pin||'');
   const got = crypto.scryptSync(pin, a.pin.salt, 64), want = Buffer.from(a.pin.hash, 'hex');
-  if(got.length === want.length && crypto.timingSafeEqual(got, want)){ _pinFails = 0; return res.json({ ok:true, token: notesNewSession() }); }
+  if(got.length === want.length && crypto.timingSafeEqual(got, want)){
+    _pinFails = 0;
+    // Remember the PIN's length (PINs set before this was stored) so the
+    // keypad can check it as soon as the last digit is typed.
+    if(!a.pin.len){ a.pin.len = pin.length; writeData(d); }
+    return res.json({ ok:true, token: notesNewSession() });
+  }
   _pinFails++;
   // 5 tries, then 1 min, 5 min, 15 min, 1 h…
   if(_pinFails >= 5){ const steps=[60,300,900,3600]; _pinLockUntil = now + 1000*steps[Math.min(steps.length-1, _pinFails-5)]; }
@@ -4353,33 +4364,100 @@ app.post('/api/notes/bio/remove', requireNotes, (req, res) => {
 // ── The notes themselves ──
 const NOTE_COLORS = ['', 'yellow','green','blue','purple','pink','orange'];
 function noteClean(n){
-  return { id:n.id, title:String(n.title||'').slice(0,200), body:String(n.body||'').slice(0,50000),
+  return { id:n.id, title:String(n.title||'').slice(0,200), body:String(n.body||''), fmt: n.fmt==='html' ? 'html' : 'text',
     color: NOTE_COLORS.includes(n.color) ? n.color : '', pinned: !!n.pinned,
     created:n.created, updated:n.updated, ...(n.deleted ? { deleted:n.deleted } : {}) };
 }
+// Formatted notes are HTML made by the editor. Even though only the owner
+// sees them, anything that could run code is removed before storing:
+// scripts, frames, event handlers, javascript: links, and picture sources
+// (pictures are referenced by id only: <img data-nimg="…">).
+const NOTE_MAX = 300000;
+function noteSafeHtml(html){
+  let h = String(html||'').slice(0, NOTE_MAX);
+  h = h.replace(/<(script|style|iframe|object|embed|svg|math|template|link|meta|base|form|textarea|select|button)\b[\s\S]*?(<\/\1\s*>|$)/gi, '');
+  h = h.replace(/<\/?(script|style|iframe|object|embed|svg|math|template|link|meta|base|form|input|textarea|select|button)\b[^>]*>/gi, '');
+  h = h.replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  h = h.replace(/(href|src|xlink:href|action|formaction)\s*=\s*("|')?\s*(javascript|vbscript|data):[^"'>\s]*("|')?/gi, '');
+  h = h.replace(/<img\b[^>]*>/gi, m => { const id = (m.match(/data-nimg\s*=\s*["']?([a-z0-9]{6,40})/i)||[])[1]; return id ? '<img data-nimg="'+id+'">' : ''; });
+  return h;
+}
+// ── Note pictures ── stored apart from the main record (which stays small
+// and is rewritten on every save): Redis key organizer:nimg:<id>, or a file.
+const NIMG_DIR = path.join(DATA_DIR, 'note-images');
+async function nimgPut(id, buf){
+  if(USE_REDIS) return redisCmd(['SET', 'organizer:nimg:'+id, buf.toString('base64')]);
+  fs.mkdirSync(NIMG_DIR, { recursive:true }); fs.writeFileSync(path.join(NIMG_DIR, id+'.jpg'), buf);
+}
+async function nimgGet(id){
+  if(USE_REDIS){ const v = await redisCmd(['GET', 'organizer:nimg:'+id]); return v ? Buffer.from(v, 'base64') : null; }
+  try{ return fs.readFileSync(path.join(NIMG_DIR, id+'.jpg')); }catch(e){ return null; }
+}
+async function nimgDel(id){
+  if(USE_REDIS) return redisCmd(['DEL', 'organizer:nimg:'+id]).catch(()=>{});
+  try{ fs.unlinkSync(path.join(NIMG_DIR, id+'.jpg')); }catch(e){}
+}
+const _nimgCache = new Map();        // a few recent pictures in memory
+// Pictures no note refers to any more (deleted from the note, or the note
+// deleted forever) are removed — after a day, so Undo still works.
+async function noteImgsGc(){
+  try{
+    const d = readData(); const idx = d.notesImgs || {};
+    const used = new Set();
+    for(const n of ((d.notes && d.notes.items) || [])) String(n.body||'').replace(/data-nimg="([a-z0-9]+)"/g, (m, id) => used.add(id));
+    const cut = Date.now() - 24*3600*1000; let changed = false;
+    for(const id of Object.keys(idx)){
+      if(!used.has(id) && idx[id].at < cut){ await nimgDel(id); _nimgCache.delete(id); delete idx[id]; changed = true; }
+    }
+    if(changed){ const cur = readData(); cur.notesImgs = idx; writeData(cur); }
+  }catch(e){ console.log('Note picture clean-up failed:', e.message); }
+}
+app.post('/api/notes/img', requireNotes, async (req, res) => {
+  try{
+    const m = String((req.body||{}).data||'').match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+    if(!m) return res.status(400).json({ error:'That doesn’t look like a picture.' });
+    const buf = Buffer.from(m[2], 'base64');
+    if(buf.length > 4*1024*1024) return res.status(413).json({ error:'Picture too large.' });
+    const id = 'i'+crypto.randomBytes(9).toString('hex');
+    await nimgPut(id, buf);
+    const d = readData(); d.notesImgs = d.notesImgs || {}; d.notesImgs[id] = { at: Date.now(), size: buf.length, type: m[1] }; writeData(d);
+    res.json({ ok:true, id });
+  }catch(e){ res.status(500).json({ error:'Couldn’t store the picture.' }); }
+});
+app.get('/api/notes/img/:id', requireNotes, async (req, res) => {
+  const id = String(req.params.id||'');
+  if(!/^i[0-9a-f]{18}$/.test(id)) return res.status(404).end();
+  let buf = _nimgCache.get(id);
+  if(!buf){ buf = await nimgGet(id).catch(()=>null); if(buf && buf.length < 600000){ _nimgCache.set(id, buf); if(_nimgCache.size > 40) _nimgCache.delete(_nimgCache.keys().next().value); } }
+  if(!buf) return res.status(404).end();
+  const t = ((readData().notesImgs||{})[id]||{}).type || 'jpeg';
+  res.set('Content-Type', 'image/'+t).set('Cache-Control', 'private, max-age=86400').send(buf);
+});
 app.get('/api/notes', requireNotes, (req, res) => {
   const d = readData(); const N = notesOf(d);
   // Bin empties itself after 30 days.
   const cut = Date.now() - 30*24*3600*1000, before = N.items.length;
   N.items = N.items.filter(n => !n.deleted || n.deleted > cut);
-  if(N.items.length !== before) writeData(d);
+  if(N.items.length !== before){ writeData(d); setTimeout(noteImgsGc, 50); }
   res.json({ notes: N.items.map(noteClean) });
 });
 app.post('/api/notes/save', requireNotes, (req, res) => {
   const b = (req.body||{}).note || {};
   const d = readData(); const N = notesOf(d); const now = Date.now();
+  const fmt = b.fmt === 'html' ? 'html' : 'text';
+  const body = fmt === 'html' ? noteSafeHtml(b.body) : String(b.body||'').slice(0, NOTE_MAX);
+  const title = String(b.title||'').slice(0,200);
   let n = b.id && N.items.find(x => x.id === b.id);
   let conflict = null;
-  if(n && b.base && n.updated > b.base && (n.body !== b.body || n.title !== b.title)){
+  if(n && b.base && n.updated > b.base && (n.body !== body || n.title !== title)){
     // Changed on another device since this one loaded it: keep both.
-    conflict = { id:'n'+uid(), title:(String(b.title||n.title||'Note'))+' (copy from this device)', body:b.body, color:b.color, pinned:false, created:now, updated:now };
+    conflict = { id:'n'+uid(), title:(title||n.title||'Note')+' (copy from this device)', body, fmt, color:b.color, pinned:false, created:now, updated:now };
     N.items.push(conflict);
   } else if(n){
-    n.title = String(b.title||'').slice(0,200); n.body = String(b.body||'').slice(0,50000);
+    n.title = title; n.body = body; n.fmt = fmt;
     n.color = NOTE_COLORS.includes(b.color) ? b.color : ''; n.pinned = !!b.pinned; n.updated = now;
   } else {
-    n = { id:'n'+uid(), title:String(b.title||'').slice(0,200), body:String(b.body||'').slice(0,50000),
-      color: NOTE_COLORS.includes(b.color) ? b.color : '', pinned: !!b.pinned, created:now, updated:now };
+    n = { id:'n'+uid(), title, body, fmt, color: NOTE_COLORS.includes(b.color) ? b.color : '', pinned: !!b.pinned, created:now, updated:now };
     N.items.push(n);
   }
   writeData(d);
@@ -4388,7 +4466,7 @@ app.post('/api/notes/save', requireNotes, (req, res) => {
 app.post('/api/notes/delete', requireNotes, (req, res) => {
   const b = req.body || {}; const d = readData(); const N = notesOf(d);
   const n = N.items.find(x => x.id === b.id); if(!n) return res.status(404).json({ error:'Not found.' });
-  if(b.forever) N.items = N.items.filter(x => x.id !== b.id);
+  if(b.forever){ N.items = N.items.filter(x => x.id !== b.id); setTimeout(noteImgsGc, 50); }
   else if(b.restore){ delete n.deleted; n.updated = Date.now(); }
   else n.deleted = Date.now();
   writeData(d); res.json({ ok:true });
@@ -4803,8 +4881,347 @@ function reminderLabel(mins){
   return mins+' min';
 }
 
+// ═══════════════════════════════════════════════════
+// NOTIFICATION CENTRE — every reminder that reached a device is kept here
+// until it is cleared (or snoozed), separately from the task itself:
+// clearing a reminder never ticks the task off. The app's bell and the
+// app-icon badge both show how many are still waiting. A reminder stops
+// counting on its own when its task is marked Done, the task is deleted
+// or moved, or two days after the event.
+// ═══════════════════════════════════════════════════
+const ALERT_KEEP_MS = 2*24*3600*1000;
+function alertEvent(d, a){
+  return (a.type==='sport' ? (d.sportEvents||[]) : (d.tasks||[])).find(x => x.id === a.evId) || null;
+}
+function alertState(d, a, now){
+  if(a.cleared) return 'cleared';
+  const ev = alertEvent(d, a);
+  if(!ev || !matchesDate(ev, a.date)) return 'gone';
+  if(a.type!=='sport' && isDoneOn(ev, a.date)) return 'done';
+  const st = eventStartMs({ ...ev, date:a.date });
+  if(!isNaN(st) && now - st > ALERT_KEEP_MS) return 'old';
+  if(a.snooze && a.snooze > now) return 'snoozed';
+  return 'active';
+}
+function alertsList(d){
+  const now = Date.now(), active = [], snoozed = [];
+  for(const a of (d.alerts||[])){
+    const s = alertState(d, a, now); if(s!=='active' && s!=='snoozed') continue;
+    const ev = alertEvent(d, a);
+    const row = { id:a.id, evId:a.evId, date:a.date, type:a.type, mins:a.mins, leave:!!a.leave, title:a.title, body:a.body, at:a.at, snooze:a.snooze||0,
+      name: ev.name, time: ev.time||'', group: ev.group||'', color: a.type==='task' ? groupColor(d, ev.group) : null, location: ev.location||'', notes: ev.notes||'',
+      competition: ev.competitionName||'', priority: ev.priority||'normal' };
+    (s==='active' ? active : snoozed).push(row);
+  }
+  active.sort((x,y)=>y.at-x.at); snoozed.sort((x,y)=>x.snooze-y.snooze);
+  // How many *events* are waiting — two reminders for the same task count once.
+  const count = new Set(active.map(a => a.evId+'|'+a.date)).size;
+  return { active, snoozed, count };
+}
+function alertsCount(d){ return alertsList(d).count; }
+function recordAlert(d, item, title, body){
+  if(!d.alerts) d.alerts = [];
+  const ev = item.ev, key = item.key;
+  let a = d.alerts.find(x => x.key === key);
+  if(!a){ a = { id:'a'+crypto.createHash('sha1').update(key).digest('hex').slice(0,14), key }; d.alerts.push(a); }
+  Object.assign(a, { evId:ev.id, date:item.ds, type:ev._type==='sport'?'sport':'task', mins:item.mins, leave:!!item.leave, title, body, at:Date.now(), cleared:0, snooze:0 });
+  // Older entries go once they can no longer matter.
+  const cut = Date.now() - 10*24*3600*1000;
+  d.alerts = d.alerts.filter(x => (x.at||0) > cut && !(x.cleared && x.cleared < Date.now() - 3*24*3600*1000));
+  return a;
+}
+app.get('/api/alerts', (req, res) => { res.json(alertsList(readData())); });
+// Clear: one reminder, every reminder of one event, or everything.
+app.post('/api/alerts/clear', (req, res) => {
+  const b = req.body || {}; const d = readData(); const now = Date.now(); let n = 0;
+  for(const a of (d.alerts||[])){
+    if(a.cleared) continue;
+    const hit = b.all || (b.ids && b.ids.includes(a.id)) || (b.evId && a.evId===b.evId && (!b.date || a.date===b.date));
+    if(hit){ a.cleared = now; n++; }
+  }
+  writeData(d);
+  res.json({ ok:true, cleared:n, ...alertsList(d) });
+});
+// Snooze an event's reminders: they disappear from the bell and come back
+// as one new notification after the chosen time.
+app.post('/api/alerts/snooze', (req, res) => {
+  const b = req.body || {}; const mins = Math.max(1, Math.min(7*24*60, parseInt(b.mins)||10));
+  const d = readData(); const now = Date.now();
+  const mine = (d.alerts||[]).filter(a => !a.cleared && a.evId===b.evId && (!b.date || a.date===b.date)).sort((x,y)=>y.at-x.at);
+  if(!mine.length) return res.status(404).json({ error:'Nothing to snooze.' });
+  mine.forEach((a,i) => { if(i===0) a.snooze = now + mins*60000; else a.cleared = now; });
+  writeData(d);
+  res.json({ ok:true, until: mine[0].snooze, ...alertsList(d) });
+});
+// Called by the reminder cron every minute.
+async function sendSnoozedAlerts(){
+  const d = readData(); const now = Date.now();
+  const due = (d.alerts||[]).filter(a => a.snooze && a.snooze <= now && !a.cleared);
+  if(!due.length) return;
+  for(const a of due){
+    a.snooze = 0;
+    const ev = alertEvent(d, a);
+    if(!ev || alertState(d, a, now) !== 'active') continue;
+    const st = eventStartMs({ ...ev, date:a.date });
+    const mins = Math.round((st - now)/60000);
+    const when = isNaN(st) ? '' : mins > 0 ? 'Starts '+fmtTime(ev.time)+' (in '+reminderLabel(mins)+')' : (ev.time ? 'Started '+fmtTime(ev.time) : 'Today');
+    a.at = now; a.title = '🔔 '+ev.name; a.body = when;
+    const tag = 'rem-'+ev.id+'-'+a.date+(a.leave?'-leave':'');
+    try{ await sendWebPush(a.title, when + (a.date!==getToday() ? ' · '+a.date : ''), { date:a.date, id:ev.id, tag, alertId:a.id, badge: alertsCount(d) }, { ttl: 6*3600, urgency:'high' }); }
+    catch(e){ console.log('Snoozed reminder failed:', e.message); }
+  }
+  const cur = readData(); cur.alerts = d.alerts; writeData(cur);
+}
+
+// ═══════════════════════════════════════════════════
+// BIBLE VERSE WALLPAPERS — fetches one reference in three languages:
+//   • English: T4T (Translation for Translators, Ellis Deibler, CC BY-SA)
+//     from the Free Use Bible API (bible.helloao.org), else ebible.org.
+//   • Hebrew: Westminster Leningrad Codex (Old Testament) or Delitzsch
+//     (New Testament) from bolls.life, written out in Latin letters here.
+//   • Romanian: Cornilescu (VDC) from bolls.life. EDCR is copyrighted and
+//     not offered by any free source, so Cornilescu is used.
+// Hebrew verse numbers differ from English ones in some chapters; the
+// table below maps the common cases.
+// ═══════════════════════════════════════════════════
+// [USFM, bolls book number, short label, names…] — names are matched
+// lower-case with spaces and dots removed.
+const VERSE_BOOKS = [
+ ['GEN',1,'Gen.','genesis','gen','ge','gn'],['EXO',2,'Exod.','exodus','exod','exo','ex'],['LEV',3,'Lev.','leviticus','lev','le','lv'],
+ ['NUM',4,'Num.','numbers','num','nu','nm'],['DEU',5,'Deut.','deuteronomy','deut','deu','dt'],['JOS',6,'Josh.','joshua','josh','jos'],
+ ['JDG',7,'Judg.','judges','judg','jdg','jg'],['RUT',8,'Ruth','ruth','rut','ru'],['1SA',9,'1 Sam.','1samuel','1sam','1sa','1sm'],
+ ['2SA',10,'2 Sam.','2samuel','2sam','2sa','2sm'],['1KI',11,'1 Kings','1kings','1kgs','1ki','1kg'],['2KI',12,'2 Kings','2kings','2kgs','2ki','2kg'],
+ ['1CH',13,'1 Chron.','1chronicles','1chron','1chr','1ch'],['2CH',14,'2 Chron.','2chronicles','2chron','2chr','2ch'],['EZR',15,'Ezra','ezra','ezr'],
+ ['NEH',16,'Neh.','nehemiah','neh','ne'],['EST',17,'Esth.','esther','esth','est'],['JOB',18,'Job','job','jb'],
+ ['PSA',19,'Ps.','psalms','psalm','psa','ps','pss'],['PRO',20,'Prov.','proverbs','proverb','prov','pro','pr','prv'],['ECC',21,'Eccl.','ecclesiastes','eccles','eccl','ecc','ec','qoh'],
+ ['SNG',22,'Song','songofsongs','songofsolomon','song','sos','sng','canticles'],['ISA',23,'Isa.','isaiah','isa','is'],['JER',24,'Jer.','jeremiah','jer','je'],
+ ['LAM',25,'Lam.','lamentations','lam','la'],['EZK',26,'Ezek.','ezekiel','ezek','eze','ezk'],['DAN',27,'Dan.','daniel','dan','da','dn'],
+ ['HOS',28,'Hos.','hosea','hos','ho'],['JOL',29,'Joel','joel','jl','joe'],['AMO',30,'Amos','amos','amo','am'],['OBA',31,'Obad.','obadiah','obad','oba','ob'],
+ ['JON',32,'Jonah','jonah','jon','jnh'],['MIC',33,'Mic.','micah','mic','mi'],['NAM',34,'Nah.','nahum','nah','na'],['HAB',35,'Hab.','habakkuk','hab','hb'],
+ ['ZEP',36,'Zeph.','zephaniah','zeph','zep','zp'],['HAG',37,'Hag.','haggai','hag','hg'],['ZEC',38,'Zech.','zechariah','zech','zec','zc'],['MAL',39,'Mal.','malachi','mal','ml'],
+ ['MAT',40,'Matt.','matthew','matt','mat','mt'],['MRK',41,'Mark','mark','mrk','mk','mr'],['LUK',42,'Luke','luke','luk','lk'],['JHN',43,'John','john','jhn','jn','joh'],
+ ['ACT',44,'Acts','acts','act','ac'],['ROM',45,'Rom.','romans','rom','ro','rm'],['1CO',46,'1 Cor.','1corinthians','1cor','1co'],['2CO',47,'2 Cor.','2corinthians','2cor','2co'],
+ ['GAL',48,'Gal.','galatians','gal','ga'],['EPH',49,'Eph.','ephesians','eph','ep'],['PHP',50,'Phil.','philippians','phil','php','pp'],['COL',51,'Col.','colossians','col','co'],
+ ['1TH',52,'1 Thess.','1thessalonians','1thess','1thes','1th'],['2TH',53,'2 Thess.','2thessalonians','2thess','2thes','2th'],['1TI',54,'1 Tim.','1timothy','1tim','1ti'],
+ ['2TI',55,'2 Tim.','2timothy','2tim','2ti'],['TIT',56,'Titus','titus','tit'],['PHM',57,'Philem.','philemon','philem','phm','phlm'],['HEB',58,'Heb.','hebrews','heb'],
+ ['JAS',59,'James','james','jas','jm'],['1PE',60,'1 Pet.','1peter','1pet','1pe','1pt'],['2PE',61,'2 Pet.','2peter','2pet','2pe','2pt'],['1JN',62,'1 John','1john','1jn','1jo'],
+ ['2JN',63,'2 John','2john','2jn','2jo'],['3JN',64,'3 John','3john','3jn','3jo'],['JUD',65,'Jude','jude','jud','jd'],['REV',66,'Rev.','revelation','revelations','rev','re','apocalypse']
+];
+function parseBibleRef(ref){
+  let s = String(ref||'').trim().replace(/[–—]/g,'-');
+  s = s.replace(/^(i{1,3})\s+(?=[a-z])/i, m => String(m.trim().length)+' ');      // "II Kings" → "2 Kings"
+  s = s.replace(/^(first|second|third)\s+/i, m => ({first:'1',second:'2',third:'3'})[m.trim().toLowerCase()]+' ');
+  const m = s.match(/^([1-3]?\s*[a-z][a-z .]*?)\s*(\d{1,3})\s*[:.,]\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?\s*$/i);
+  if(!m) return null;
+  const key = m[1].toLowerCase().replace(/[\s.]/g,'');
+  const b = VERSE_BOOKS.find(x => x.slice(3).includes(key)) || VERSE_BOOKS.find(x => x[3].startsWith(key) && key.length >= 3);
+  if(!b) return null;
+  const ch = +m[2], v1 = +m[3], v2 = Math.max(v1, +(m[4]||m[3]));
+  if(v2 - v1 > 7) return null;
+  return { usfm:b[0], num:b[1], ot: b[1] <= 39, ch, v1, v2, label: b[2]+' '+ch+':'+v1+(v2>v1?'-'+v2:'') };
+}
+// English (KJV-style) → Hebrew numbering: [book, ch, from, to, hebCh, add]
+const HEB_VERSE_MAP = [
+ ['GEN',31,55,55,32,-54],['GEN',32,1,32,32,1],['EXO',8,1,4,7,25],['EXO',8,5,32,8,-4],['NUM',16,36,50,17,-35],['NUM',17,1,13,17,15],
+ ['NUM',29,40,40,30,-39],['NUM',30,1,16,30,1],['DEU',12,32,32,13,-31],['DEU',13,1,18,13,1],['DEU',22,30,30,23,-29],['DEU',23,1,25,23,1],
+ ['DEU',29,1,1,28,68],['DEU',29,2,29,29,-1],['1SA',23,29,29,24,-28],['1SA',24,1,22,24,1],['2SA',18,33,33,19,-32],['2SA',19,1,43,19,1],
+ ['1KI',4,21,34,5,-20],['1KI',5,1,18,5,14],['2KI',11,21,21,12,-20],['2KI',12,1,21,12,1],['1CH',6,1,15,5,26],['1CH',6,16,81,6,-15],
+ ['NEH',4,1,6,3,32],['NEH',4,7,23,4,-6],['JOB',41,1,8,40,24],['JOB',41,9,34,41,-8],['ECC',5,1,1,4,16],['ECC',5,2,20,5,-1],
+ ['SNG',6,13,13,7,-12],['SNG',7,1,13,7,1],['ISA',9,1,1,8,22],['ISA',9,2,21,9,-1],['ISA',64,2,12,64,-1],['JER',9,1,1,8,22],['JER',9,2,26,9,-1],
+ ['EZK',20,45,49,21,-44],['EZK',21,1,32,21,5],['DAN',4,1,3,3,30],['DAN',4,4,37,4,-3],['DAN',5,31,31,6,-30],['DAN',6,1,28,6,1],
+ ['HOS',1,10,11,2,-9],['HOS',2,1,23,2,2],['HOS',11,12,12,12,-11],['HOS',12,1,14,12,1],['HOS',13,16,16,14,-15],['HOS',14,1,9,14,1],
+ ['JOL',2,28,32,3,-27],['JOL',3,1,21,4,0],['JON',1,17,17,2,-16],['JON',2,1,10,2,1],['MIC',5,1,1,4,13],['MIC',5,2,15,5,-1],
+ ['NAM',1,15,15,2,-14],['NAM',2,1,13,2,1],['ZEC',1,18,21,2,-17],['ZEC',2,1,13,2,4],['MAL',4,1,6,3,18]
+];
+function hebVerse(r, v){
+  for(const m of HEB_VERSE_MAP) if(m[0]===r.usfm && m[1]===r.ch && v>=m[2] && v<=m[3]) return { ch:m[4], v:v+m[5] };
+  return { ch:r.ch, v };
+}
+// ── Hebrew → Latin letters (readable, Israeli-style; no doubled letters) ──
+function transliterateHebrew(input){
+  const H = String(input||'')
+    .replace(/<[^>]+>/g,'')
+    .replace(/[֑-ֽֿ֯׀ׅׄ׆]/g,'')   // cantillation, meteg, rafe, paseq…
+    .replace(/־/g,'-').replace(/׃/g,'.').replace(/[׳]/g,"'").replace(/[״]/g,'"')
+    .replace(/ׇ/g,'ָ');                                       // qamats qatan → qamats
+  const V = { 'ְ':'@', 'ֱ':'e', 'ֲ':'a', 'ֳ':'o', 'ִ':'i', 'ֵ':'e', 'ֶ':'e', 'ַ':'a', 'ָ':'a', 'ֹ':'o', 'ֺ':'o', 'ֻ':'u' };
+  const isL = c => c >= 'א' && c <= 'ת';
+  const words = H.split(/(\s+|-|\.|,|;|:)/);
+  const out = words.map(w => {
+    if(!w || !/[א-ת]/.test(w)) return w;
+    // Group into letters with their marks.
+    const L = [];
+    for(const ch of w){
+      if(isL(ch)) L.push({ c:ch, dag:false, shin:null, v:'' });
+      else if(L.length){
+        const x = L[L.length-1];
+        if(ch === 'ּ') x.dag = true;
+        else if(ch === 'ׁ') x.shin = 'sh'; else if(ch === 'ׂ') x.shin = 's';
+        else if(V[ch]) x.v = x.v ? x.v : V[ch];
+      }
+    }
+    // God's name is read "Adonai" (or "Elohim" when pointed that way).
+    const cons = L.map(x=>x.c).join('');
+    const yhwh = cons.match(/^([ובלמכהש]?)יהוה$/);
+    if(yhwh){ const pre = yhwh[1] ? transliterateHebrew(w.slice(0, w.indexOf('י'))).replace(/[.-]$/,'') : ''; const elo = L.some(x=>x.c==='ה' && x.v==='i'); return pre+(elo?'Elohim':'Adonai'); }
+    let s = ''; let prevSilentShva = false;
+    for(let i=0;i<L.length;i++){
+      const x = L[i], nx = L[i+1], pv = L[i-1], first = i===0, last = i===L.length-1;
+      let c = '';
+      switch(x.c){
+        case 'א': case 'ע': { const voweled = (x.v && x.v!=='@') || !!(nx && nx.c==='ו' && (nx.dag || nx.v==='o')); c = (!first && voweled && /[aeiou]$/.test(s)) ? "'" : ''; break; }
+        case 'ב': c = x.dag || first ? 'b' : 'v'; break;
+        case 'ג': c='g'; break; case 'ד': c='d'; break;
+        case 'ה': c = (last && !x.v && !x.dag && /[aeiou]$/.test(s) && s.length>1 && /a$/.test(s)) ? 'h' : (last && !x.v ? 'h' : 'h'); break;
+        case 'ו':
+          if(x.dag && !x.v){ s += 'u'; prevSilentShva=false; continue; }                       // shureq
+          if(x.v==='o' && pv && !pv.v){ s += 'o'; prevSilentShva=false; continue; }           // holam male
+          if(!x.v && pv && pv.v==='o'){ continue; }                                          // written after a holam
+          c = 'v'; break;
+        case 'ז': c='z'; break; case 'ח': c='ch'; break; case 'ט': c='t'; break;
+        case 'י':
+          if(!x.v && !x.dag && pv && pv.v==='i') continue;                                   // i written with yod
+          if(!x.v && !x.dag && pv && pv.v==='e'){ if(!/ei$/.test(s)) s += 'i'; continue; }     // tsere + yod → ei
+          if(!x.v && !x.dag && pv && (pv.v==='a' || pv.v==='o' || pv.v==='u')){ s += 'i'; continue; }
+          c = 'y'; break;
+        case 'כ': case 'ך': c = x.dag || first ? 'k' : 'ch'; break;
+        case 'ל': c='l'; break; case 'מ': case 'ם': c='m'; break; case 'נ': case 'ן': c='n'; break;
+        case 'ס': c='s'; break;
+        case 'פ': case 'ף': c = x.dag || first ? 'p' : 'f'; break;
+        case 'צ': case 'ץ': c='tz'; break; case 'ק': c='k'; break; case 'ר': c='r'; break;
+        case 'ש': c = x.shin==='s' ? 's' : 'sh'; break; case 'ת': c='t'; break;
+      }
+      // Furtive patah under a final het/ayin/he is said before it: ruach.
+      if(last && x.v==='a' && /[חעה]/.test(x.c)){ s += 'a'+c; continue; }
+      s += c;
+      if(x.v==='@'){
+        // Vocal shva at the start of a word, after a silent shva, or under a doubled letter.
+        const vocal = !last && (first || prevSilentShva || (x.dag && !first && !!pv && !!pv.v && pv.v!=='@'));
+        if(vocal){ s += 'e'; prevSilentShva = false; } else prevSilentShva = true;
+      } else { s += x.v; prevSilentShva = false; }
+      if(x.c==='ו' && first && x.v==='@'){ /* ve- */ }
+    }
+    s = s.replace(/'+/g,"'").replace(/^'/,'');
+    return /^(v|u|ha|le|be|ke|me|she|ve)?eloh/.test(s) ? s.replace(/eloh/,'Eloh') : s;
+  });
+  let r = out.join('').replace(/\s+/g,' ').replace(/\s+([.,;:])/g,'$1').trim();
+  r = r.replace(/(^|[.!?]\s+)([a-z])/g, (m,a,b)=>a+b.toUpperCase());
+  return r;
+}
+// ── fetching (cached per chapter) ──
+const _bibleCache = new Map();
+async function bibleFetchJson(url){
+  if(_bibleCache.has(url)) return _bibleCache.get(url);
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 12000);
+  try{
+    const r = await fetch(url, { signal: ctl.signal, headers:{ 'User-Agent':'PersonalOrganizer/1.0' } });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const ct = r.headers.get('content-type')||'';
+    const v = ct.includes('json') || /\.json(\?|$)/.test(url) || url.includes('bolls.life') ? await r.json() : await r.text();
+    _bibleCache.set(url, v); if(_bibleCache.size > 250) _bibleCache.delete(_bibleCache.keys().next().value);
+    return v;
+  } finally { clearTimeout(t); }
+}
+const BIBLE_HELLOAO = 'https://bible.helloao.org';
+const BIBLE_BOLLS = 'https://bolls.life';
+const BIBLE_EBIBLE = 'https://ebible.org';
+let _t4tId = null;
+async function t4tId(){
+  if(_t4tId) return _t4tId;
+  const list = await bibleFetchJson(BIBLE_HELLOAO+'/api/available_translations.json');
+  const arr = (list && (list.translations || list)) || [];
+  const hit = arr.find(t => /t4t/i.test(t.id||'')) || arr.find(t => /translation for translators/i.test((t.name||'')+' '+(t.englishName||'')));
+  if(!hit) throw new Error('T4T not listed');
+  return (_t4tId = hit.id);
+}
+function cleanT4T(t){
+  return String(t||'')
+    .replace(/\[[A-Z]{2,5}(?:,\s*[A-Z]{2,5})*\]/g,'')          // [MET], [RHQ] translator codes
+    .replace(/\(OR,[^)]*\)/g,'')                             // alternative renderings
+    .replace(/[◄►]/g,'')
+    .replace(/[ \t]+/g,' ').replace(/ +([,.;:!?’”])/g,'$1').replace(/\n /g,'\n').replace(/ \n/g,'\n').trim();
+}
+async function englishT4T(r){
+  try{
+    const id = await t4tId();
+    const j = await bibleFetchJson(BIBLE_HELLOAO+'/api/'+id+'/'+r.usfm+'/'+r.ch+'.json');
+    const lines = [];
+    for(const it of ((j.chapter||{}).content||[])){
+      if(it.type!=='verse' || it.number < r.v1 || it.number > r.v2) continue;
+      let cur = '';
+      const flush = () => { if(cur.trim()) lines.push(cur.trim()); cur=''; };
+      for(const c of (it.content||[])){
+        if(typeof c === 'string') cur += c;
+        else if(c && typeof c.text === 'string'){ if(c.poem) flush(); cur += c.text; }
+        else if(c && c.lineBreak) flush();
+      }
+      flush();
+    }
+    if(!lines.length) throw new Error('verse not found');
+    return cleanT4T(lines.join('\n'));
+  }catch(e){
+    // ebible.org chapter page: <span class="verse" id="V9">9&#160;</span>…
+    const pad = r.usfm==='PSA' ? String(r.ch).padStart(3,'0') : String(r.ch).padStart(2,'0');
+    const html = await bibleFetchJson(BIBLE_EBIBLE+'/eng-t4t/'+r.usfm+pad+'.htm');
+    let body = String(html);
+    const cut = body.search(/<div class=["']footnote|<ul class=["']tnav|<div class=["']copyright|<div class=["']pageFooter/i);
+    if(cut > 0) body = body.slice(0, cut);
+    body = body.replace(/<a [^>]*class=["']notemark[^>]*>[\s\S]*?<\/a>/gi,'').replace(/<span class=["']popup[^>]*>[\s\S]*?<\/span>/gi,'');
+    const parts = body.split(/<span class=["']verse["'] id=["']V(\d+)["'][^>]*>[\s\S]*?<\/span>/i);
+    const lines = [];
+    for(let i=1;i<parts.length;i+=2){
+      const v = +parts[i]; if(v < r.v1 || v > r.v2) continue;
+      const txt = parts[i+1].replace(/<\/div>\s*<div[^>]*>/gi,'\n').replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'')
+        .replace(/&#160;|&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&#(\d+);/g,(m,n)=>String.fromCharCode(+n)).replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+      txt.split('\n').map(x=>x.trim()).filter(Boolean).forEach(x=>lines.push(x));
+    }
+    if(!lines.length) throw new Error('English verse not found');
+    return cleanT4T(lines.join('\n'));
+  }
+}
+function stripBolls(t){ return String(t||'').replace(/<sup>[\s\S]*?<\/sup>/gi,'').replace(/<S>\d+<\/S>/g,'').replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim(); }
+async function bollsChapter(tr, book, ch){
+  const arr = await bibleFetchJson(BIBLE_BOLLS+'/get-text/'+tr+'/'+book+'/'+ch+'/');
+  return Array.isArray(arr) ? arr : [];
+}
+async function romanianVDC(r){
+  const arr = await bollsChapter('VDCL', r.num, r.ch);
+  const vs = arr.filter(x => x.verse >= r.v1 && x.verse <= r.v2).map(x => stripBolls(x.text));
+  if(!vs.length) throw new Error('Romanian verse not found');
+  return { text: vs.join(' '), count: arr.length };
+}
+async function hebrewTranslit(r, roCount){
+  const tr = r.ot ? 'WLC' : 'DHNT';
+  const out = [];
+  for(let v=r.v1; v<=r.v2; v++){
+    let m = hebVerse(r, v);
+    let arr = await bollsChapter(tr, r.num, m.ch);
+    // Psalm titles count as verse 1 in Hebrew: shift by the difference.
+    if(r.usfm==='PSA' && m.ch===r.ch && roCount && arr.length > roCount) m = { ch:m.ch, v: v + (arr.length - roCount) };
+    const hit = arr.find(x => x.verse === m.v);
+    if(hit) out.push(stripBolls(hit.text));
+  }
+  if(!out.length) throw new Error('Hebrew verse not found');
+  const heb = out.join(' ');
+  // The Hebrew itself is shown with vowels but without the chanting marks.
+  return { hebrew: heb.replace(/[\u0591-\u05AF\u05BD]/g,''), text: transliterateHebrew(heb) };
+}
+app.get('/api/verse', async (req, res) => {
+  const r = parseBibleRef(req.query.ref);
+  if(!r) return res.status(400).json({ error:'I couldn’t read that reference — try e.g. “Prov 12:9” or “John 3:16-17”.' });
+  const out = { ref: r.label, book: r.usfm, en:null, he:null, ro:null, errors:{} };
+  const [en, ro] = await Promise.allSettled([ englishT4T(r), romanianVDC(r) ]);
+  if(en.status==='fulfilled') out.en = en.value; else out.errors.en = 'English (T4T) unavailable right now';
+  if(ro.status==='fulfilled') out.ro = ro.value.text; else out.errors.ro = 'Romanian (Cornilescu) unavailable right now';
+  try{ const he = await hebrewTranslit(r, ro.status==='fulfilled' ? ro.value.count : 0); out.he = he.text; out.hebrew = he.hebrew; }
+  catch(e){ out.errors.he = 'Hebrew unavailable right now'; }
+  if(!out.en && !out.ro && !out.he) return res.status(502).json({ error:'Couldn’t reach the Bible sources — check the connection and try again.', ref:r.label });
+  res.json(out);
+});
+
 let _reminderCron = cron.schedule('* * * * *', async () => {
   try {
+    try { await sendSnoozedAlerts(); } catch(e) { console.log('Snooze check failed:', e.message); }
     const d = readData();
     const token = null, chatId = null;          // Telegram retired
     const hasPush = (d.pushSubs || []).length > 0;
@@ -4848,16 +5265,18 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
       try {
         const when = fmtTime(ev.time) + (item.ds!==getToday() ? ' · '+item.ds : '');
         const secsToStart = Math.floor((item.startMs - Date.now())/1000);
-        pushCount = await sendWebPush(
-          item.leave
-            ? '🚗 Leave now — '+ev.name
-            : '⏰ In '+reminderLabel(item.mins)+': '+ev.name,
-          item.leave
+        const pTitle = item.leave ? '🚗 Leave now — '+ev.name : '⏰ In '+reminderLabel(item.mins)+': '+ev.name;
+        const pBody = item.leave
             ? reminderLabel(item.travel.mins)+' drive to '+(item.travel.toName||ev.location)+' · starts '+fmtTime(ev.time)
-            : when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : ''),
+            : when + (ev.competitionName ? ' · '+ev.competitionName : '') + (ev.notes ? '\n'+ev.notes : '');
+        // Recorded in the notification centre first, so the badge number in
+        // the push already includes this one.
+        var pendData = data, pendAlert = recordAlert(data, item, pTitle, pBody);
+        pushCount = await sendWebPush(pTitle, pBody,
           // Same tag as the in-page fallback so the device shows one
           // notification, not two, if both happen to fire.
-          { date: item.ds, id: ev.id, tag: 'rem-'+ev.id+'-'+item.ds+(item.leave?'-leave':'') },
+          { date: item.ds, id: ev.id, tag: 'rem-'+ev.id+'-'+item.ds+(item.leave?'-leave':''),
+            alertId: pendAlert.id, badge: alertsCount(pendData) },
           // Expire when the event starts — never deliver a stale reminder.
           { ttl: secsToStart, urgency: 'high' }
         );
@@ -4868,6 +5287,7 @@ let _reminderCron = cron.schedule('* * * * *', async () => {
       // it sent unconditionally (the previous behaviour) meant a failed
       // delivery was never retried AND the failure was invisible — the
       // reminder simply never arrived and the app believed it had.
+      if (!delivered && data.alerts) data.alerts = data.alerts.filter(a => a.key !== item.key);
       if (delivered) {
         data.sentReminders[item.key] = nowMs;
         console.log('Sent reminder for:', ev.name, item.ds, '| telegram:', tgOk, '| pushDevices:', pushCount);
