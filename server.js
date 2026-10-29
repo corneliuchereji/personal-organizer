@@ -30,7 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ═══════════════════════════════════════════════════
 const crypto = require('crypto');
 const PRIVATE_SETTING_KEYS = ['footballDataKey','highlightlyKey','apiFootballKey','tsdbKey','orsKey',
-  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey','remoteKey','remotePhones','shellyKey','shellyServer'];
+  'tgToken','tgChatId','mcpSecret','homeAddress','homeLat','homeLon','homeName','vapidPrivateKey','privatePass','cartoKey','ticketmasterKey','remoteKey','remotePhones','shellyKey','shellyServer','botKey'];
 const PRIV_EDITABLE = ['footballDataKey','highlightlyKey','orsKey','cartoKey','ticketmasterKey','shellyKey','shellyServer'];
 const PRIV_TTL_MS = 30*60*1000;              // 30 min, renewed while in use
 const _privSessions = new Map();             // token -> expiry
@@ -57,7 +57,7 @@ function requirePrivate(req, res, next){
 // Kept only on the server and never replaced by a browser save, a backup
 // restore or a snapshot roll-back: notes (and their PIN/passkeys/pictures)
 // and the list of notifications still waiting to be cleared.
-const KEEP_SERVER_SIDE = ['notes','notesAuth','notesImgs','alerts'];
+const KEEP_SERVER_SIDE = ['notes','notesAuth','notesImgs','alerts','games','bot'];
 function publicView(d){
   const out = { ...d };
   const st = { ...(d.settings||{}) };
@@ -68,6 +68,8 @@ function publicView(d){
   delete out.pushSubs;
   delete out.notes; delete out.notesAuth; delete out.notesImgs;   // only via /api/notes, behind the PIN
   delete out.alerts;                                // served by /api/alerts
+  delete out.games;                                 // served by /api/games/records
+  delete out.bot;                                   // served by /api/bot
   if(d.travelCache){
     out.travelCache = {};
     for(const [k,v] of Object.entries(d.travelCache)){
@@ -1048,7 +1050,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-26-cornilescu';
+const BUILD_VERSION = '2026-10-29-games';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -1740,7 +1742,7 @@ app.post('/api/restore', (req, res) => {
       ...(incoming.concerts ? { concerts: incoming.concerts } : {}),
       ...(incoming.tithe ? { tithe: incoming.tithe } : {}),
       ...(incoming.bible ? { bible: incoming.bible } : {}),
-      notes: current.notes, notesAuth: current.notesAuth, notesImgs: current.notesImgs, alerts: current.alerts,
+      notes: current.notes, notesAuth: current.notesAuth, notesImgs: current.notesImgs, alerts: current.alerts, bot: current.bot,
       tasks: Array.isArray(incoming.tasks) ? incoming.tasks : (current.tasks||[]),
       sportEvents: Array.isArray(incoming.sportEvents) ? incoming.sportEvents : (current.sportEvents||[]),
       groups: Array.isArray(incoming.groups) && incoming.groups.length ? incoming.groups : current.groups,
@@ -2866,6 +2868,8 @@ const MCP_TOOLS = [
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, date:{type:'string', description:'YYYY-MM-DD, to pick one if several match'} } } },
   { name:'follow_artist', description:'Follow a music artist: their concerts in Europe show in the Concerts widget and new dates send a notification.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string', description:'Artist or band name'} } } },
+  { name:'bot_status', description:'Status of the BTC trading bot: value now, profit/loss, position, last report and recent trades.',
+    inputSchema:{ type:'object', properties:{} } },
   { name:'concerts_upcoming', description:'Upcoming European concerts of the followed artists, with whether each is in the calendar.',
     inputSchema:{ type:'object', properties:{} } },
   { name:'add_to_shopping_list', description:'Add items to the shopping list (the next planned shopping trip, or the first list). Several at once, comma-separated; quantities allowed (e.g. "2 kg roșii, lapte, ouă x10").',
@@ -2989,6 +2993,14 @@ async function mcpCall(name, args){
         trip: t ? { date:t.date, time:t.time, store:t.location||'' } : null,
         items: l.items.map(i=>(i.done?'[x] ':'[ ] ')+i.name+(i.qty?' ('+i.qty+')':'')) }; });
       return mcpText(lists.some(x=>x.items.length) ? { lists } : 'The shopping list is empty.');
+    }
+    case 'bot_status': {
+      const b = botPublic(d);
+      if(!b.connected) return mcpText('The trading bot is not connected yet (Settings → Private → Trading bot).');
+      if(!b.status) return mcpText('The bot is connected but has not reported yet.');
+      return mcpText({ ...b.status, running: b.running,
+        lastReport: b.lastSeen ? new Date(b.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest'}) : null,
+        recentTrades: b.trades.slice(-5) });
     }
     case 'exchange_rate': {
       const fx = await bnrRates();
@@ -4882,6 +4894,173 @@ function reminderLabel(mins){
 }
 
 // ═══════════════════════════════════════════════════
+// TRADING BOT — the BTC bot running on the PC reports here.
+//   POST /api/bot/report   (header X-Bot-Key = settings.botKey, private)
+//     { status:{…}, trades:[…], equity:[…], events:[{id,kind,title,body}] }
+//   Sent every 5 minutes as a heartbeat; events (a buy, a sell, a stop-loss,
+//   the bot halting, repeated errors) become a push + an entry in the bell.
+//   Events carry the bot's own id, so a report re-sent after a network
+//   hiccup never notifies twice.
+// d.bot = { status, trades, equity, lastSeen, seen:[ids], summary:{on,time,last} }
+// Kept server-side (KEEP_SERVER_SIDE): a browser save never touches it.
+// ═══════════════════════════════════════════════════
+const BOT_STALE_MS = 15*60*1000;              // no heartbeat for 15 min = not running
+// Bot events (buys, sells, stop-loss, halted…) no longer send notifications
+// or go in the bell: they're counted on the Trading bot widget instead
+// ("N new since you last opened it"). Set to true to bring the pushes back.
+const BOT_PUSH = false;
+function botKeyOk(req){
+  const want = (readData().settings||{}).botKey || '';
+  const got = String(req.get('X-Bot-Key') || '');
+  if(!want || got.length !== want.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
+}
+function botNum(v){ const n = +v; return isFinite(n) ? n : null; }
+function botClean(st){
+  st = st || {};
+  const o = {};
+  for(const k of ['cash','btc','price','equity','budget','pnl','pnlPct','entry','stop','stopPct']) o[k] = botNum(st[k]);
+  o.mode = st.mode === 'live' ? 'live' : 'paper';
+  o.position = st.position === 'btc' ? 'btc' : 'cash';
+  o.halted = !!st.halted;
+  o.symbol = String(st.symbol || 'BTC/EUR').slice(0, 20);
+  o.note = String(st.note || '').slice(0, 200);
+  return o;
+}
+function botPublic(d){
+  const b = d.bot || {};
+  const on = !!(d.settings && d.settings.botKey);
+  const sum = b.summary || {};
+  return { connected:on, status:b.status||null, trades:b.trades||[], equity:b.equity||[], lastSeen:b.lastSeen||0,
+    running: !!(b.lastSeen && Date.now()-b.lastSeen < BOT_STALE_MS),
+    events: (b.log||[]).slice(-30).reverse(), openedAt: b.openedAt||0,
+    unseen: (b.log||[]).filter(e => e.at > (b.openedAt||0)).length,
+    summary:{ on: sum.on !== false, time: sum.time || '08:00' } };
+}
+function botMoney(v){ return v==null ? '–' : v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
+function botPct(v){ return v==null ? '' : (v>0?'+':'')+(v*100).toFixed(2)+'%'; }
+function botSummaryText(d){
+  const b = d.bot || {}, st = b.status;
+  if(!st) return null;
+  const pos = st.halted ? 'stopped' : (st.position==='btc' ? 'in BTC' : 'in cash');
+  const body = botMoney(st.equity)+' ('+(st.pnl>=0?'+':'')+botMoney(st.pnl)+', '+botPct(st.pnlPct)+') · '+pos+' · BTC '+botMoney(st.price);
+  const age = Date.now() - (b.lastSeen||0);
+  const note = age > BOT_STALE_MS ? ' · last report '+new Date(b.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+  return { title: '₿ Bot '+(st.mode==='live'?'(real money)':'(paper)')+': '+botPct(st.pnlPct), body: body+note };
+}
+
+app.post('/api/bot/report', async (req, res) => {
+  if(!botKeyOk(req)) return res.status(401).json({ error:'Wrong or missing bot key — copy it again from Settings → Private → Trading bot.' });
+  const b = req.body || {};
+  const d = readData();
+  const bot = d.bot = d.bot || {};
+  bot.lastSeen = Date.now();
+  if(b.status) bot.status = botClean(b.status);
+  if(Array.isArray(b.trades)) bot.trades = b.trades.slice(-30).map(t => ({
+    time:String(t.time||'').slice(0,30), side:t.side==='sell'?'sell':'buy', price:botNum(t.price), qty:botNum(t.qty),
+    quote:botNum(t.quote), reason:String(t.reason||'').slice(0,60), pnl:botNum(t.pnl) }));
+  if(Array.isArray(b.equity)) bot.equity = b.equity.slice(-400).map(e => ({ time:String(e.time||'').slice(0,30), price:botNum(e.price), equity:botNum(e.equity) }));
+  const seen = new Set(bot.seen || []);
+  const fresh = (Array.isArray(b.events) ? b.events : []).filter(e => e && e.id && !seen.has(String(e.id))).slice(0, 20);
+  const made = [];
+  bot.log = bot.log || [];
+  for(const e of fresh){
+    const id = String(e.id).slice(0, 64);
+    seen.add(id);
+    // Every event goes into the widget's own list; the widget shows how many
+    // arrived since it was last opened (bot.openedAt).
+    bot.log.push({ id, kind:String(e.kind||'').slice(0,20), title:String(e.title||'Trading bot').slice(0,120), body:String(e.body||'').slice(0,300), at:Date.now() });
+    if(BOT_PUSH){
+      const evId = 'bot-'+id;
+      const a = recordAlert(d, { ev:{ id:evId, _type:'task' }, key:evId, ds:getToday(), mins:0 }, String(e.title||'Trading bot').slice(0,120), String(e.body||'').slice(0,300));
+      a.type = 'bot'; a.kind = String(e.kind||'').slice(0,20);
+      made.push(a);
+    }
+  }
+  bot.log = bot.log.slice(-100);
+  bot.seen = [...seen].slice(-300);
+  writeData(d);
+  for(const a of made){
+    try{ await sendWebPush(a.title, a.body, { bot:1, date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 24*3600, urgency: a.kind==='trade' ? 'normal' : 'high' }); }
+    catch(e){ console.log('Bot push failed:', e.message); }
+  }
+  res.json({ ok:true, notified: made.length, logged: fresh.length });
+});
+// What the widget shows. Same visibility as the calendar itself; the key is never included.
+app.get('/api/bot', (req, res) => { res.json(botPublic(readData())); });
+// ═══════════════════════════════════════════════════
+// GAMES — personal records only (games themselves aren't saved).
+// d.games = { tetris:{ best, lines, at }, sudoku:{ beginner:{best,at,solved}, advanced, expert } }
+// ═══════════════════════════════════════════════════
+app.get('/api/games/records', (req, res) => { res.json(readData().games || {}); });
+app.post('/api/games/records', (req, res) => {
+  const b = req.body || {}; const d = readData(); const g = d.games = d.games || {}; const now = new Date().toISOString();
+  let newRecord = false;
+  if(b.game === 'tetris'){
+    const t = g.tetris = g.tetris || { best:0, lines:0 };
+    const sc = Math.max(0, Math.min(1e8, parseInt(b.score)||0)), ln = Math.max(0, Math.min(1e5, parseInt(b.lines)||0));
+    if(sc > (t.best||0)){ t.best = sc; t.at = now; newRecord = true; }
+    if(ln > (t.lines||0)){ t.lines = ln; newRecord = true; }
+    t.played = (t.played||0) + 1;
+  } else if(b.game === 'sudoku' && ['beginner','advanced','expert'].includes(b.level)){
+    const sd = g.sudoku = g.sudoku || {}; const r = sd[b.level] = sd[b.level] || {};
+    const secs = Math.max(1, Math.min(86400*3, parseInt(b.secs)||0));
+    r.solved = (r.solved||0) + 1;
+    if(!r.best || secs < r.best){ r.best = secs; r.at = now; newRecord = true; }
+  } else return res.status(400).json({ error:'Unknown game.' });
+  writeData(d);
+  res.json({ ok:true, newRecord, records: g });
+});
+// The widget was opened: the "new" counter starts again from zero (on every device).
+app.post('/api/bot/opened', (req, res) => {
+  const d = readData(); d.bot = d.bot || {};
+  const before = d.bot.openedAt || 0; d.bot.openedAt = Date.now(); writeData(d);
+  res.json({ ok:true, before, ...botPublic(d) });
+});
+app.post('/api/bot/summary', (req, res) => {
+  const b = req.body || {}; const d = readData();
+  d.bot = d.bot || {}; const s = d.bot.summary = d.bot.summary || {};
+  if(typeof b.on === 'boolean') s.on = b.on;
+  if(/^([01]\d|2[0-3]):[0-5]\d$/.test(b.time||'')) s.time = b.time;
+  writeData(d);
+  res.json(botPublic(d));
+});
+// The key itself: only behind the private unlock.
+app.get('/api/bot/key', requirePrivate, (req, res) => { res.json({ key: (readData().settings||{}).botKey || '' }); });
+app.post('/api/bot/key', requirePrivate, (req, res) => {
+  const d = readData(); d.settings = d.settings || {};
+  d.settings.botKey = crypto.randomBytes(24).toString('hex');
+  writeData(d);
+  res.json({ key: d.settings.botKey });
+});
+app.post('/api/bot/key/remove', requirePrivate, (req, res) => {
+  const d = readData(); d.settings = d.settings || {};
+  delete d.settings.botKey; writeData(d);
+  res.json({ ok:true });
+});
+// Morning summary: one push a day at the chosen time (Bucharest), info only
+// — it doesn't go to the bell or the badge.
+async function sendBotSummary(force){
+  const d = readData(); const b = d.bot;
+  if(!b || !b.status || !(d.settings && d.settings.botKey)) return 0;
+  const s = b.summary || {};
+  if(!force){
+    if(s.on === false) return 0;
+    const now = new Date(), hm = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    if(hm !== (s.time||'08:00') || s.last === getToday()) return 0;
+  }
+  const t = botSummaryText(d); if(!t) return 0;
+  if(!force){ const cur = readData(); cur.bot = cur.bot || {}; cur.bot.summary = { ...(cur.bot.summary||{}), last:getToday() }; writeData(cur); }
+  return sendWebPush(t.title, t.body, { bot:1, tag:'bot-summary', noBadge:true }, { ttl: 6*3600 });
+}
+app.post('/api/bot/summary/test', async (req, res) => {
+  try{ const n = await sendBotSummary(true); res.json({ ok:true, sent:n }); }catch(e){ res.status(500).json({ error:e.message }); }
+});
+let _botCron = cron.schedule('* * * * *', async () => {
+  try{ await sendBotSummary(false); }catch(e){ console.log('Bot summary failed:', e.message); }
+});
+
+// ═══════════════════════════════════════════════════
 // NOTIFICATION CENTRE — every reminder that reached a device is kept here
 // until it is cleared (or snoozed), separately from the task itself:
 // clearing a reminder never ticks the task off. The app's bell and the
@@ -4893,8 +5072,15 @@ const ALERT_KEEP_MS = 2*24*3600*1000;
 function alertEvent(d, a){
   return (a.type==='sport' ? (d.sportEvents||[]) : (d.tasks||[])).find(x => x.id === a.evId) || null;
 }
+// Trading-bot alerts have no calendar event behind them: they stay until
+// cleared or snoozed, and drop out on their own after a week.
+const BOT_ALERT_KEEP_MS = 7*24*3600*1000;
 function alertState(d, a, now){
   if(a.cleared) return 'cleared';
+  if(a.type==='bot'){
+    if(now - (a.at||0) > BOT_ALERT_KEEP_MS) return 'old';
+    return a.snooze && a.snooze > now ? 'snoozed' : 'active';
+  }
   const ev = alertEvent(d, a);
   if(!ev || !matchesDate(ev, a.date)) return 'gone';
   if(a.type!=='sport' && isDoneOn(ev, a.date)) return 'done';
@@ -4907,6 +5093,11 @@ function alertsList(d){
   const now = Date.now(), active = [], snoozed = [];
   for(const a of (d.alerts||[])){
     const s = alertState(d, a, now); if(s!=='active' && s!=='snoozed') continue;
+    if(a.type==='bot'){
+      const row = { id:a.id, evId:a.evId, date:a.date, type:'bot', kind:a.kind||'', title:a.title, body:a.body, at:a.at, snooze:a.snooze||0, name:a.title, time:'' };
+      (s==='active' ? active : snoozed).push(row);
+      continue;
+    }
     const ev = alertEvent(d, a);
     const row = { id:a.id, evId:a.evId, date:a.date, type:a.type, mins:a.mins, leave:!!a.leave, title:a.title, body:a.body, at:a.at, snooze:a.snooze||0,
       name: ev.name, time: ev.time||'', group: ev.group||'', color: a.type==='task' ? groupColor(d, ev.group) : null, location: ev.location||'', notes: ev.notes||'',
@@ -4960,6 +5151,13 @@ async function sendSnoozedAlerts(){
   if(!due.length) return;
   for(const a of due){
     a.snooze = 0;
+    if(a.type==='bot'){
+      if(alertState(d, a, now) !== 'active') continue;
+      a.at = now;
+      try{ await sendWebPush('🔔 '+a.title, a.body||'', { bot:1, date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 6*3600, urgency:'high' }); }
+      catch(e){ console.log('Snoozed bot alert failed:', e.message); }
+      continue;
+    }
     const ev = alertEvent(d, a);
     if(!ev || alertState(d, a, now) !== 'active') continue;
     const st = eventStartMs({ ...ev, date:a.date });
