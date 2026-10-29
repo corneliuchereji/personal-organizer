@@ -1187,6 +1187,97 @@ select option:checked{background:#2E3A78;color:#fff}
 .spin{animation:spin 900ms linear infinite;display:inline-block}
 .bw-wrap .sh-chip{border-color:var(--border);background:rgba(255,255,255,.05);color:var(--txt)}
 .bw-wrap .sh-chip.on{background:rgba(226,192,141,.18);border-color:rgba(226,192,141,.55);color:#f5dfb8}
+.wtile-ic{position:relative;}
+.wtile-count{position:absolute;top:-6px;right:-8px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;line-height:19px;text-align:center;font-style:normal;box-shadow:0 0 0 2px #0F1732}
+#widgetsBtn{position:relative}
+#widgetsBtn.has-new::after{content:"";position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px #0F1732}
+.bt-newn{margin-left:6px;font-size:11px;font-weight:700;color:#fff;background:#ef4444;border-radius:99px;padding:1px 8px}
+.bt-evs{display:flex;flex-direction:column;gap:6px}
+.bt-ev{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:13px}
+.bt-ev > i{font-size:17px;color:#F7931A;margin-top:1px}
+.bt-ev.alert > i{color:#f87171}
+.bt-ev.new{border-color:rgba(247,147,26,.5);background:rgba(247,147,26,.08)}
+.bt-ev span{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.bt-ev small{color:var(--txt2);font-size:12px}
+.bt-ev em{font-style:normal;color:var(--txt3);font-size:11.5px}
+.bt-newtag{flex:none !important;font-size:10.5px;font-weight:700;color:#1a1a2e;background:#F7931A;border-radius:99px;padding:2px 7px;align-self:center}
+
+/* Games */
+.gm-home{display:grid;grid-template-columns:1fr;gap:12px;padding-top:6px;max-width:640px;width:100%;margin:0 auto}
+@media (min-width:640px){ .gm-home{grid-template-columns:1fr 1fr} }
+.gm-tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:18px;border-radius:20px;border:1px solid var(--border);background:linear-gradient(150deg,rgba(167,139,250,.16),rgba(255,255,255,.03));color:var(--txt);font:inherit;cursor:pointer;transition:transform 140ms var(--ease-out)}
+.gm-tile.sd{background:linear-gradient(150deg,rgba(56,189,248,.15),rgba(255,255,255,.03))}
+.gm-tile:active{transform:scale(.97)}
+.gm-ic{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:26px;background:rgba(167,139,250,.22);color:#ddd6fe;margin-bottom:6px}
+.gm-tile.sd .gm-ic{background:rgba(56,189,248,.2);color:#bae6fd}
+.gm-tile > b{font-size:19px}
+.gm-tile > small{color:var(--txt2);font-size:13px}
+.gm-rec{margin-top:8px;font-size:12.5px;color:var(--txt2);display:flex;flex-wrap:wrap;gap:4px 10px}
+.gm-rec b{color:var(--txt)}
+.gm-setup{display:flex;flex-direction:column;gap:12px;max-width:520px;width:100%;margin:0 auto;padding-top:6px;overflow-y:auto}
+.gm-q{font-weight:650;font-size:14px}
+.gm-q small{font-weight:400;color:var(--txt3)}
+.gm-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.gm-steps button{height:48px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:18px;font-weight:650;cursor:pointer;touch-action:manipulation}
+.gm-steps button.on{background:rgba(167,139,250,.28);border-color:rgba(167,139,250,.75);color:#fff}
+.gm-levels{display:flex;flex-direction:column;gap:8px}
+.gm-levels button{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;padding:13px 15px;border-radius:15px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;cursor:pointer}
+.gm-levels button.on{background:rgba(56,189,248,.18);border-color:rgba(56,189,248,.7)}
+.gm-levels b{font-size:16px}.gm-levels small{grid-column:1;color:var(--txt2);font-size:12.5px}.gm-levels em{grid-row:1/3;grid-column:2;align-self:center;font-style:normal;font-size:12.5px;color:var(--txt2)}
+.gm-go{height:52px;font-size:17px;justify-content:center;margin-top:4px}
+.gm-recs{display:flex;gap:16px;font-size:13px;color:var(--txt2)}.gm-recs b{color:var(--txt)}
+.gm-help{font-size:12.5px;color:var(--txt3);line-height:1.5}
+.gm-new{color:#fde68a;font-weight:650}
+/* Blocks */
+.tb-play{flex:1;min-height:0;display:flex;gap:10px;justify-content:center;align-items:flex-start}
+.tb-board{position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(167,139,250,.35);box-shadow:0 0 0 4px rgba(167,139,250,.06)}
+.tb-board canvas{display:block;touch-action:none}
+.tb-side{display:flex;flex-direction:column;gap:8px;width:92px;flex:none}
+.tb-box{padding:8px 9px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.tb-box small{font-size:11px;color:var(--txt3)}
+.tb-box b{font-size:17px;font-variant-numeric:tabular-nums}
+.tb-box canvas{width:88px;height:66px;margin:0 -6px}
+.tb-over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(7,11,29,.82);text-align:center;padding:12px}
+.tb-over[hidden]{display:none}
+.tb-over b{font-size:24px}
+.tb-over span{font-size:14px;color:var(--txt2)}
+.tb-pad{flex:none;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 4px 4px;max-width:520px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none}
+.tb-dpad,.tb-act{display:flex;gap:10px;align-items:center}
+.tb-b{width:64px;height:64px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font-size:28px;display:grid;place-items:center;cursor:pointer;touch-action:none;transition:transform 90ms var(--ease-out),background-color 90ms ease}
+.tb-b.on{transform:scale(.92);background:rgba(167,139,250,.3)}
+.tb-b.rot{width:76px;height:76px;font-size:32px;background:rgba(167,139,250,.3);border-color:rgba(167,139,250,.6)}
+.tb-b.drop{width:58px;height:58px;font-size:24px}
+@media (max-width:360px){ .tb-b{width:54px;height:54px;font-size:24px} .tb-b.rot{width:64px;height:64px} .tb-side{width:80px} }
+/* Sudoku */
+.sd-meta{margin-left:auto;font-size:13px;color:var(--txt2);font-variant-numeric:tabular-nums}
+.sd-play{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.sd-grid{display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);border:2px solid #cbd5e1;border-radius:10px;overflow:hidden;background:#0d1430;flex:none;touch-action:manipulation}
+.sd-c{display:grid;place-items:center;border-right:1px solid rgba(203,213,225,.18);border-bottom:1px solid rgba(203,213,225,.18);font-size:clamp(16px,5.4vw,28px);font-weight:500;color:#93c5fd;cursor:pointer;position:relative;-webkit-user-select:none;user-select:none}
+.sd-c:nth-child(9n){border-right:0}
+.sd-c.br{border-right:2px solid #cbd5e1}
+.sd-c.bb{border-bottom:2px solid #cbd5e1}
+.sd-c.given{color:#e8ecf8;font-weight:700}
+.sd-c.peer{background:rgba(148,163,184,.10)}
+.sd-c.same{background:rgba(56,189,248,.18)}
+.sd-c.sel{background:rgba(56,189,248,.38)}
+.sd-c.clash span{color:#fca5a5}
+.sd-c.ok{background:rgba(74,222,128,.20)} .sd-c.ok span{color:#86efac}
+.sd-c.bad{background:rgba(248,113,113,.28)} .sd-c.bad span{color:#fecaca;text-decoration:line-through}
+.sd-c.sel.ok,.sd-c.sel.bad{outline:2px solid #38bdf8;outline-offset:-2px}
+.sd-n{display:grid;grid-template-columns:repeat(3,1fr);width:100%;height:100%;padding:1px}
+.sd-n i{font-style:normal;font-size:clamp(8px,2.2vw,11px);color:#94a3b8;display:grid;place-items:center;line-height:1}
+.sd-msg{min-height:22px;font-size:14px;text-align:center;color:var(--txt2)}
+.sd-msg .ok{color:#86efac;font-weight:650}.sd-msg .bad{color:#fca5a5;font-weight:650}
+.sd-tools{display:flex;gap:8px;flex:none}
+.sd-tools button{display:flex;flex-direction:column;align-items:center;gap:2px;width:72px;padding:7px 0;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:12px;cursor:pointer}
+.sd-tools button i{font-size:21px}
+.sd-tools button.on{background:rgba(250,204,21,.2);border-color:rgba(250,204,21,.6);color:#fde68a}
+.sd-pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;width:100%;max-width:560px;flex:none;padding-bottom:4px}
+.sd-pad button{height:58px;border-radius:12px;border:1px solid var(--border);background:rgba(56,189,248,.12);color:var(--txt);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:manipulation}
+.sd-pad button b{font-size:23px;font-weight:600}
+.sd-pad button small{font-size:10.5px;color:var(--txt3);min-height:12px}
+.sd-pad button.full{opacity:.35}
+.sd-pad button:active,.sd-tools button:active{transform:scale(.95)}
 /* Notes */
 .nt-wrap{position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;background:#0B1128;color:var(--txt);
   padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));animation:mbgIn 160ms ease-out}
@@ -1439,6 +1530,47 @@ select option:checked{background:#2E3A78;color:#fff}
 .fx-pairs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
 .fx-chip{justify-content:space-between;font-size:12px;padding:7px 10px;white-space:nowrap;min-width:0;gap:6px}
 .fx-chip span{overflow:hidden;text-overflow:ellipsis}
+/* ─── Trading bot widget ─── */
+.bt-body{display:flex;flex-direction:column}
+.bt-empty{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;background:rgba(247,147,26,.07);border:1px solid rgba(247,147,26,.22)}
+.bt-empty>i{font-size:22px;color:#F7931A;margin-top:2px}
+.bt-empty p{margin:4px 0 0;font-size:13px;line-height:1.45;color:var(--txt2)}
+.bt-empty code{font-size:12px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px}
+.bt-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bt-run{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--txt2)}
+.bt-run i{width:8px;height:8px;border-radius:50%;background:#6B78A0}
+.bt-run.on i{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.18)}
+.bt-run.off{color:#fcd34d}.bt-run.off i{background:#fbbf24}
+.bt-mode{font-size:11px;font-weight:650;padding:3px 9px;border-radius:99px;background:rgba(140,168,255,.12);color:#c7d2fe}
+.bt-mode.live{background:rgba(248,113,113,.16);color:#fecaca}
+.bt-hero{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:16px;background:linear-gradient(135deg,rgba(247,147,26,.16),rgba(247,147,26,.04));border:1px solid rgba(247,147,26,.25)}
+.bt-hero small{font-size:12px;color:var(--txt2)}
+.bt-hero b{font-size:30px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums;color:var(--txt)}
+.bt-pnl{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--txt2)}
+.bt-pnl.up{color:#4ade80}.bt-pnl.down{color:#fca5a5}
+.bt-pnl em{font-style:normal;font-weight:400;color:var(--txt2)}
+.bt-warn{margin-top:8px;padding:9px 12px;border-radius:12px;background:rgba(248,113,113,.12);color:#fecaca;font-size:13px}
+.bt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.bt-tile{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+.bt-tile small{display:block;font-size:11px;color:var(--txt2);margin-bottom:2px}
+.bt-tile b{font-size:15px;font-variant-numeric:tabular-nums}
+.bt-key{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;background:#F7931A}
+.bt-key.h{background:repeating-linear-gradient(90deg,#9AA6C8 0 4px,transparent 4px 7px)}
+.bt-nochart{margin-top:12px;font-size:12px;color:var(--txt2);padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.03)}
+.bt-trades{display:flex;flex-direction:column;gap:6px}
+.bt-tr{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.035)}
+.bt-side{flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;min-width:38px;text-align:center}
+.bt-side.buy{background:rgba(74,222,128,.15);color:#bbf7d0}.bt-side.sell{background:rgba(248,113,113,.15);color:#fecaca}
+.bt-tm{flex:1;min-width:0;font-size:13px;font-variant-numeric:tabular-nums}
+.bt-tm small{display:block;font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-tp{flex:none;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
+.bt-tp.up{color:#4ade80}.bt-tp.down{color:#fca5a5}
+.bt-sum{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bt-sw{display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.bt-sw input{width:18px;height:18px;accent-color:#F7931A}
+.bt-sum input[type=time]{width:auto;padding:6px 10px;font-size:16px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);color-scheme:dark}
+.bt-chip{border-color:rgba(247,147,26,.3);background:rgba(247,147,26,.08);color:#fed7aa}
+.bt-env{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--txt);word-break:break-all;user-select:all;-webkit-user-select:all}
 </style>
 </head>
 <body>
@@ -3142,12 +3274,17 @@ async function renderPrivBox(msg){
     '<div style="font-size:10px;color:var(--yellow);margin-top:5px">Treat this address like a password \u2014 anyone who has it can read and change your data.</div>'+
     '<div style="margin-top:6px"><button class="btn sm red" onclick="rotateMcpUrl()"><i class="ti ti-refresh"></i> Generate a new address</button></div>'+
     '<div id="mcpStatus" style="font-size:11px;margin-top:5px"></div>' +
+    '<div class="slabel" style="margin-top:14px"><i class="ti ti-currency-bitcoin"></i> Trading bot</div>'+
+    '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">The BTC bot on your PC sends its trades and status here. Copy these two lines into the bot\u2019s <b>.env</b> file (in the bot folder), then restart the bot.</div>'+
+    '<div id="botKeyBox"><div class="cc-empty">Loading\u2026</div></div>'+
+    '<div style="font-size:10px;color:var(--yellow);margin-top:5px">The key only lets the bot post its reports \u2014 it can\u2019t read or change anything else.</div>' +
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-shield-lock"></i> Change password</div>'+
     '<input id="privCur" type="password" placeholder="Current password" autocomplete="current-password">'+
     '<input id="privNew" type="password" placeholder="New password (at least 6 characters)" autocomplete="new-password" style="margin-top:6px">'+
     '<button class="btn sm" style="width:100%;justify-content:center;margin-top:6px" onclick="privChange()"><i class="ti ti-refresh"></i> Change password</button>';
   refreshFsInfo();
   refreshMcpInfo();
+  refreshBotKey();
 }
 function privToggle(id, btn){
   const i = document.getElementById(id); if(!i) return;
@@ -4425,8 +4562,10 @@ const WIDGETS_DEFAULT=[
   {id:'w_tithe',name:'Giving', desc:'Income, the share due and what you\u2019ve given', action:'tithe', icon:'ti-heart-handshake'},
   {id:'w_concerts',name:'Concerts', desc:'Your artists\u2019 dates in Europe', action:'concerts', icon:'ti-microphone-2'},
   {id:'w_shop',name:'Shopping list', desc:'What to buy, ticked off as you go', action:'shopping', icon:'ti-shopping-cart'},
+  {id:'w_bot',name:'Trading bot', desc:'Your BTC bot: value, trades, whether it\u2019s running', action:'bot', icon:'ti-currency-bitcoin'},
   {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
   {id:'w_worship',name:'Worship schedule', desc:'Read the monthly team plan into the calendar', action:'worship', icon:'ti-music'},
+  {id:'w_games',name:'Games', desc:'Blocks and Sudoku', action:'games', icon:'ti-device-gamepad-2'},
   {id:'w_verse',name:'Verse wallpaper', desc:'Black 4K wallpapers: a Bible verse in English, Hebrew and Romanian, or a quote', action:'verse', icon:'ti-photo-heart'},
   {id:'w_notes',name:'Notes', desc:'Your notes on every device, behind a PIN or Face ID', action:'notes', icon:'ti-notes'},
   {id:'w_plugs',name:'Smart plugs', desc:'Switch your Shelly plugs, timers and schedules', action:'plugs', icon:'ti-plug'},
@@ -4458,7 +4597,7 @@ function toggleWidgets(e){
   const tile=w=>{
     const c=WIDGET_TINT[w.action]||'#8CA8FF';
     return '<button class="wtile" role="menuitem" style="--wt:'+c+'" onclick="openWidget(\''+w.id+'\')">'+
-      '<span class="wtile-ic"><i class="ti '+(w.icon||'ti-apps')+'"></i></span>'+
+      '<span class="wtile-ic"><i class="ti '+(w.icon||'ti-apps')+'"></i>'+widgetCount(w)+'</span>'+
       '<b>'+escHtml(w.name)+'</b><small>'+escHtml(widgetPeek(w)||w.desc||'')+'</small></button>';
   };
   const link=w=>'<button class="wlink" role="menuitem" onclick="openWidget(\''+w.id+'\')">'+
@@ -4493,9 +4632,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes(), verse: ()=>openVerse() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes(), verse: ()=>openVerse(), games: ()=>openGames(), bot: ()=>openBot() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15', verse:'#E2C08D' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15', verse:'#E2C08D', games:'#a78bfa', bot:'#F7931A' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -4657,6 +4796,13 @@ async function previewTravel(force){
 }
 // A live one-liner under a launcher tile, where there's something worth
 // seeing at a glance; otherwise the tile shows its description.
+// A number on a launcher tile: bot events since the widget was last opened.
+function widgetCount(w){
+  const n = w.action==='bot' && _bt ? (_bt.unseen||0) : 0;
+  return n ? '<span class="wtile-count" aria-label="'+n+' new">'+(n>99?'99+':n)+'</span>' : '';
+}
+// The Widgets button gets a small dot while something there is new.
+function widgetsDot(){ const b=document.getElementById('widgetsBtn'); if(b) b.classList.toggle('has-new', !!(_bt && _bt.unseen)); }
 function widgetPeek(w){
   try{
     if(w.action==='clocks' && (S.worldClocks||[]).length){
@@ -4666,6 +4812,8 @@ function widgetPeek(w){
     if(w.action==='notes' && _nt.st && _nt.st.pinSet){ return '🔒 '+(_nt.st.count||0)+' note'+(_nt.st.count===1?'':'s'); }
     if(w.action==='plugs' && _pl && Array.isArray(_pl.plugs) && _pl.plugs.length){ const on=_pl.plugs.filter(p=>p.on); const W=on.reduce((a,p)=>a+(p.watts||0),0); return on.length ? on.length+' on'+(W?' · '+plFmtW(W):'') : 'All off'; }
     if(w.action==='remote' && _rm && !_rm.error){ return !_rm.paired ? 'Not set up' : (_rm.online ? (_rm.host||'Laptop')+' online' : 'Laptop offline'); }
+    if(w.action==='games' && _gm.rec && _gm.rec.tetris && _gm.rec.tetris.best){ return 'Blocks best '+_gm.rec.tetris.best.toLocaleString('en-GB'); }
+    if(w.action==='bot' && _bt){ if(!_bt.connected) return 'Not connected'; if(_bt.status) return btMoney(_bt.status.equity)+' \u00b7 '+btPct(_bt.status.pnlPct)+(_bt.running?'':' \u00b7 not running'); }
     if(w.action==='fx' && _fx && _fx.rates){ const f=S.fxFrom||'EUR', t=S.fxTo||'RON'; const v=fxRate(f,t); if(v) return '1 '+f+' = '+fxFmt(v)+' '+t; }
     if(w.action==='shopping' && _shop && _shop.lists){
       const L=_shop.lists, n=L.reduce((a,l)=>a+(l.open||0),0), next=L.find(l=>l.trip);
@@ -4674,6 +4822,158 @@ function widgetPeek(w){
   }catch(e){}
   return '';
 }
+
+// ─── TRADING BOT ─────────────────────────────────────────
+// The BTC bot runs on the PC and reports here every 5 minutes
+// (POST /api/bot/report with its key). This widget shows what it last
+// said; trades and warnings also arrive as notifications in the bell, and
+// a summary push comes each morning. No report for 15 min = "not running"
+// (usually the PC is off or the bot window was closed).
+let _bt = null;
+function btMoney(v){ return v==null||!isFinite(v) ? '–' : (+v).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
+function btPct(v){ return v==null||!isFinite(v) ? '' : (v>0?'+':'')+(v*100).toFixed(2)+'%'; }
+function btAgo(ms){
+  const m=Math.round((Date.now()-ms)/60000);
+  if(m<1) return 'just now'; if(m<60) return m+' min ago';
+  const h=Math.round(m/60); if(h<24) return h+' h ago';
+  return new Date(ms).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+async function loadBot(){
+  try{ _bt = await (await fetch('/api/bot',{cache:'no-store'})).json(); }catch(e){ if(!_bt) _bt={ error:'Couldn’t reach the server.' }; }
+  widgetsDot();
+  return _bt;
+}
+// Opening the widget shows what's new (marked "New") and resets the counter.
+let _btSince=0;
+async function openBot(){
+  showModal('Trading bot', '<div id="btBody" class="bt-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div></div>',
+    '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
+  await loadBot();
+  _btSince=(_bt&&_bt.openedAt)||0;
+  const newN=(_bt&&_bt.unseen)||0;
+  btRender(newN);
+  try{ const d=await (await fetch('/api/bot/opened',{method:'POST'})).json(); if(d && !d.error){ _bt.unseen=0; _bt.openedAt=d.openedAt||Date.now(); widgetsDot(); } }catch(e){}
+}
+setTimeout(()=>loadBot(), 2500);
+function btEventsHtml(newN){
+  const ev=(_bt&&_bt.events)||[];
+  if(!ev.length) return '';
+  const ic=k=>k==='trade'?'ti-arrows-exchange':k==='alert'?'ti-alert-triangle':'ti-info-circle';
+  return '<div class="slabel" style="margin-top:12px"><i class="ti ti-bell"></i> Bot messages'+(newN?' <span class="bt-newn">'+newN+' new since last time</span>':'')+'</div>'+
+    '<div class="bt-evs">'+ev.slice(0,10).map(e=>{
+      const isNew=e.at>_btSince;
+      const when=new Date(e.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      return '<div class="bt-ev'+(isNew?' new':'')+(e.kind==='alert'?' alert':'')+'"><i class="ti '+ic(e.kind)+'"></i><span><b>'+escHtml(e.title)+'</b>'+(e.body?'<small>'+escHtml(e.body)+'</small>':'')+'<em>'+escHtml(when)+'</em></span>'+(isNew?'<span class="bt-newtag">New</span>':'')+'</div>';
+    }).join('')+'</div>';
+}
+function btRender(newN){
+  const el=document.getElementById('btBody'); if(!el) return;
+  if(newN===undefined) newN=0;
+  const b=_bt||{};
+  if(b.error){ el.innerHTML='<div class="cc-msg" style="color:var(--red)">'+escHtml(b.error)+'</div><div style="text-align:center;margin-top:10px"><button class="sh-chip" onclick="openBot()"><i class="ti ti-refresh"></i> Try again</button></div>'; return; }
+  if(!b.connected){
+    el.innerHTML='<div class="bt-empty"><i class="ti ti-plug-connected"></i><div><b>Not connected yet</b>'+
+      '<p>Open Settings → Private → <b>Trading bot</b>, create a key and copy the two lines it shows into the bot’s <code>.env</code> file. The bot then reports here every 5 minutes.</p></div></div>';
+    return;
+  }
+  if(!b.status){
+    el.innerHTML='<div class="bt-empty"><i class="ti ti-clock"></i><div><b>Waiting for the first report</b><p>The key is set. Start the bot on the PC (porneste-bot.bat) — it reports within a minute.</p></div></div>';
+    return;
+  }
+  const st=b.status, up=(st.pnl||0)>0.004, down=(st.pnl||0)<-0.004;
+  const pos = st.halted ? '<span style="color:var(--red)">Stopped</span>' : (st.position==='btc' ? 'In BTC' : 'In cash');
+  const run = b.running
+    ? '<span class="bt-run on"><i></i>Running · last report '+btAgo(b.lastSeen)+'</span>'
+    : '<span class="bt-run off"><i></i>Not running · last report '+btAgo(b.lastSeen)+'</span>';
+  const tile=(k,v)=>'<div class="bt-tile"><small>'+k+'</small><b>'+v+'</b></div>';
+  const trades=(b.trades||[]).slice(-6).reverse();
+  el.innerHTML=
+    '<div class="bt-head">'+run+'<span class="bt-mode '+(st.mode==='live'?'live':'')+'">'+(st.mode==='live'?'Real money':'Paper money')+'</span></div>'+
+    '<div class="bt-hero"><small>Value now</small><b>'+btMoney(st.equity)+'</b>'+
+      '<span class="bt-pnl '+(up?'up':down?'down':'')+'">'+(up?'▲':down?'▼':'●')+' '+(st.pnl>0?'+':'')+btMoney(st.pnl)+' · '+btPct(st.pnlPct)+' <em>since the start ('+btMoney(st.budget)+')</em></span></div>'+
+    (st.halted && st.note ? '<div class="bt-warn"><i class="ti ti-alert-triangle"></i> '+escHtml(st.note)+'</div>' : '')+
+    '<div class="bt-grid">'+tile('Position',pos)+tile('BTC price',btMoney(st.price))+
+      tile('Bought at',st.position==='btc'&&st.entry?btMoney(st.entry):'–')+
+      tile('Stop-loss at',st.position==='btc'&&st.stop?btMoney(st.stop):'–')+'</div>'+
+    btEventsHtml(newN)+
+    '<div id="btChart"></div>'+
+    '<div class="slabel" style="margin-top:12px"><i class="ti ti-arrows-exchange"></i> Recent trades</div>'+
+    (trades.length ? '<div class="bt-trades">'+trades.map(t=>{
+        const dt=new Date(t.time); const when=isNaN(dt)?'':dt.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+        const pnl = t.side==='sell' && t.pnl!=null ? '<span class="bt-tp '+(t.pnl>=0?'up':'down')+'">'+(t.pnl>0?'+':'')+btMoney(t.pnl)+'</span>' : '';
+        return '<div class="bt-tr"><span class="bt-side '+t.side+'">'+(t.side==='buy'?'Buy':'Sell')+'</span>'+
+          '<span class="bt-tm"><b>'+btMoney(t.quote)+'</b> at '+btMoney(t.price)+'<small>'+escHtml(when)+(t.reason?' · '+escHtml(t.reason):'')+'</small></span>'+pnl+'</div>';
+      }).join('')+'</div>' : '<div class="cc-empty">No trades yet.</div>')+
+    '<div class="slabel" style="margin-top:12px"><i class="ti ti-sunrise"></i> Morning summary</div>'+
+    '<div class="bt-sum"><label class="bt-sw"><input type="checkbox" id="btSumOn" '+(b.summary.on?'checked':'')+' onchange="btSaveSummary()"><span>One notification a day at</span></label>'+
+      '<input type="time" id="btSumTime" value="'+escHtml(b.summary.time||'08:00')+'" onchange="btSaveSummary()" aria-label="Summary time">'+
+      '<button class="sh-chip bt-chip" onclick="btTestSummary(this)"><i class="ti ti-send"></i> Send now</button></div>'+
+    '<div class="cc-foot">'+(st.mode==='live'?'Real money on Revolut X.':'Paper trading: virtual money at real Revolut X prices.')+' Updates every 5 minutes while the bot runs on the PC.</div>';
+  btChart();
+}
+// Bot value vs. simply holding the BTC the budget would have bought on day one.
+function btChart(){
+  const el=document.getElementById('btChart'); if(!el) return;
+  const eq=(_bt.equity||[]).filter(e=>e.equity!=null&&e.price);
+  if(eq.length<2){ el.innerHTML='<div class="bt-nochart">The chart starts after two days of reports (one point per day).</div>'; return; }
+  const budget=_bt.status.budget||eq[0].equity, p0=eq[0].price;
+  const pts=eq.map(e=>({ t:e.time, a:e.equity, h:budget/p0*e.price }));
+  const W=320,H=96,P=6, all=pts.flatMap(p=>[p.a,p.h]), lo=Math.min(...all), hi=Math.max(...all), span=(hi-lo)||1;
+  const x=i=>P+i*(W-2*P)/(pts.length-1), y=v=>P+(H-2*P)*(1-(v-lo)/span);
+  const line=k=>pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p[k]).toFixed(1)).join(' ');
+  const day=ds=>new Date(ds).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const last=pts[pts.length-1];
+  el.innerHTML='<div class="fx-trend-h" style="margin-top:12px"><span><i class="bt-key a"></i>Bot '+btMoney(last.a)+'</span><span><i class="bt-key h"></i>Just holding BTC '+btMoney(last.h)+'</span></div>'+
+    '<div class="fx-chart" style="height:96px"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Bot value '+btMoney(last.a)+' against holding BTC '+btMoney(last.h)+'">'+
+      '<path d="'+line('h')+'" fill="none" stroke="#9AA6C8" stroke-width="1.6" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>'+
+      '<path d="'+line('a')+'" fill="none" stroke="#F7931A" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+      '<circle cx="'+x(pts.length-1).toFixed(1)+'" cy="'+y(last.a).toFixed(1)+'" r="4" fill="#F7931A" stroke="var(--bg1)" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
+    '</svg></div><div class="fx-axis"><span>'+day(pts[0].t)+'</span><span>'+day(last.t)+'</span></div>';
+}
+async function btSaveSummary(){
+  const on=!!(document.getElementById('btSumOn')||{}).checked, time=(document.getElementById('btSumTime')||{}).value||'08:00';
+  try{ const d=await (await fetch('/api/bot/summary',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({on,time})})).json(); if(d && d.summary) _bt.summary=d.summary; showToast(on?'Summary every day at '+time:'Morning summary off'); }catch(e){ showToast('Couldn’t save'); }
+}
+async function btTestSummary(btn){
+  if(btn) btn.disabled=true;
+  try{ const d=await (await fetch('/api/bot/summary/test',{method:'POST'})).json(); showToast(d.sent?'Summary sent':'No device has notifications on'); }catch(e){ showToast('Couldn’t send'); }
+  if(btn) btn.disabled=false;
+}
+// Settings → Private → Trading bot: the key the bot uses, shown as the two
+// lines for its .env file.
+async function refreshBotKey(){
+  const box=document.getElementById('botKeyBox'); if(!box) return;
+  let key='';
+  try{ key=(await (await fetch('/api/bot/key')).json()).key||''; }catch(e){}
+  if(!key){
+    box.innerHTML='<button class="btn sm acc" style="width:100%;justify-content:center" onclick="botNewKey(false)"><i class="ti ti-key"></i> Create a key for the bot</button>';
+    return;
+  }
+  const lines='ORGANIZER_URL='+location.origin+'\nORGANIZER_BOT_KEY='+key;
+  // Shown as wrapping text (not a text box) so the whole key is visible on a phone.
+  box.innerHTML='<div id="botEnv" class="bt-env" data-v="'+escHtml(lines)+'">'+escHtml(lines).replace('\n','<br>')+'</div>'+
+    '<div style="display:flex;gap:6px;margin-top:6px">'+
+      '<button class="btn sm" style="flex:1;justify-content:center" onclick="botCopyEnv()"><i class="ti ti-copy"></i> Copy both lines</button>'+
+      '<button class="btn sm red" onclick="botNewKey(true)" title="The old key stops working"><i class="ti ti-refresh"></i> New key</button>'+
+      '<button class="btn sm" onclick="botRemoveKey()" title="Disconnect the bot" aria-label="Disconnect the bot"><i class="ti ti-plug-connected-x"></i></button>'+
+    '</div>';
+}
+function botCopyEnv(){
+  const el=document.getElementById('botEnv'); if(!el) return;
+  navigator.clipboard?.writeText(el.dataset.v).then(()=>showToast('Copied — paste into the bot’s .env file')).catch(()=>{});
+}
+async function botNewKey(replace){
+  if(replace && !confirm('Make a new key? The bot stops reporting until you put the new lines in its .env file.')) return;
+  try{ await fetch('/api/bot/key',{method:'POST'}); }catch(e){}
+  refreshBotKey();
+}
+async function botRemoveKey(){
+  if(!confirm('Disconnect the bot? Its reports will be refused until you create a new key.')) return;
+  try{ await fetch('/api/bot/key/remove',{method:'POST'}); }catch(e){}
+  refreshBotKey();
+}
+setTimeout(loadBot, 3000);
+setInterval(()=>{ if(!document.hidden){ loadBot().then(()=>{ if(document.getElementById('btBody')){ btRender(); if(_bt && _bt.unseen) fetch('/api/bot/opened',{method:'POST'}).then(()=>{ _bt.unseen=0; widgetsDot(); }).catch(()=>{}); } }); } }, 5*60000);   // open while new messages arrive: they're seen
 
 // ─── SHOPPING LIST ───────────────────────────────────────
 // Several lists can live side by side — e.g. "today · Lidl" and "tomorrow ·
@@ -6621,6 +6921,370 @@ async function bwSave(){
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
 }
 function bwAlert(t){ const m=document.getElementById('bwMsg'); if(m) m.innerHTML='<span style="color:#fca5a5">'+escHtml(t)+'</span>'; }
+// ─── GAMES ───────────────────────────────────────────────
+// Blocks (Tetris-style) and Sudoku, full screen. No sound. Closing a game
+// throws it away (nothing is saved but your records, which the server keeps
+// so they're the same on every device).
+let _gm={ rec:null, view:'home' };
+const GM_KEY='org:games';
+function gmPrefs(){ try{ return Object.assign({ rows:1, speed:1, sdLevel:'beginner' }, JSON.parse(localStorage.getItem(GM_KEY)||'{}')); }catch(e){ return { rows:1, speed:1, sdLevel:'beginner' }; } }
+function gmSavePrefs(p){ try{ localStorage.setItem(GM_KEY, JSON.stringify(p)); }catch(e){} }
+async function gmLoadRec(){ try{ _gm.rec=await (await fetch('/api/games/records')).json(); }catch(e){ _gm.rec=_gm.rec||{}; } return _gm.rec; }
+async function gmPostRec(game, data){ try{ const d=await (await fetch('/api/games/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ game, ...data })})).json(); if(d && d.records) _gm.rec=d.records; return d; }catch(e){ return {}; } }
+function gmTime(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function openGames(){
+  closeModal();
+  let o=document.getElementById('gmWrap');
+  if(!o){ o=document.createElement('div'); o.id='gmWrap'; o.className='nt-wrap gm-wrap'; document.body.appendChild(o); lockPageScroll(); }
+  gmHome();
+  gmLoadRec().then(()=>{ if(_gm.view==='home') gmHome(); });
+}
+function gmClose(){ tbStop(); sdStop(); const o=document.getElementById('gmWrap'); if(o) o.remove(); unlockPageScroll(); _gm.view='home'; }
+function gmTop(title, right, back){
+  return '<div class="nt-top"><button class="pad-x" onclick="'+(back?'gmBack()':'gmClose()')+'" aria-label="'+(back?'Back to games':'Close')+'"><i class="ti '+(back?'ti-arrow-left':'ti-x')+'"></i></button><b>'+title+'</b>'+(right||'')+'</div>';
+}
+function gmBack(){ tbStop(); sdStop(); gmHome(); }
+function gmHome(){
+  const o=document.getElementById('gmWrap'); if(!o) return;
+  _gm.view='home';
+  const r=_gm.rec||{}, t=r.tetris||{}, s=r.sudoku||{};
+  const sdRec=['beginner','advanced','expert'].map(l=>'<span>'+l[0].toUpperCase()+l.slice(1)+': <b>'+(s[l]&&s[l].best?gmTime(s[l].best):'–')+'</b></span>').join('');
+  o.innerHTML=gmTop('Games','')+
+    '<div class="gm-home">'+
+      '<button class="gm-tile tb" onclick="tbSetup()"><span class="gm-ic"><i class="ti ti-layout-grid"></i></span><b>Blocks</b><small>Classic falling blocks</small>'+
+        '<span class="gm-rec">Best score <b>'+(t.best||0).toLocaleString('en-GB')+'</b> · most lines <b>'+(t.lines||0)+'</b></span></button>'+
+      '<button class="gm-tile sd" onclick="sdSetup()"><span class="gm-ic"><i class="ti ti-grid-dots"></i></span><b>Sudoku</b><small>Beginner, advanced or expert</small>'+
+        '<span class="gm-rec">Best times · '+sdRec+'</span></button>'+
+    '</div>';
+}
+
+// ════════ BLOCKS ════════
+const TB_W=10, TB_H=20;
+const TB_SHAPES={
+  I:[[0,1],[1,1],[2,1],[3,1]], O:[[1,0],[2,0],[1,1],[2,1]], T:[[1,0],[0,1],[1,1],[2,1]],
+  S:[[1,0],[2,0],[0,1],[1,1]], Z:[[0,0],[1,0],[1,1],[2,1]], J:[[0,0],[0,1],[1,1],[2,1]], L:[[2,0],[0,1],[1,1],[2,1]]
+};
+const TB_COL={ I:'#38bdf8', O:'#facc15', T:'#c084fc', S:'#4ade80', Z:'#f87171', J:'#60a5fa', L:'#fb923c', G:'#64748b' };
+const TB_GRAV=[0,800,640,500,370,250];          // ms per row for speed 1…5
+let _tb=null;
+function tbSetup(){
+  const o=document.getElementById('gmWrap'); if(!o) return;
+  tbStop(); _gm.view='tbsetup';
+  const p=gmPrefs(), t=(_gm.rec||{}).tetris||{};
+  o.innerHTML=gmTop('Blocks','',true)+
+    '<div class="gm-setup">'+
+      '<div class="gm-q">Rows of blocks at the start</div><div class="gm-steps">'+Array.from({length:10},(_,i)=>i+1).map(n=>'<button class="'+(n===p.rows?'on':'')+'" onclick="tbPick(\'rows\','+n+')">'+n+'</button>').join('')+'</div>'+
+      '<div class="gm-q">Starting speed <small>(it rises every 10 lines, up to 5)</small></div><div class="gm-steps five">'+[1,2,3,4,5].map(n=>'<button class="'+(n===p.speed?'on':'')+'" onclick="tbPick(\'speed\','+n+')">'+n+'</button>').join('')+'</div>'+
+      '<button class="btn acc gm-go" onclick="tbStart()"><i class="ti ti-player-play"></i> Start</button>'+
+      '<div class="gm-recs"><span>Best score <b>'+(t.best||0).toLocaleString('en-GB')+'</b></span><span>Most lines <b>'+(t.lines||0)+'</b></span></div>'+
+      '<div class="gm-help">On the phone: the buttons under the board. On a keyboard: ← → move, ↑ turn, ↓ faster, space drops, P pauses.</div>'+
+    '</div>';
+}
+function tbPick(k,v){ const p=gmPrefs(); p[k]=v; gmSavePrefs(p); tbSetup(); }
+function tbBag(){ const a=Object.keys(TB_SHAPES); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function tbNextType(){ if(!_tb.bag.length) _tb.bag=tbBag(); return _tb.bag.pop(); }
+function tbPiece(type){ return { type, cells:TB_SHAPES[type].map(c=>[...c]), x:3, y:type==='I'?-1:0 }; }
+function tbStart(){
+  const p=gmPrefs();
+  const grid=Array.from({length:TB_H},()=>Array(TB_W).fill(null));
+  // Starting rows: random blocks with at least one gap per row.
+  for(let r=0;r<p.rows;r++){
+    const row=grid[TB_H-1-r], hole=Math.floor(Math.random()*TB_W);
+    for(let c=0;c<TB_W;c++) row[c] = c!==hole && Math.random()<0.75 ? 'G' : null;
+    if(row.every(Boolean)) row[(hole+1)%TB_W]=null;
+  }
+  _tb={ grid, bag:[], score:0, lines:0, startSpeed:p.speed, speed:p.speed, rows:p.rows, over:false, paused:false, t:0, raf:0, last:0, acc:0, rep:null, lockT:0 };
+  _tb.cur=tbPiece(tbNextType()); _tb.next=tbNextType();
+  _gm.view='tb';
+  tbLayout();
+  _tb.last=performance.now(); _tb.raf=requestAnimationFrame(tbLoop);
+}
+function tbLayout(){
+  const o=document.getElementById('gmWrap'); if(!o) return;
+  const btn=(id,ic,label,cls)=>'<button class="tb-b '+(cls||'')+'" data-k="'+id+'" aria-label="'+label+'"><i class="ti '+ic+'"></i></button>';
+  o.innerHTML=gmTop('Blocks','<button class="pad-ic" id="tbPauseBtn" onclick="tbPause()" aria-label="Pause"><i class="ti ti-player-pause"></i></button>',true)+
+    '<div class="tb-play">'+
+      '<div class="tb-board"><canvas id="tbCv"></canvas><div class="tb-over" id="tbOver" hidden></div></div>'+
+      '<div class="tb-side">'+
+        '<div class="tb-box"><small>Next</small><canvas id="tbNext" width="88" height="66"></canvas></div>'+
+        '<div class="tb-box"><small>Score</small><b id="tbScore">0</b></div>'+
+        '<div class="tb-box"><small>Lines</small><b id="tbLines">0</b></div>'+
+        '<div class="tb-box"><small>Speed</small><b id="tbSpeed">'+_tb.speed+'</b></div>'+
+        '<div class="tb-box"><small>Best</small><b>'+(((_gm.rec||{}).tetris||{}).best||0).toLocaleString('en-GB')+'</b></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="tb-pad">'+
+      '<div class="tb-dpad">'+btn('left','ti-chevron-left','Move left')+btn('down','ti-chevron-down','Faster down')+btn('right','ti-chevron-right','Move right')+'</div>'+
+      '<div class="tb-act">'+btn('drop','ti-arrow-bar-to-down','Drop','drop')+btn('rot','ti-rotate-clockwise','Turn','rot')+'</div>'+
+    '</div>';
+  // Size the board to the space left on this screen.
+  const play=o.querySelector('.tb-play'), side=o.querySelector('.tb-side');
+  const availH=play.clientHeight-4, availW=play.clientWidth-side.offsetWidth-12;
+  const cell=Math.max(12, Math.floor(Math.min(availH/TB_H, availW/TB_W)));
+  const cv=document.getElementById('tbCv'), dpr=Math.min(2, window.devicePixelRatio||1);
+  cv.width=cell*TB_W*dpr; cv.height=cell*TB_H*dpr; cv.style.width=cell*TB_W+'px'; cv.style.height=cell*TB_H+'px';
+  _tb.cell=cell; _tb.dpr=dpr;
+  // Buttons: press-and-hold repeats for move and down.
+  o.querySelectorAll('.tb-b').forEach(b=>{
+    const k=b.dataset.k;
+    const start=e=>{ e.preventDefault(); if(_tb.over||_tb.paused) return; b.classList.add('on'); tbKey(k);
+      if(k==='left'||k==='right'||k==='down'){ clearTimeout(_tb.rep); clearInterval(_tb.rep2); _tb.rep=setTimeout(()=>{ _tb.rep2=setInterval(()=>tbKey(k), k==='down'?40:70); }, 180); } };
+    const end=()=>{ b.classList.remove('on'); clearTimeout(_tb.rep); clearInterval(_tb.rep2); };
+    b.addEventListener('pointerdown', start); ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,end));
+    b.addEventListener('contextmenu', e=>e.preventDefault());
+  });
+  tbDraw();
+}
+// Turning the phone / resizing the window: the board is sized again (the game carries on).
+let _gmRz=null;
+window.addEventListener('resize', ()=>{ clearTimeout(_gmRz); _gmRz=setTimeout(()=>{ if(!document.getElementById('gmWrap')) return; if(_gm.view==='tb' && _tb) tbLayout(); if(_gm.view==='sd' && _sd) sdLayout(); }, 200); });
+function tbFits(cells, x, y){
+  for(const [cx,cy] of cells){ const gx=x+cx, gy=y+cy; if(gx<0||gx>=TB_W||gy>=TB_H) return false; if(gy>=0 && _tb.grid[gy][gx]) return false; }
+  return true;
+}
+function tbRotate(){
+  const p=_tb.cur; if(p.type==='O') return;
+  const size=p.type==='I'?4:3;
+  const rc=p.cells.map(([x,y])=>[size-1-y, x]);
+  for(const k of [0,-1,1,-2,2]){ if(tbFits(rc,p.x+k,p.y)){ p.cells=rc; p.x+=k; return true; } }      // nudge off walls
+  if(tbFits(rc,p.x,p.y-1)){ p.cells=rc; p.y-=1; return true; }
+}
+function tbKey(k){
+  if(!_tb || _tb.over) return;
+  if(k==='pause') return tbPause();
+  if(_tb.paused) return;
+  const p=_tb.cur;
+  if(k==='left' && tbFits(p.cells,p.x-1,p.y)) p.x--;
+  else if(k==='right' && tbFits(p.cells,p.x+1,p.y)) p.x++;
+  else if(k==='rot') tbRotate();
+  else if(k==='down'){ if(tbFits(p.cells,p.x,p.y+1)){ p.y++; _tb.score+=1; _tb.acc=0; } else tbLock(); }
+  else if(k==='drop'){ let n=0; while(tbFits(p.cells,p.x,p.y+1)){ p.y++; n++; } _tb.score+=2*n; tbLock(); }
+  tbDraw();
+}
+function tbLock(){
+  const p=_tb.cur;
+  for(const [cx,cy] of p.cells){ const gy=p.y+cy; if(gy<0){ return tbGameOver(); } _tb.grid[gy][p.x+cx]=p.type; }
+  // Full rows go; the rest falls.
+  let cleared=0;
+  for(let r=TB_H-1;r>=0;r--){ if(_tb.grid[r].every(Boolean)){ _tb.grid.splice(r,1); _tb.grid.unshift(Array(TB_W).fill(null)); cleared++; r++; } }
+  if(cleared){
+    _tb.lines+=cleared; _tb.score+=[0,100,300,500,800][cleared]*_tb.speed;
+    _tb.speed=Math.min(5, _tb.startSpeed+Math.floor(_tb.lines/10));
+    if(navigator.vibrate) navigator.vibrate(cleared>=4?[20,30,20]:12);
+  }
+  _tb.cur=tbPiece(_tb.next); _tb.next=tbNextType(); _tb.acc=0;
+  if(!tbFits(_tb.cur.cells,_tb.cur.x,_tb.cur.y)) return tbGameOver();
+}
+function tbLoop(now){
+  if(!_tb || _gm.view!=='tb') return;
+  const dt=now-_tb.last; _tb.last=now;
+  if(!_tb.paused && !_tb.over){
+    _tb.acc+=dt;
+    if(_tb.acc>=TB_GRAV[_tb.speed]){ _tb.acc=0; const p=_tb.cur; if(tbFits(p.cells,p.x,p.y+1)) p.y++; else tbLock(); tbDraw(); }
+  }
+  _tb.raf=requestAnimationFrame(tbLoop);
+}
+function tbDraw(){
+  const cv=document.getElementById('tbCv'); if(!cv||!_tb) return;
+  const c=cv.getContext('2d'), s=_tb.cell, d=_tb.dpr;
+  c.setTransform(d,0,0,d,0,0);
+  c.fillStyle='#070b1d'; c.fillRect(0,0,s*TB_W,s*TB_H);
+  c.strokeStyle='rgba(255,255,255,.045)'; c.lineWidth=1;
+  for(let x=1;x<TB_W;x++){ c.beginPath(); c.moveTo(x*s+.5,0); c.lineTo(x*s+.5,s*TB_H); c.stroke(); }
+  for(let y=1;y<TB_H;y++){ c.beginPath(); c.moveTo(0,y*s+.5); c.lineTo(s*TB_W,y*s+.5); c.stroke(); }
+  const cellAt=(x,y,col,alpha)=>{ c.globalAlpha=alpha||1; c.fillStyle=col; const r=Math.max(2,s*.16);
+    c.beginPath(); c.roundRect ? c.roundRect(x*s+1,y*s+1,s-2,s-2,r) : c.rect(x*s+1,y*s+1,s-2,s-2); c.fill();
+    if(!alpha||alpha===1){ c.fillStyle='rgba(255,255,255,.22)'; c.fillRect(x*s+3,y*s+3,s-6,Math.max(2,s*.14)); }
+    c.globalAlpha=1; };
+  for(let y=0;y<TB_H;y++) for(let x=0;x<TB_W;x++) if(_tb.grid[y][x]) cellAt(x,y,TB_COL[_tb.grid[y][x]]);
+  if(!_tb.over){
+    const p=_tb.cur; let gy=p.y; while(tbFits(p.cells,p.x,gy+1)) gy++;
+    for(const [cx,cy] of p.cells) if(gy+cy>=0) cellAt(p.x+cx,gy+cy,TB_COL[p.type],0.22);                // where it will land
+    for(const [cx,cy] of p.cells) if(p.y+cy>=0) cellAt(p.x+cx,p.y+cy,TB_COL[p.type]);
+  }
+  const n=document.getElementById('tbNext');
+  if(n){ const x=n.getContext('2d'); x.clearRect(0,0,88,66); const sh=TB_SHAPES[_tb.next], q=18;
+    const minX=Math.min(...sh.map(a=>a[0])), maxX=Math.max(...sh.map(a=>a[0])), minY=Math.min(...sh.map(a=>a[1])), maxY=Math.max(...sh.map(a=>a[1]));
+    const ox=(88-(maxX-minX+1)*q)/2-minX*q, oy=(66-(maxY-minY+1)*q)/2-minY*q;
+    x.fillStyle=TB_COL[_tb.next]; sh.forEach(([a,b])=>{ x.beginPath(); x.roundRect?x.roundRect(ox+a*q+1,oy+b*q+1,q-2,q-2,3):x.rect(ox+a*q+1,oy+b*q+1,q-2,q-2); x.fill(); }); }
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('tbScore',_tb.score.toLocaleString('en-GB')); set('tbLines',_tb.lines); set('tbSpeed',_tb.speed);
+}
+function tbPause(force){
+  if(!_tb||_tb.over) return;
+  _tb.paused = force!==undefined ? force : !_tb.paused;
+  const ov=document.getElementById('tbOver'), b=document.getElementById('tbPauseBtn');
+  if(b) b.innerHTML='<i class="ti '+(_tb.paused?'ti-player-play':'ti-player-pause')+'"></i>';
+  if(ov){ ov.hidden=!_tb.paused; ov.innerHTML='<b>Paused</b><button class="btn acc" onclick="tbPause(false)"><i class="ti ti-player-play"></i> Continue</button>'; }
+}
+async function tbGameOver(){
+  _tb.over=true; tbDraw();
+  const ov=document.getElementById('tbOver');
+  const old=((_gm.rec||{}).tetris||{});
+  const newBest=_tb.score>(old.best||0), newLines=_tb.lines>(old.lines||0);
+  if(ov){ ov.hidden=false; ov.innerHTML='<b>Game over</b><span>'+_tb.score.toLocaleString('en-GB')+' points · '+_tb.lines+' lines</span>'+(newBest?'<span class="gm-new"><i class="ti ti-trophy"></i> New best score!</span>':newLines?'<span class="gm-new"><i class="ti ti-trophy"></i> Most lines ever!</span>':'')+
+    '<button class="btn acc" onclick="tbStart()"><i class="ti ti-refresh"></i> Play again</button><button class="btn" onclick="tbSetup()">Change level</button>'; }
+  if(_tb.score>0 || _tb.lines>0) await gmPostRec('tetris', { score:_tb.score, lines:_tb.lines });
+}
+function tbStop(){ if(_tb){ cancelAnimationFrame(_tb.raf); clearTimeout(_tb.rep); clearInterval(_tb.rep2); } _tb=null; }
+document.addEventListener('keydown', e=>{
+  if(_gm.view!=='tb' || !_tb || !document.getElementById('gmWrap')) return;
+  const m={ ArrowLeft:'left', ArrowRight:'right', ArrowDown:'down', ArrowUp:'rot', ' ':'drop', x:'rot', X:'rot', p:'pause', P:'pause', Escape:'pause' }[e.key];
+  if(m){ e.preventDefault(); tbKey(m); }
+});
+// Leaving the app pauses the game.
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && _tb && !_tb.over) tbPause(true); });
+
+// ════════ SUDOKU ════════
+const SD_GIVENS={ beginner:38, advanced:30, expert:25 };
+let _sd=null;
+function sdSetup(){
+  const o=document.getElementById('gmWrap'); if(!o) return;
+  sdStop(); _gm.view='sdsetup';
+  const p=gmPrefs(), s=(_gm.rec||{}).sudoku||{};
+  const lv=[['beginner','Beginner','Lots of numbers to start with'],['advanced','Advanced','Fewer numbers, more thinking'],['expert','Expert','Very few numbers']];
+  o.innerHTML=gmTop('Sudoku','',true)+
+    '<div class="gm-setup">'+
+      '<div class="gm-q">Level</div><div class="gm-levels">'+lv.map(l=>'<button class="'+(l[0]===p.sdLevel?'on':'')+'" onclick="sdPick(\''+l[0]+'\')"><b>'+l[1]+'</b><small>'+l[2]+'</small><em>'+(s[l[0]]&&s[l[0]].best?'Best '+gmTime(s[l[0]].best):'No record yet')+'</em></button>').join('')+'</div>'+
+      '<button class="btn acc gm-go" onclick="sdStart()"><i class="ti ti-player-play"></i> New puzzle</button>'+
+      '<div class="gm-help">Tap a square, then a number. <b>Notes</b> writes small pencil marks. <b>Check</b> shows which numbers are right or wrong.</div>'+
+    '</div>';
+}
+function sdPick(l){ const p=gmPrefs(); p.sdLevel=l; gmSavePrefs(p); sdSetup(); }
+// Puzzle maker: a random full grid, then numbers are taken away one by one
+// as long as the puzzle still has exactly one solution.
+function sdSolveCount(g, limit){
+  let count=0;
+  const rowM=Array(9).fill(0), colM=Array(9).fill(0), boxM=Array(9).fill(0);
+  for(let i=0;i<81;i++){ const v=g[i]; if(v){ const b=1<<v, r=(i/9)|0, c=i%9, x=((r/3)|0)*3+((c/3)|0); rowM[r]|=b; colM[c]|=b; boxM[x]|=b; } }
+  const rec=()=>{
+    let best=-1, bestMask=0, bestN=10;
+    for(let i=0;i<81;i++){ if(g[i]) continue; const r=(i/9)|0, c=i%9, x=((r/3)|0)*3+((c/3)|0); const m=~(rowM[r]|colM[c]|boxM[x]) & 0x3FE; let n=0; for(let k=m;k;k&=k-1) n++; if(n<bestN){ bestN=n; best=i; bestMask=m; if(!n) return; } }
+    if(best<0){ count++; return; }
+    const r=(best/9)|0, c=best%9, x=((r/3)|0)*3+((c/3)|0);
+    for(let v=1;v<=9;v++){ if(!(bestMask&(1<<v))) continue; const b=1<<v; g[best]=v; rowM[r]|=b; colM[c]|=b; boxM[x]|=b; rec(); g[best]=0; rowM[r]&=~b; colM[c]&=~b; boxM[x]&=~b; if(count>=limit) return; }
+  };
+  rec(); return count;
+}
+function sdFull(){
+  const g=Array(81).fill(0);
+  const ok=(i,v)=>{ const r=(i/9)|0, c=i%9; for(let k=0;k<9;k++){ if(g[r*9+k]===v||g[k*9+c]===v) return false; } const br=r-r%3, bc=c-c%3; for(let a=0;a<3;a++) for(let b=0;b<3;b++) if(g[(br+a)*9+bc+b]===v) return false; return true; };
+  const fill=i=>{ if(i===81) return true; const vs=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-.5); for(const v of vs){ if(ok(i,v)){ g[i]=v; if(fill(i+1)) return true; g[i]=0; } } return false; };
+  fill(0); return g;
+}
+function sdMake(level){
+  const sol=sdFull(), puz=[...sol], target=SD_GIVENS[level]||38;
+  const order=[...Array(81).keys()].sort(()=>Math.random()-.5);
+  let givens=81;
+  for(const i of order){
+    if(givens<=target) break;
+    const keep=puz[i]; puz[i]=0;
+    if(sdSolveCount([...puz],2)!==1) puz[i]=keep; else givens--;
+  }
+  return { sol, puz };
+}
+function sdStart(){
+  const p=gmPrefs();
+  const o=document.getElementById('gmWrap'); if(!o) return;
+  o.innerHTML=gmTop('Sudoku','',true)+'<div class="nt-center"><div class="cc-empty"><i class="ti ti-loader-2 spin"></i> Making a puzzle…</div></div>';
+  setTimeout(()=>{
+    const { sol, puz }=sdMake(p.sdLevel);
+    _sd={ level:p.sdLevel, sol, given:puz.map(v=>!!v), val:[...puz], notes:Array.from({length:81},()=>new Set()), sel:-1, noteMode:false, checked:false, start:Date.now(), paused:0, tick:null, done:false, checks:0 };
+    _gm.view='sd'; sdLayout();
+    _sd.tick=setInterval(()=>{ const t=document.getElementById('sdTime'); if(t && _sd && !_sd.done) t.textContent=gmTime((Date.now()-_sd.start)/1000); }, 1000);
+  }, 30);
+}
+function sdLayout(){
+  const o=document.getElementById('gmWrap'); if(!o||!_sd) return;
+  const lvl=_sd.level[0].toUpperCase()+_sd.level.slice(1);
+  o.innerHTML=gmTop('Sudoku','<span class="sd-meta">'+lvl+' · <span id="sdTime">0:00</span></span>',true)+
+    '<div class="sd-play"><div class="sd-grid" id="sdGrid" role="grid" aria-label="Sudoku grid"></div>'+
+      '<div class="sd-msg" id="sdMsg"></div>'+
+      '<div class="sd-tools">'+
+        '<button id="sdNoteBtn" onclick="sdToggleNotes()"><i class="ti ti-pencil"></i><span>Notes</span></button>'+
+        '<button onclick="sdErase()"><i class="ti ti-eraser"></i><span>Erase</span></button>'+
+        '<button onclick="sdCheck()"><i class="ti ti-checks"></i><span>Check</span></button>'+
+        '<button onclick="sdNew()"><i class="ti ti-refresh"></i><span>New</span></button>'+
+      '</div>'+
+      '<div class="sd-pad" id="sdPad">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button onclick="sdInput('+n+')" data-n="'+n+'"><b>'+n+'</b><small></small></button>').join('')+'</div>'+
+    '</div>';
+  // Size: as big as the screen allows.
+  const g=document.getElementById('sdGrid'), play=o.querySelector('.sd-play');
+  const spare=play.clientHeight - o.querySelector('.sd-tools').offsetHeight - o.querySelector('.sd-pad').offsetHeight - 76;
+  const side=Math.floor(Math.max(240, Math.min(play.clientWidth, spare, 560)));
+  g.style.width=g.style.height=side+'px';
+  g.innerHTML=Array.from({length:81},(_,i)=>'<div class="sd-c'+((i%9)%3===2&&i%9!==8?' br':'')+((((i/9)|0)%3===2)&&i<72?' bb':'')+'" data-i="'+i+'" role="gridcell" tabindex="-1"></div>').join('');
+  g.addEventListener('pointerdown', e=>{ const c=e.target.closest('.sd-c'); if(c){ e.preventDefault(); sdSelect(+c.dataset.i); } });
+  sdRender();
+}
+function sdPeers(i){ const r=(i/9)|0, c=i%9, br=r-r%3, bc=c-c%3, out=new Set(); for(let k=0;k<9;k++){ out.add(r*9+k); out.add(k*9+c); } for(let a=0;a<3;a++) for(let b=0;b<3;b++) out.add((br+a)*9+bc+b); out.delete(i); return out; }
+function sdRender(){
+  const g=document.getElementById('sdGrid'); if(!g||!_sd) return;
+  const sel=_sd.sel, selV=sel>=0?_sd.val[sel]:0, peers=sel>=0?sdPeers(sel):new Set();
+  // Clashes (same number twice in a row/column/box) are always shown.
+  const clash=new Set();
+  for(let i=0;i<81;i++){ const v=_sd.val[i]; if(!v) continue; for(const p of sdPeers(i)) if(_sd.val[p]===v){ clash.add(i); } }
+  g.querySelectorAll('.sd-c').forEach(el=>{
+    const i=+el.dataset.i, v=_sd.val[i];
+    let cls='sd-c'+((i%9)%3===2&&i%9!==8?' br':'')+((((i/9)|0)%3===2)&&i<72?' bb':'');
+    if(_sd.given[i]) cls+=' given';
+    if(i===sel) cls+=' sel'; else if(peers.has(i)) cls+=' peer';
+    if(v && selV && v===selV && i!==sel) cls+=' same';
+    if(!_sd.given[i] && v && clash.has(i)) cls+=' clash';
+    if(_sd.checked && !_sd.given[i] && v) cls+= v===_sd.sol[i] ? ' ok' : ' bad';
+    el.className=cls;
+    el.innerHTML = v ? '<span>'+v+'</span>' : (_sd.notes[i].size ? '<div class="sd-n">'+[1,2,3,4,5,6,7,8,9].map(n=>'<i>'+(_sd.notes[i].has(n)?n:'')+'</i>').join('')+'</div>' : '');
+  });
+  // How many of each number are still to place.
+  document.querySelectorAll('#sdPad button').forEach(b=>{ const n=+b.dataset.n, used=_sd.val.filter(v=>v===n).length; b.querySelector('small').textContent=used>=9?'':9-used; b.classList.toggle('full', used>=9); });
+  const nb=document.getElementById('sdNoteBtn'); if(nb) nb.classList.toggle('on', _sd.noteMode);
+}
+function sdSelect(i){ if(!_sd||_sd.done) return; _sd.sel=i; _sd.checked=false; sdRender(); }
+function sdInput(n){
+  if(!_sd||_sd.done) return;
+  const i=_sd.sel; if(i<0){ sdMsg('Tap a square first.'); return; }
+  if(_sd.given[i]) return;
+  _sd.checked=false;
+  if(_sd.noteMode){ if(_sd.val[i]) return; const s=_sd.notes[i]; s.has(n)?s.delete(n):s.add(n); }
+  else {
+    _sd.val[i] = _sd.val[i]===n ? 0 : n;
+    if(_sd.val[i]) for(const p of sdPeers(i)) _sd.notes[p].delete(n);     // tidy pencil marks
+  }
+  sdMsg(''); sdRender(); sdIsDone();
+}
+function sdErase(){ if(!_sd||_sd.sel<0||_sd.given[_sd.sel]) return; _sd.val[_sd.sel]=0; _sd.notes[_sd.sel].clear(); _sd.checked=false; sdRender(); }
+function sdToggleNotes(){ if(!_sd) return; _sd.noteMode=!_sd.noteMode; sdRender(); }
+function sdMsg(h){ const m=document.getElementById('sdMsg'); if(m) m.innerHTML=h; }
+// Check: every number you've placed is marked right (green) or wrong (red).
+function sdCheck(){
+  if(!_sd) return;
+  let wrong=0, right=0, empty=0;
+  for(let i=0;i<81;i++){ if(_sd.given[i]) continue; const v=_sd.val[i]; if(!v) empty++; else if(v===_sd.sol[i]) right++; else wrong++; }
+  _sd.checked=true; _sd.checks++; sdRender();
+  sdMsg(wrong ? '<span class="bad"><i class="ti ti-alert-circle"></i> '+wrong+' wrong</span> · '+right+' right · '+empty+' to go'
+              : '<span class="ok"><i class="ti ti-circle-check"></i> All '+right+' correct so far</span>'+(empty?' · '+empty+' to go':''));
+}
+async function sdIsDone(){
+  if(_sd.val.some((v,i)=>v!==_sd.sol[i])) return;
+  _sd.done=true; clearInterval(_sd.tick);
+  const secs=Math.round((Date.now()-_sd.start)/1000);
+  _sd.checked=true; sdRender();
+  const old=(((_gm.rec||{}).sudoku||{})[_sd.level]||{}).best;
+  const best=!old || secs<old;
+  sdMsg('<span class="ok"><i class="ti ti-confetti"></i> Solved in '+gmTime(secs)+'!</span>'+(best?' <span class="gm-new"><i class="ti ti-trophy"></i> New best time</span>':' Best '+gmTime(old))+
+    ' <button class="sh-chip" onclick="sdNew()">Another one</button>');
+  await gmPostRec('sudoku', { level:_sd.level, secs });
+}
+function sdNew(){ sdStop(); sdStart(); }
+function sdStop(){ if(_sd) clearInterval(_sd.tick); _sd=null; }
+document.addEventListener('keydown', e=>{
+  if(_gm.view!=='sd' || !_sd || !document.getElementById('gmWrap')) return;
+  if(/^[1-9]$/.test(e.key)){ sdInput(+e.key); e.preventDefault(); }
+  else if(e.key==='Backspace'||e.key==='Delete'||e.key==='0'){ sdErase(); e.preventDefault(); }
+  else if(/^Arrow/.test(e.key)){ let i=_sd.sel<0?0:_sd.sel; const r=(i/9)|0, c=i%9;
+    i = e.key==='ArrowUp'? ((r+8)%9)*9+c : e.key==='ArrowDown'? ((r+1)%9)*9+c : e.key==='ArrowLeft'? r*9+(c+8)%9 : r*9+(c+1)%9; sdSelect(i); e.preventDefault(); }
+  else if(e.key==='n'||e.key==='N'){ sdToggleNotes(); }
+});
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
 // key). Windy's own API only returns real data on a paid plan, so each city
@@ -7387,7 +8051,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-26-cornilescu';
+const APP_BUILD='2026-10-29-games';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -7419,6 +8083,11 @@ function handleOpenParams(){
       setTimeout(()=>openConcerts(), 400);
       return;
     }
+    if(q.get('bot')){
+      history.replaceState({}, '', location.pathname);
+      setTimeout(()=>openBot(), 400);
+      return;
+    }
     const d=q.get('d');
     if(d){
       openOnDate(d, q.get('ev'));
@@ -7435,6 +8104,7 @@ if('serviceWorker' in navigator){
     if(e.data && e.data.type==='OPEN_DATE' && e.data.date){ openOnDate(e.data.date, e.data.id); if(e.data.alert && e.data.id) setTimeout(()=>openAlerts(e.data.id, e.data.date), 250); }
     if(e.data && e.data.type==='ALERTS_CHANGED') loadAlerts();
     if(e.data && e.data.type==='OPEN_CONCERTS') openConcerts();
+    if(e.data && e.data.type==='OPEN_BOT') openBot();
   });
 }
 
@@ -7655,7 +8325,8 @@ async function alSyncDevice(){
     const reg=navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
     if(reg && reg.getNotifications){
       const keep=new Set(_al.active.map(a=>'rem-'+a.evId+'-'+a.date+(a.leave?'-leave':'')));
-      (await reg.getNotifications()).forEach(n=>{ if(String(n.tag||'').startsWith('rem-') && !keep.has(n.tag)) n.close(); });
+      _al.active.forEach(a=>{ if(a.type==='bot') keep.add('bot-'+a.evId); });
+      (await reg.getNotifications()).forEach(n=>{ const t=String(n.tag||''); if((t.startsWith('rem-') || t.startsWith('bot-bot-')) && !keep.has(t)) n.close(); });
     }
   }catch(e){}
 }
@@ -7677,7 +8348,24 @@ function alRemLabel(a){
   return '<i class="ti ti-bell-ringing"></i> '+(a.mins ? escHtml(remLabelShort(a.mins))+' before' : 'Reminder');
 }
 function remLabelShort(m){ m=+m; if(m%43200===0) return (m/43200)+' month'+(m>43200?'s':''); if(m%10080===0) return (m/10080)+' week'+(m>10080?'s':''); if(m>=1440) return Math.round(m/1440)+' day'+(m>=2880?'s':''); if(m>=60) return (m%60? (m/60).toFixed(1).replace('.0','') : m/60)+' hour'+(m>60?'s':''); return m+' min'; }
+function alBotCard(g, focus){
+  const a=g.items[0], k=escHtml(g.evId)+'\',\''+g.date;
+  const col = a.kind==='trade' ? '#F7931A' : '#f87171';
+  return '<div class="ecard task al-card al-bot'+(focus?' focus':'')+'" data-key="'+escHtml(g.key)+'">'+
+    '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div><div class="ec-body">'+
+      '<div class="ec-title">'+escHtml(a.title||'Trading bot')+'</div>'+
+      '<div class="ec-meta"><span style="color:var(--txt3)"><i class="ti ti-currency-bitcoin"></i> Trading bot \u00b7 '+escHtml(alDayLabel(a.date))+' '+alClock(a.at)+'</span></div>'+
+      (a.body?'<div class="ec-notes">'+escHtml(a.body)+'</div>':'')+'</div></div>'+
+    '<div class="ec-actions">'+
+      '<button class="ea grn" onclick="alClear(\''+k+'\')"><i class="ti ti-checks"></i>Clear</button>'+
+      '<button class="ea ylw" onclick="alSnoozeMenu(this)"><i class="ti ti-alarm-snooze"></i>Snooze</button>'+
+      '<button class="ea" onclick="closeModal();openBot()"><i class="ti ti-currency-bitcoin"></i>Open bot</button>'+
+    '</div>'+
+    '<div class="al-snooze" hidden>'+[[10,'10 min'],[30,'30 min'],[60,'1 hour'],[180,'3 hours'],['tm','Tomorrow 9:00']].map(s=>'<button class="sh-chip" onclick="alSnooze(\''+k+'\',\''+s[0]+'\')">'+s[1]+'</button>').join('')+'</div>'+
+  '</div>';
+}
 function alCard(g, focus){
+  if(g.items[0].type==='bot') return alBotCard(g, focus);
   const a=g.items[0], sport=a.type==='sport', col=a.color||'#60a5fa';
   const ev=(sport?S.sportEvents:S.tasks).find(x=>x.id===g.evId);
   const pri=a.priority||'normal';
