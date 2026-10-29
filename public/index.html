@@ -1230,7 +1230,7 @@ select option:checked{background:#2E3A78;color:#fff}
 .gm-new{color:#fde68a;font-weight:650}
 /* Blocks */
 .tb-play{flex:1;min-height:0;display:flex;gap:10px;justify-content:center;align-items:flex-start}
-.tb-board{position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(167,139,250,.35);box-shadow:0 0 0 4px rgba(167,139,250,.06)}
+.tb-board{position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(160,170,190,.28)}
 .tb-board canvas{display:block;touch-action:none}
 .tb-side{display:flex;flex-direction:column;gap:8px;width:92px;flex:none}
 .tb-box{padding:8px 9px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
@@ -1244,40 +1244,40 @@ select option:checked{background:#2E3A78;color:#fff}
 .tb-pad{flex:none;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 4px 4px;max-width:520px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none}
 .tb-dpad,.tb-act{display:flex;gap:10px;align-items:center}
 .tb-b{width:64px;height:64px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font-size:28px;display:grid;place-items:center;cursor:pointer;touch-action:none;transition:transform 90ms var(--ease-out),background-color 90ms ease}
-.tb-b.on{transform:scale(.92);background:rgba(167,139,250,.3)}
-.tb-b.rot{width:76px;height:76px;font-size:32px;background:rgba(167,139,250,.3);border-color:rgba(167,139,250,.6)}
+.tb-b.on{transform:scale(.92);background:rgba(140,160,190,.28)}
+.tb-b.rot{width:76px;height:76px;font-size:32px;background:rgba(140,160,190,.22);border-color:rgba(160,175,200,.45)}
 .tb-b.drop{width:58px;height:58px;font-size:24px}
 @media (max-width:360px){ .tb-b{width:54px;height:54px;font-size:24px} .tb-b.rot{width:64px;height:64px} .tb-side{width:80px} }
 /* Sudoku */
-.sd-meta{margin-left:auto;font-size:13px;color:var(--txt2);font-variant-numeric:tabular-nums}
-.sd-play{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px}
-.sd-grid{display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);border:2px solid #cbd5e1;border-radius:10px;overflow:hidden;background:#0d1430;flex:none;touch-action:manipulation}
-.sd-c{display:grid;place-items:center;border-right:1px solid rgba(203,213,225,.18);border-bottom:1px solid rgba(203,213,225,.18);font-size:clamp(16px,5.4vw,28px);font-weight:500;color:#93c5fd;cursor:pointer;position:relative;-webkit-user-select:none;user-select:none}
-.sd-c:nth-child(9n){border-right:0}
-.sd-c.br{border-right:2px solid #cbd5e1}
-.sd-c.bb{border-bottom:2px solid #cbd5e1}
-.sd-c.given{color:#e8ecf8;font-weight:700}
-.sd-c.peer{background:rgba(148,163,184,.10)}
-.sd-c.same{background:rgba(56,189,248,.18)}
-.sd-c.sel{background:rgba(56,189,248,.38)}
-.sd-c.clash span{color:#fca5a5}
-.sd-c.ok{background:rgba(74,222,128,.20)} .sd-c.ok span{color:#86efac}
-.sd-c.bad{background:rgba(248,113,113,.28)} .sd-c.bad span{color:#fecaca;text-decoration:line-through}
-.sd-c.sel.ok,.sd-c.sel.bad{outline:2px solid #38bdf8;outline-offset:-2px}
-.sd-n{display:grid;grid-template-columns:repeat(3,1fr);width:100%;height:100%;padding:1px}
-.sd-n i{font-style:normal;font-size:clamp(8px,2.2vw,11px);color:#94a3b8;display:grid;place-items:center;line-height:1}
-.sd-msg{min-height:22px;font-size:14px;text-align:center;color:var(--txt2)}
-.sd-msg .ok{color:#86efac;font-weight:650}.sd-msg .bad{color:#fca5a5;font-weight:650}
-.sd-tools{display:flex;gap:8px;flex:none}
-.sd-tools button{display:flex;flex-direction:column;align-items:center;gap:2px;width:72px;padding:7px 0;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:12px;cursor:pointer}
-.sd-tools button i{font-size:21px}
-.sd-tools button.on{background:rgba(250,204,21,.2);border-color:rgba(250,204,21,.6);color:#fde68a}
-.sd-pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;width:100%;max-width:560px;flex:none;padding-bottom:4px}
-.sd-pad button{height:58px;border-radius:12px;border:1px solid var(--border);background:rgba(56,189,248,.12);color:var(--txt);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:manipulation}
-.sd-pad button b{font-size:23px;font-weight:600}
-.sd-pad button small{font-size:10.5px;color:var(--txt3);min-height:12px}
-.sd-pad button.full{opacity:.35}
-.sd-pad button:active,.sd-tools button:active{transform:scale(.95)}
+.sk-meta{margin-left:auto;font-size:13px;color:var(--txt2);font-variant-numeric:tabular-nums}
+.sk-play{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.sk-grid{display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);border:2px solid #7d879c;border-radius:10px;overflow:hidden;background:#1a2032;flex:none;touch-action:manipulation}
+.sk-c{display:grid;place-items:center;border-right:1px solid rgba(160,170,190,.16);border-bottom:1px solid rgba(160,170,190,.16);font-size:clamp(16px,5.4vw,28px);font-weight:500;color:#9fbcd0;cursor:pointer;position:relative;-webkit-user-select:none;user-select:none}
+.sk-c:nth-child(9n){border-right:0}
+.sk-c.br{border-right:2px solid #7d879c}
+.sk-c.bb{border-bottom:2px solid #7d879c}
+.sk-c.given{color:#d5d9e2;font-weight:600}
+.sk-c.peer{background:rgba(150,160,185,.08)}
+.sk-c.same{background:rgba(120,160,190,.16)}
+.sk-c.sel{background:rgba(120,160,190,.30)}
+.sk-c.clash span{color:#d9a3a3}
+.sk-c.ok{background:rgba(120,170,130,.16)} .sk-c.ok span{color:#a9cfae}
+.sk-c.bad{background:rgba(200,120,120,.20)} .sk-c.bad span{color:#e0b0b0;text-decoration:line-through}
+.sk-c.sel.ok,.sk-c.sel.bad{outline:2px solid #8fb3cc;outline-offset:-2px}
+.sk-n{display:grid;grid-template-columns:repeat(3,1fr);width:100%;height:100%;padding:1px}
+.sk-n i{font-style:normal;font-size:clamp(8px,2.2vw,11px);color:#8a94a8;display:grid;place-items:center;line-height:1}
+.sk-msg{min-height:22px;font-size:14px;text-align:center;color:var(--txt2)}
+.sk-msg .ok{color:#a9cfae;font-weight:650}.sk-msg .bad{color:#e0b0b0;font-weight:650}
+.sk-tools{display:flex;gap:8px;flex:none}
+.sk-tools button{display:flex;flex-direction:column;align-items:center;gap:2px;width:72px;padding:7px 0;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:12px;cursor:pointer}
+.sk-tools button i{font-size:21px}
+.sk-tools button.on{background:rgba(250,204,21,.2);border-color:rgba(250,204,21,.6);color:#fde68a}
+.sk-pad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;width:100%;max-width:560px;flex:none;padding-bottom:4px}
+.sk-pad button{height:58px;border-radius:12px;border:1px solid var(--border);background:rgba(140,160,190,.10);color:var(--txt);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:manipulation}
+.sk-pad button b{font-size:23px;font-weight:600}
+.sk-pad button small{font-size:10.5px;color:var(--txt3);min-height:12px}
+.sk-pad button.full{opacity:.35}
+.sk-pad button:active,.sk-tools button:active{transform:scale(.95)}
 /* Notes */
 .nt-wrap{position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;background:#0B1128;color:var(--txt);
   padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));animation:mbgIn 160ms ease-out}
@@ -6939,11 +6939,11 @@ function openGames(){
   gmHome();
   gmLoadRec().then(()=>{ if(_gm.view==='home') gmHome(); });
 }
-function gmClose(){ tbStop(); sdStop(); const o=document.getElementById('gmWrap'); if(o) o.remove(); unlockPageScroll(); _gm.view='home'; }
+function gmClose(){ tbStop(); sdSave(); sdStop(); const o=document.getElementById('gmWrap'); if(o) o.remove(); unlockPageScroll(); _gm.view='home'; }
 function gmTop(title, right, back){
   return '<div class="nt-top"><button class="pad-x" onclick="'+(back?'gmBack()':'gmClose()')+'" aria-label="'+(back?'Back to games':'Close')+'"><i class="ti '+(back?'ti-arrow-left':'ti-x')+'"></i></button><b>'+title+'</b>'+(right||'')+'</div>';
 }
-function gmBack(){ tbStop(); sdStop(); gmHome(); }
+function gmBack(){ tbStop(); sdSave(); sdStop(); gmHome(); }
 function gmHome(){
   const o=document.getElementById('gmWrap'); if(!o) return;
   _gm.view='home';
@@ -6959,12 +6959,13 @@ function gmHome(){
 }
 
 // ════════ BLOCKS ════════
-const TB_W=10, TB_H=20;
+const TB_W=12, TB_H=24;          // smaller blocks than the classic 10×20, same board size
 const TB_SHAPES={
   I:[[0,1],[1,1],[2,1],[3,1]], O:[[1,0],[2,0],[1,1],[2,1]], T:[[1,0],[0,1],[1,1],[2,1]],
   S:[[1,0],[2,0],[0,1],[1,1]], Z:[[0,0],[1,0],[1,1],[2,1]], J:[[0,0],[0,1],[1,1],[2,1]], L:[[2,0],[0,1],[1,1],[2,1]]
 };
-const TB_COL={ I:'#38bdf8', O:'#facc15', T:'#c084fc', S:'#4ade80', Z:'#f87171', J:'#60a5fa', L:'#fb923c', G:'#64748b' };
+// Soft, muted colours that are easy on the eyes (no bright neon on black).
+const TB_COL={ I:'#7fb0c4', O:'#d4bf82', T:'#a99cc6', S:'#8fb996', Z:'#cc9a90', J:'#8fa3c4', L:'#d2aa82', G:'#4b5568' };
 const TB_GRAV=[0,800,640,500,370,250];          // ms per row for speed 1…5
 let _tb=null;
 function tbSetup(){
@@ -6983,7 +6984,7 @@ function tbSetup(){
 function tbPick(k,v){ const p=gmPrefs(); p[k]=v; gmSavePrefs(p); tbSetup(); }
 function tbBag(){ const a=Object.keys(TB_SHAPES); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function tbNextType(){ if(!_tb.bag.length) _tb.bag=tbBag(); return _tb.bag.pop(); }
-function tbPiece(type){ return { type, cells:TB_SHAPES[type].map(c=>[...c]), x:3, y:type==='I'?-1:0 }; }
+function tbPiece(type){ return { type, cells:TB_SHAPES[type].map(c=>[...c]), x:Math.floor(TB_W/2)-2, y:type==='I'?-1:0 }; }
 function tbStart(){
   const p=gmPrefs();
   const grid=Array.from({length:TB_H},()=>Array(TB_W).fill(null));
@@ -7088,22 +7089,22 @@ function tbDraw(){
   const cv=document.getElementById('tbCv'); if(!cv||!_tb) return;
   const c=cv.getContext('2d'), s=_tb.cell, d=_tb.dpr;
   c.setTransform(d,0,0,d,0,0);
-  c.fillStyle='#070b1d'; c.fillRect(0,0,s*TB_W,s*TB_H);
-  c.strokeStyle='rgba(255,255,255,.045)'; c.lineWidth=1;
+  c.fillStyle='#161c2c'; c.fillRect(0,0,s*TB_W,s*TB_H);
+  c.strokeStyle='rgba(255,255,255,.035)'; c.lineWidth=1;
   for(let x=1;x<TB_W;x++){ c.beginPath(); c.moveTo(x*s+.5,0); c.lineTo(x*s+.5,s*TB_H); c.stroke(); }
   for(let y=1;y<TB_H;y++){ c.beginPath(); c.moveTo(0,y*s+.5); c.lineTo(s*TB_W,y*s+.5); c.stroke(); }
   const cellAt=(x,y,col,alpha)=>{ c.globalAlpha=alpha||1; c.fillStyle=col; const r=Math.max(2,s*.16);
     c.beginPath(); c.roundRect ? c.roundRect(x*s+1,y*s+1,s-2,s-2,r) : c.rect(x*s+1,y*s+1,s-2,s-2); c.fill();
-    if(!alpha||alpha===1){ c.fillStyle='rgba(255,255,255,.22)'; c.fillRect(x*s+3,y*s+3,s-6,Math.max(2,s*.14)); }
+    if(!alpha||alpha===1){ c.fillStyle='rgba(255,255,255,.10)'; c.fillRect(x*s+3,y*s+3,s-6,Math.max(1.5,s*.10)); }
     c.globalAlpha=1; };
   for(let y=0;y<TB_H;y++) for(let x=0;x<TB_W;x++) if(_tb.grid[y][x]) cellAt(x,y,TB_COL[_tb.grid[y][x]]);
   if(!_tb.over){
     const p=_tb.cur; let gy=p.y; while(tbFits(p.cells,p.x,gy+1)) gy++;
-    for(const [cx,cy] of p.cells) if(gy+cy>=0) cellAt(p.x+cx,gy+cy,TB_COL[p.type],0.22);                // where it will land
+    for(const [cx,cy] of p.cells) if(gy+cy>=0) cellAt(p.x+cx,gy+cy,TB_COL[p.type],0.16);                // where it will land
     for(const [cx,cy] of p.cells) if(p.y+cy>=0) cellAt(p.x+cx,p.y+cy,TB_COL[p.type]);
   }
   const n=document.getElementById('tbNext');
-  if(n){ const x=n.getContext('2d'); x.clearRect(0,0,88,66); const sh=TB_SHAPES[_tb.next], q=18;
+  if(n){ const x=n.getContext('2d'); x.clearRect(0,0,88,66); const sh=TB_SHAPES[_tb.next], q=16;
     const minX=Math.min(...sh.map(a=>a[0])), maxX=Math.max(...sh.map(a=>a[0])), minY=Math.min(...sh.map(a=>a[1])), maxY=Math.max(...sh.map(a=>a[1]));
     const ox=(88-(maxX-minX+1)*q)/2-minX*q, oy=(66-(maxY-minY+1)*q)/2-minY*q;
     x.fillStyle=TB_COL[_tb.next]; sh.forEach(([a,b])=>{ x.beginPath(); x.roundRect?x.roundRect(ox+a*q+1,oy+b*q+1,q-2,q-2,3):x.rect(ox+a*q+1,oy+b*q+1,q-2,q-2); x.fill(); }); }
@@ -7138,15 +7139,43 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden && _tb &&
 // ════════ SUDOKU ════════
 const SD_GIVENS={ beginner:38, advanced:30, expert:25 };
 let _sd=null;
+// The unfinished puzzle is kept on this device (every move, and when the
+// app is closed), so it can be continued later. Solving it or starting a
+// new one replaces it.
+const SD_SAVE='org:sudokuSave';
+function sdSave(){
+  if(!_sd || _sd.done) return;
+  try{ localStorage.setItem(SD_SAVE, JSON.stringify({ level:_sd.level, sol:_sd.sol, given:_sd.given, val:_sd.val, notes:_sd.notes.map(x=>[...x]), elapsed:Date.now()-_sd.start, at:Date.now() })); }catch(e){}
+}
+function sdSaved(){ try{ const g=JSON.parse(localStorage.getItem(SD_SAVE)||'null'); return g && Array.isArray(g.val) && g.val.length===81 ? g : null; }catch(e){ return null; } }
+function sdForget(){ try{ localStorage.removeItem(SD_SAVE); }catch(e){} }
+function sdResume(){
+  const g=sdSaved(); if(!g) return sdStart();
+  _sd={ level:g.level, sol:g.sol, given:g.given, val:g.val, notes:g.notes.map(a=>new Set(a)), sel:-1, noteMode:false, checked:false, start:Date.now()-(g.elapsed||0), tick:null, done:false, checks:0 };
+  _gm.view='sd'; sdLayout(); sdTick();
+}
+function sdTick(){
+  clearInterval(_sd.tick);
+  _sd.tick=setInterval(()=>{ const t=document.getElementById('sdTime'); if(t && _sd && !_sd.done){ t.textContent=gmTime((Date.now()-_sd.start)/1000); if(Math.round((Date.now()-_sd.start)/1000)%10===0) sdSave(); } }, 1000);
+}
+// Time only counts while you're playing: leaving the app saves and stops the clock.
+document.addEventListener('visibilitychange', ()=>{
+  if(!_sd || _sd.done || _gm.view!=='sd') return;
+  if(document.hidden){ _sd.hiddenAt=Date.now(); sdSave(); }
+  else if(_sd.hiddenAt){ _sd.start+=Date.now()-_sd.hiddenAt; _sd.hiddenAt=0; }
+});
+window.addEventListener('pagehide', ()=>sdSave());
 function sdSetup(){
   const o=document.getElementById('gmWrap'); if(!o) return;
-  sdStop(); _gm.view='sdsetup';
-  const p=gmPrefs(), s=(_gm.rec||{}).sudoku||{};
+  sdSave(); sdStop(); _gm.view='sdsetup';
+  const p=gmPrefs(), s=(_gm.rec||{}).sudoku||{}, sv=sdSaved();
+  const filled=sv?sv.val.filter(Boolean).length:0;
   const lv=[['beginner','Beginner','Lots of numbers to start with'],['advanced','Advanced','Fewer numbers, more thinking'],['expert','Expert','Very few numbers']];
   o.innerHTML=gmTop('Sudoku','',true)+
     '<div class="gm-setup">'+
       '<div class="gm-q">Level</div><div class="gm-levels">'+lv.map(l=>'<button class="'+(l[0]===p.sdLevel?'on':'')+'" onclick="sdPick(\''+l[0]+'\')"><b>'+l[1]+'</b><small>'+l[2]+'</small><em>'+(s[l[0]]&&s[l[0]].best?'Best '+gmTime(s[l[0]].best):'No record yet')+'</em></button>').join('')+'</div>'+
-      '<button class="btn acc gm-go" onclick="sdStart()"><i class="ti ti-player-play"></i> New puzzle</button>'+
+      (sv?'<button class="btn acc gm-go" onclick="sdResume()"><i class="ti ti-player-play"></i> Continue last game · '+sv.level[0].toUpperCase()+sv.level.slice(1)+' · '+gmTime((sv.elapsed||0)/1000)+'</button>':'')+
+      '<button class="btn '+(sv?'':'acc ')+'gm-go" onclick="'+(sv?'sdForget();':'')+'sdStart()"><i class="ti ti-plus"></i> New puzzle</button>'+
       '<div class="gm-help">Tap a square, then a number. <b>Notes</b> writes small pencil marks. <b>Check</b> shows which numbers are right or wrong.</div>'+
     '</div>';
 }
@@ -7190,31 +7219,30 @@ function sdStart(){
   setTimeout(()=>{
     const { sol, puz }=sdMake(p.sdLevel);
     _sd={ level:p.sdLevel, sol, given:puz.map(v=>!!v), val:[...puz], notes:Array.from({length:81},()=>new Set()), sel:-1, noteMode:false, checked:false, start:Date.now(), paused:0, tick:null, done:false, checks:0 };
-    _gm.view='sd'; sdLayout();
-    _sd.tick=setInterval(()=>{ const t=document.getElementById('sdTime'); if(t && _sd && !_sd.done) t.textContent=gmTime((Date.now()-_sd.start)/1000); }, 1000);
+    _gm.view='sd'; sdLayout(); sdTick(); sdSave();
   }, 30);
 }
 function sdLayout(){
   const o=document.getElementById('gmWrap'); if(!o||!_sd) return;
   const lvl=_sd.level[0].toUpperCase()+_sd.level.slice(1);
-  o.innerHTML=gmTop('Sudoku','<span class="sd-meta">'+lvl+' · <span id="sdTime">0:00</span></span>',true)+
-    '<div class="sd-play"><div class="sd-grid" id="sdGrid" role="grid" aria-label="Sudoku grid"></div>'+
-      '<div class="sd-msg" id="sdMsg"></div>'+
-      '<div class="sd-tools">'+
+  o.innerHTML=gmTop('Sudoku','<span class="sk-meta">'+lvl+' · <span id="sdTime">'+gmTime((Date.now()-_sd.start)/1000)+'</span></span>',true)+
+    '<div class="sk-play"><div class="sk-grid" id="sdGrid" role="grid" aria-label="Sudoku grid"></div>'+
+      '<div class="sk-msg" id="sdMsg"></div>'+
+      '<div class="sk-tools">'+
         '<button id="sdNoteBtn" onclick="sdToggleNotes()"><i class="ti ti-pencil"></i><span>Notes</span></button>'+
         '<button onclick="sdErase()"><i class="ti ti-eraser"></i><span>Erase</span></button>'+
         '<button onclick="sdCheck()"><i class="ti ti-checks"></i><span>Check</span></button>'+
         '<button onclick="sdNew()"><i class="ti ti-refresh"></i><span>New</span></button>'+
       '</div>'+
-      '<div class="sd-pad" id="sdPad">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button onclick="sdInput('+n+')" data-n="'+n+'"><b>'+n+'</b><small></small></button>').join('')+'</div>'+
+      '<div class="sk-pad" id="sdPad">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button onclick="sdInput('+n+')" data-n="'+n+'"><b>'+n+'</b><small></small></button>').join('')+'</div>'+
     '</div>';
   // Size: as big as the screen allows.
-  const g=document.getElementById('sdGrid'), play=o.querySelector('.sd-play');
-  const spare=play.clientHeight - o.querySelector('.sd-tools').offsetHeight - o.querySelector('.sd-pad').offsetHeight - 76;
+  const g=document.getElementById('sdGrid'), play=o.querySelector('.sk-play');
+  const spare=play.clientHeight - o.querySelector('.sk-tools').offsetHeight - o.querySelector('.sk-pad').offsetHeight - 76;
   const side=Math.floor(Math.max(240, Math.min(play.clientWidth, spare, 560)));
   g.style.width=g.style.height=side+'px';
-  g.innerHTML=Array.from({length:81},(_,i)=>'<div class="sd-c'+((i%9)%3===2&&i%9!==8?' br':'')+((((i/9)|0)%3===2)&&i<72?' bb':'')+'" data-i="'+i+'" role="gridcell" tabindex="-1"></div>').join('');
-  g.addEventListener('pointerdown', e=>{ const c=e.target.closest('.sd-c'); if(c){ e.preventDefault(); sdSelect(+c.dataset.i); } });
+  g.innerHTML=Array.from({length:81},(_,i)=>'<div class="sk-c'+((i%9)%3===2&&i%9!==8?' br':'')+((((i/9)|0)%3===2)&&i<72?' bb':'')+'" data-i="'+i+'" role="gridcell" tabindex="-1"></div>').join('');
+  g.addEventListener('pointerdown', e=>{ const c=e.target.closest('.sk-c'); if(c){ e.preventDefault(); sdSelect(+c.dataset.i); } });
   sdRender();
 }
 function sdPeers(i){ const r=(i/9)|0, c=i%9, br=r-r%3, bc=c-c%3, out=new Set(); for(let k=0;k<9;k++){ out.add(r*9+k); out.add(k*9+c); } for(let a=0;a<3;a++) for(let b=0;b<3;b++) out.add((br+a)*9+bc+b); out.delete(i); return out; }
@@ -7224,16 +7252,16 @@ function sdRender(){
   // Clashes (same number twice in a row/column/box) are always shown.
   const clash=new Set();
   for(let i=0;i<81;i++){ const v=_sd.val[i]; if(!v) continue; for(const p of sdPeers(i)) if(_sd.val[p]===v){ clash.add(i); } }
-  g.querySelectorAll('.sd-c').forEach(el=>{
+  g.querySelectorAll('.sk-c').forEach(el=>{
     const i=+el.dataset.i, v=_sd.val[i];
-    let cls='sd-c'+((i%9)%3===2&&i%9!==8?' br':'')+((((i/9)|0)%3===2)&&i<72?' bb':'');
+    let cls='sk-c'+((i%9)%3===2&&i%9!==8?' br':'')+((((i/9)|0)%3===2)&&i<72?' bb':'');
     if(_sd.given[i]) cls+=' given';
     if(i===sel) cls+=' sel'; else if(peers.has(i)) cls+=' peer';
     if(v && selV && v===selV && i!==sel) cls+=' same';
     if(!_sd.given[i] && v && clash.has(i)) cls+=' clash';
     if(_sd.checked && !_sd.given[i] && v) cls+= v===_sd.sol[i] ? ' ok' : ' bad';
     el.className=cls;
-    el.innerHTML = v ? '<span>'+v+'</span>' : (_sd.notes[i].size ? '<div class="sd-n">'+[1,2,3,4,5,6,7,8,9].map(n=>'<i>'+(_sd.notes[i].has(n)?n:'')+'</i>').join('')+'</div>' : '');
+    el.innerHTML = v ? '<span>'+v+'</span>' : (_sd.notes[i].size ? '<div class="sk-n">'+[1,2,3,4,5,6,7,8,9].map(n=>'<i>'+(_sd.notes[i].has(n)?n:'')+'</i>').join('')+'</div>' : '');
   });
   // How many of each number are still to place.
   document.querySelectorAll('#sdPad button').forEach(b=>{ const n=+b.dataset.n, used=_sd.val.filter(v=>v===n).length; b.querySelector('small').textContent=used>=9?'':9-used; b.classList.toggle('full', used>=9); });
@@ -7250,9 +7278,9 @@ function sdInput(n){
     _sd.val[i] = _sd.val[i]===n ? 0 : n;
     if(_sd.val[i]) for(const p of sdPeers(i)) _sd.notes[p].delete(n);     // tidy pencil marks
   }
-  sdMsg(''); sdRender(); sdIsDone();
+  sdMsg(''); sdRender(); sdSave(); sdIsDone();
 }
-function sdErase(){ if(!_sd||_sd.sel<0||_sd.given[_sd.sel]) return; _sd.val[_sd.sel]=0; _sd.notes[_sd.sel].clear(); _sd.checked=false; sdRender(); }
+function sdErase(){ if(!_sd||_sd.sel<0||_sd.given[_sd.sel]) return; _sd.val[_sd.sel]=0; _sd.notes[_sd.sel].clear(); _sd.checked=false; sdRender(); sdSave(); }
 function sdToggleNotes(){ if(!_sd) return; _sd.noteMode=!_sd.noteMode; sdRender(); }
 function sdMsg(h){ const m=document.getElementById('sdMsg'); if(m) m.innerHTML=h; }
 // Check: every number you've placed is marked right (green) or wrong (red).
@@ -7266,7 +7294,7 @@ function sdCheck(){
 }
 async function sdIsDone(){
   if(_sd.val.some((v,i)=>v!==_sd.sol[i])) return;
-  _sd.done=true; clearInterval(_sd.tick);
+  _sd.done=true; clearInterval(_sd.tick); sdForget();
   const secs=Math.round((Date.now()-_sd.start)/1000);
   _sd.checked=true; sdRender();
   const old=(((_gm.rec||{}).sudoku||{})[_sd.level]||{}).best;
@@ -7275,7 +7303,7 @@ async function sdIsDone(){
     ' <button class="sh-chip" onclick="sdNew()">Another one</button>');
   await gmPostRec('sudoku', { level:_sd.level, secs });
 }
-function sdNew(){ sdStop(); sdStart(); }
+function sdNew(){ sdStop(); sdForget(); sdStart(); }
 function sdStop(){ if(_sd) clearInterval(_sd.tick); _sd=null; }
 document.addEventListener('keydown', e=>{
   if(_gm.view!=='sd' || !_sd || !document.getElementById('gmWrap')) return;
@@ -8051,7 +8079,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-29-games';
+const APP_BUILD='2026-10-29-games-soft';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
