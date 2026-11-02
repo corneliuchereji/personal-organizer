@@ -1278,6 +1278,134 @@ select option:checked{background:#2E3A78;color:#fff}
 .sk-pad button small{font-size:10.5px;color:var(--txt3);min-height:12px}
 .sk-pad button.full{opacity:.35}
 .sk-pad button:active,.sk-tools button:active{transform:scale(.95)}
+.bt-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.bt-tabs button{flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:13px;cursor:pointer}
+.bt-tabs button.on{background:rgba(247,147,26,.16);border-color:rgba(247,147,26,.6);color:#fde4c4}
+.bt-tabs small{font-size:11px;color:var(--txt3)}
+.bt-dot{width:8px;height:8px;border-radius:50%;background:#64748b}.bt-dot.on{background:#4ade80}
+.bt-evbot{display:inline-block;font-size:10.5px;font-weight:700;color:#F7931A;margin-right:3px}
+
+/* Dev tracker */
+.dv-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:30px;max-width:760px;width:100%;margin:0 auto}
+.dv-sum{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.3)}
+.dv-sum b{font-size:22px;display:block}.dv-sum small{color:var(--txt2);font-size:12px}
+.dv-bar{display:block;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:5px 0 3px;flex:1}
+.dv-bar.big{height:10px}
+.dv-bar i{display:block;height:100%;background:#2dd4bf;border-radius:99px}
+.dv-sec{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;color:var(--txt2);margin:16px 2px 8px}
+.dv-sec i{color:#2dd4bf}.dv-sec small{font-weight:400;color:var(--txt3)}
+.dv-row,.dv-phase,.dv-card,.dv-dep{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--txt);font:inherit;font-size:13.5px;cursor:pointer;margin-bottom:6px}
+.dv-row .dv-t{flex:1;min-width:0}
+.dv-id,.dv-pid{flex:none;font-weight:700;font-size:12px;color:#5eead4;font-variant-numeric:tabular-nums}
+.dv-pid{width:30px}
+.dv-pn{flex:1;min-width:0;display:flex;flex-direction:column}
+.dv-pn b{font-size:14px}.dv-pn em{font-style:normal;font-size:11px;color:#2dd4bf;font-weight:650}
+.dv-pn small{font-size:11.5px;color:var(--txt3)}
+.dv-phase.cur{border-color:rgba(45,212,191,.6);background:rgba(45,212,191,.08)}
+.dv-phase.full .dv-bar i{background:#4ade80}
+.dv-chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:650;padding:2px 8px;border-radius:99px;color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);white-space:nowrap}
+.dv-chip.sm{font-size:10.5px;padding:1px 6px}
+.dv-own{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;color:var(--txt2)}
+.dv-card{flex-direction:column;align-items:stretch;gap:5px}
+.dv-card b{font-size:14px;font-weight:600}
+.dv-ch{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.dv-wait{color:#fca5a5;font-size:12px}
+.dv-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.dv-sel{height:38px;border-radius:12px;border:1px solid var(--border);background:#16203d;color:var(--txt);font:inherit;font-size:14px;padding:0 8px;max-width:100%}
+.dv-sel option{background:#16203d;color:#e8ecf8}
+.dv-count{font-size:12px;color:var(--txt3);margin:4px 2px 8px}
+.dv-empty{font-size:13px;color:var(--txt3);padding:6px 2px}
+.dv-log{font-size:12.5px;padding:6px 2px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.dv-log small{color:var(--txt3);font-size:11px}
+.dv-head{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.dv-head > b{font-size:19px}.dv-head > span{font-size:13px;color:var(--txt2)}
+.dv-warn{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-radius:12px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.35);color:#fecaca;font-size:13px;margin:8px 0}
+.dv-f{margin:12px 0}
+.dv-f > small{display:block;font-size:11.5px;font-weight:650;color:var(--txt3);margin-bottom:5px;text-transform:none}
+.dv-f p{font-size:14px;line-height:1.5;margin:0}
+.dv-f ul{margin:0;padding-left:20px;font-size:14px;line-height:1.5}
+.dv-seg{display:flex;gap:6px;flex-wrap:wrap}
+.dv-seg button{padding:7px 12px;border-radius:99px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--txt2);font:inherit;font-size:13px;cursor:pointer}
+.dv-seg button.on{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);font-weight:650}
+.dv-dep{font-size:13px}
+.dv-note{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);margin-bottom:6px}
+.dv-note p{font-size:13.5px}.dv-note small{font-size:11px;color:var(--txt3)}
+.dv-f textarea,.dv-addf textarea{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:16px;padding:9px 11px;margin:6px 0;resize:vertical}
+.dv-add{width:100%;justify-content:center;margin-top:8px}
+.dv-addf{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:12px;border-radius:14px;border:1px solid var(--border)}
+
+/* Trading bot dashboard v2 */
+.bt-views{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.bt-views button,.bt-chips button{flex:none;display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--txt2);font:inherit;font-size:12.5px;cursor:pointer}
+.bt-views button.on,.bt-chips button.on{background:rgba(247,147,26,.15);border-color:rgba(247,147,26,.55);color:#fde4c4}
+.bt-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:6px 0}
+.bt-chips.wrap{flex-wrap:wrap;overflow:visible}
+.bt-chips b{color:var(--txt);font-weight:700}
+.bt-modes{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bt-modes small{font-size:11px;color:var(--txt3)}
+.bt-orig{display:inline-flex;font-size:11px;font-weight:650;padding:2px 8px;border-radius:99px;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.bt-cfg{margin-top:8px;font-size:12px;color:var(--txt2);display:flex;gap:6px;align-items:center}
+.bt-sl{margin-top:14px !important}
+.bt-grid.three{grid-template-columns:repeat(3,1fr)}
+.bt-tile small span{color:var(--txt3);font-weight:400}
+.bt-tile.up b{color:#4ade80}.bt-tile.down b{color:#f87171}
+.bt-pers{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.bt-per{padding:8px 9px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid var(--border);display:flex;flex-direction:column;gap:1px;min-width:0}
+.bt-per small{font-size:10.5px;color:var(--txt3)}.bt-per b{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}.bt-per em{font-style:normal;font-size:11px;color:var(--txt2)}
+.bt-per.up b,.bt-per.up em{color:#4ade80}.bt-per.down b,.bt-per.down em{color:#f87171}
+@media (max-width:420px){ .bt-pers{grid-template-columns:repeat(2,1fr)} .bt-grid.three{grid-template-columns:repeat(2,1fr)} }
+.bt-budget{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid var(--border)}
+.bt-bbar{display:flex;height:12px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.06)}
+.bt-bbar i{display:block;height:100%}
+.bt-bbar .al,.bt-bleg .al{background:#F7931A}.bt-bbar .rs,.bt-bleg .rs{background:#c084fc}.bt-bbar .av,.bt-bleg .av{background:#4ade80}
+.bt-bleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:12px;color:var(--txt2)}
+.bt-bleg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+.bt-bfoot{font-size:12px;color:var(--txt3);margin-top:6px}.bt-mis{color:#fca5a5}
+.bt-states{display:flex;flex-wrap:wrap;gap:6px}
+.bt-stc{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:99px;border:1px solid color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--txt);font:inherit;font-size:12.5px;cursor:pointer}
+.bt-stc b{color:var(--c)}
+.bt-mk{font-size:11.5px;color:var(--txt3)}.bt-mk .b{color:#4ade80;font-style:normal}.bt-mk .s{color:#fb923c;font-style:normal}
+.fx-axis{display:flex;justify-content:space-between;gap:6px}
+.bt-honest{margin-top:14px;font-size:11.5px;color:var(--txt3);text-align:center}
+.bt-simh{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.bt-simh > b{font-size:16px}.bt-simh > span{font-size:12.5px;color:var(--txt2)}
+.bt-params{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.bt-params span{font-size:12px;padding:3px 8px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--border)}
+.bt-params small{color:var(--txt3)}
+.bt-tblw{overflow-x:auto;margin:6px 0}
+.bt-tbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.bt-tbl th{font-size:11px;font-weight:600;color:var(--txt3);text-align:right;padding:5px 6px;border-bottom:1px solid var(--border);white-space:nowrap}
+.bt-tbl td{text-align:right;padding:7px 6px;border-bottom:1px solid var(--border);white-space:nowrap}
+.bt-tbl th:first-child,.bt-tbl td:first-child{text-align:left;white-space:normal}
+.bt-tbl tr.best td{background:rgba(74,222,128,.07)}.bt-tbl tr.worst td{background:rgba(248,113,113,.07)}
+.bt-tbl td.up{color:#4ade80}.bt-tbl td.down{color:#f87171}
+.bt-sw2{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.bt-bw{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:3px}.bt-bw.b{background:rgba(74,222,128,.2);color:#86efac}.bt-bw.w{background:rgba(248,113,113,.2);color:#fca5a5}
+.bt-hyp{color:#fde68a}
+.bt-hypnote{margin-top:8px;padding:9px 12px;border-radius:12px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);font-size:12.5px;color:#fde68a;line-height:1.45}
+.bt-vod{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--txt3)}
+.bt-vod input{height:40px;border-radius:12px;border:1px solid var(--border);background:#16203d;color:var(--txt);font:inherit;font-size:16px;padding:0 10px;color-scheme:dark}
+.bt-vodn{font-size:11.5px;color:var(--txt3);margin-top:4px;display:flex;align-items:center;gap:6px}
+.bt-proj{margin-top:8px;display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:12px;border:1px dashed rgba(251,191,36,.5)}
+.bt-proj > small{font-size:11.5px;color:var(--txt3)}
+.bt-notes{margin-top:10px;font-size:12.5px;color:var(--txt2);line-height:1.5}
+.bt-share{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--txt2);padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.035);margin:6px 0}
+.bt-share i{color:#F7931A}
+.bt-shh{font-weight:650;color:var(--txt);display:flex;align-items:center;gap:6px}
+.bt-items{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.bt-item{border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.035)}
+.bt-item.open{border-color:rgba(247,147,26,.45)}
+.bt-irow{display:flex;align-items:center;gap:8px;width:100%;padding:9px 11px;border:0;background:transparent;color:var(--txt);font:inherit;text-align:left;cursor:pointer}
+.bt-in{flex:1;min-width:0;display:flex;flex-direction:column}.bt-in b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt-in small{font-size:11px;color:var(--txt3)}
+.bt-ist{flex:none;font-size:10.5px;font-weight:650;padding:2px 7px;border-radius:99px;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent)}
+.bt-ip{flex:none;display:flex;flex-direction:column;align-items:flex-end}.bt-ip small{font-size:11px;color:var(--txt3)}.bt-ip b{font-size:13px;font-variant-numeric:tabular-nums}
+.bt-ip b.up{color:#4ade80}.bt-ip b.down{color:#f87171}
+.bt-tg{display:flex;flex-wrap:wrap;gap:4px;padding:0 11px 9px}
+.bt-tg span{font-size:10.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--border);color:var(--txt3)}
+.bt-tg span.hit{border-color:rgba(74,222,128,.6);color:#86efac;background:rgba(74,222,128,.1)}
+.bt-idet{padding:0 11px 11px}
+.bt-kv{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.bt-kv div{display:flex;gap:8px;font-size:12.5px}.bt-kv small{flex:none;width:76px;color:var(--txt3)}.bt-kv b{font-weight:500}
 /* Notes */
 .nt-wrap{position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;background:#0B1128;color:var(--txt);
   padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));animation:mbgIn 160ms ease-out}
@@ -4565,6 +4693,7 @@ const WIDGETS_DEFAULT=[
   {id:'w_bot',name:'Trading bot', desc:'Your BTC bot: value, trades, whether it\u2019s running', action:'bot', icon:'ti-currency-bitcoin'},
   {id:'w_fx',name:'Currency', desc:'BNR exchange rates and converter', action:'fx', icon:'ti-arrows-exchange'},
   {id:'w_worship',name:'Worship schedule', desc:'Read the monthly team plan into the calendar', action:'worship', icon:'ti-music'},
+  {id:'w_dev',name:'Dev tracker', desc:'Investment Bot plan: phases, tasks, tests', action:'dev', icon:'ti-list-check'},
   {id:'w_games',name:'Games', desc:'Blocks and Sudoku', action:'games', icon:'ti-device-gamepad-2'},
   {id:'w_verse',name:'Verse wallpaper', desc:'Black 4K wallpapers: a Bible verse in English, Hebrew and Romanian, or a quote', action:'verse', icon:'ti-photo-heart'},
   {id:'w_notes',name:'Notes', desc:'Your notes on every device, behind a PIN or Face ID', action:'notes', icon:'ti-notes'},
@@ -4632,9 +4761,9 @@ document.addEventListener('click', e=>{
 window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
-  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes(), verse: ()=>openVerse(), games: ()=>openGames(), bot: ()=>openBot() };
+  clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes(), verse: ()=>openVerse(), games: ()=>openGames(), dev: ()=>openDev(), bot: ()=>openBot() };
 // Each built-in widget's accent, used for its tile in the launcher.
-const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15', verse:'#E2C08D', games:'#a78bfa', bot:'#F7931A' };
+const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15', verse:'#E2C08D', games:'#a78bfa', dev:'#2dd4bf', bot:'#F7931A' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
@@ -4812,6 +4941,7 @@ function widgetPeek(w){
     if(w.action==='notes' && _nt.st && _nt.st.pinSet){ return '🔒 '+(_nt.st.count||0)+' note'+(_nt.st.count===1?'':'s'); }
     if(w.action==='plugs' && _pl && Array.isArray(_pl.plugs) && _pl.plugs.length){ const on=_pl.plugs.filter(p=>p.on); const W=on.reduce((a,p)=>a+(p.watts||0),0); return on.length ? on.length+' on'+(W?' · '+plFmtW(W):'') : 'All off'; }
     if(w.action==='remote' && _rm && !_rm.error){ return !_rm.paired ? 'Not set up' : (_rm.online ? (_rm.host||'Laptop')+' online' : 'Laptop offline'); }
+    if(w.action==='dev' && _dv.data && _dv.data.tasks){ const t=_dv.data.tasks; return t.filter(x=>x.status==='done').length+' / '+t.length+' done'+(_dv.data.current?' · '+_dv.data.current:''); }
     if(w.action==='games' && _gm.rec && _gm.rec.tetris && _gm.rec.tetris.best){ return 'Blocks best '+_gm.rec.tetris.best.toLocaleString('en-GB'); }
     if(w.action==='bot' && _bt){ if(!_bt.connected) return 'Not connected'; if(_bt.status) return btMoney(_bt.status.equity)+' \u00b7 '+btPct(_bt.status.pnlPct)+(_bt.running?'':' \u00b7 not running'); }
     if(w.action==='fx' && _fx && _fx.rates){ const f=S.fxFrom||'EUR', t=S.fxTo||'RON'; const v=fxRate(f,t); if(v) return '1 '+f+' = '+fxFmt(v)+' '+t; }
@@ -4844,7 +4974,7 @@ async function loadBot(){
   return _bt;
 }
 // Opening the widget shows what's new (marked "New") and resets the counter.
-let _btSince=0;
+let _btSince=0, _btTab=null, _btCur=null;
 async function openBot(){
   showModal('Trading bot', '<div id="btBody" class="bt-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
@@ -4858,12 +4988,13 @@ setTimeout(()=>loadBot(), 2500);
 function btEventsHtml(newN){
   const ev=(_bt&&_bt.events)||[];
   if(!ev.length) return '';
-  const ic=k=>k==='trade'?'ti-arrows-exchange':k==='alert'?'ti-alert-triangle':'ti-info-circle';
+  const ic=k=>k==='trade'?'ti-arrows-exchange':k==='alert'?'ti-alert-triangle':k==='target'?'ti-target-arrow':k==='sim'?'ti-chart-line':'ti-info-circle';
+  const multi=((_bt&&_bt.bots)||[]).length>1;
   return '<div class="slabel" style="margin-top:12px"><i class="ti ti-bell"></i> Bot messages'+(newN?' <span class="bt-newn">'+newN+' new since last time</span>':'')+'</div>'+
     '<div class="bt-evs">'+ev.slice(0,10).map(e=>{
       const isNew=e.at>_btSince;
       const when=new Date(e.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      return '<div class="bt-ev'+(isNew?' new':'')+(e.kind==='alert'?' alert':'')+'"><i class="ti '+ic(e.kind)+'"></i><span><b>'+escHtml(e.title)+'</b>'+(e.body?'<small>'+escHtml(e.body)+'</small>':'')+'<em>'+escHtml(when)+'</em></span>'+(isNew?'<span class="bt-newtag">New</span>':'')+'</div>';
+      return '<div class="bt-ev'+(isNew?' new':'')+(e.kind==='alert'?' alert':'')+'"><i class="ti '+ic(e.kind)+'"></i><span><b>'+(multi&&e.botName?'<small class="bt-evbot">'+escHtml(e.botName)+'</small> ':'')+escHtml(e.title)+'</b>'+(e.body?'<small>'+escHtml(e.body)+'</small>':'')+'<em>'+escHtml(when)+'</em></span>'+(isNew?'<span class="bt-newtag">New</span>':'')+'</div>';
     }).join('')+'</div>';
 }
 function btRender(newN){
@@ -4876,25 +5007,76 @@ function btRender(newN){
       '<p>Open Settings → Private → <b>Trading bot</b>, create a key and copy the two lines it shows into the bot’s <code>.env</code> file. The bot then reports here every 5 minutes.</p></div></div>';
     return;
   }
-  if(!b.status){
+  // One tab per bot (main, practice-btc, practice-eth …).
+  const bots=(b.bots&&b.bots.length)?b.bots.filter(x=>x.status):(b.status?[{ id:'main', name:'Main bot', role:'main', symbol:'BTC/EUR', status:b.status, trades:b.trades, equity:b.equity, lastSeen:b.lastSeen, running:b.running }]:[]);
+  if(!bots.length){
     el.innerHTML='<div class="bt-empty"><i class="ti ti-clock"></i><div><b>Waiting for the first report</b><p>The key is set. Start the bot on the PC (porneste-bot.bat) — it reports within a minute.</p></div></div>';
     return;
   }
-  const st=b.status, up=(st.pnl||0)>0.004, down=(st.pnl||0)<-0.004;
-  const pos = st.halted ? '<span style="color:var(--red)">Stopped</span>' : (st.position==='btc' ? 'In BTC' : 'In cash');
-  const run = b.running
-    ? '<span class="bt-run on"><i></i>Running · last report '+btAgo(b.lastSeen)+'</span>'
-    : '<span class="bt-run off"><i></i>Not running · last report '+btAgo(b.lastSeen)+'</span>';
-  const tile=(k,v)=>'<div class="bt-tile"><small>'+k+'</small><b>'+v+'</b></div>';
-  const trades=(b.trades||[]).slice(-6).reverse();
-  el.innerHTML=
-    '<div class="bt-head">'+run+'<span class="bt-mode '+(st.mode==='live'?'live':'')+'">'+(st.mode==='live'?'Real money':'Paper money')+'</span></div>'+
+  const cur=bots.find(x=>x.id===_btTab)||bots[0]; _btTab=cur.id; _btCur=cur;
+  const tabs=bots.length>1?'<div class="bt-tabs" role="tablist">'+bots.map(x=>'<button role="tab" aria-selected="'+(x.id===cur.id)+'" class="'+(x.id===cur.id?'on':'')+'" onclick="_btTab=\''+escHtml(x.id)+'\';btRender()"><span class="bt-dot '+(x.running?'on':'off')+'"></span>'+escHtml(x.name)+(x.role==='practice'?' <small>practice</small>':'')+'</button>').join('')+'</div>':'';
+  // Inside a bot: Overview · Simulations · Items (the last two only when the bot sends them).
+  const sims=cur.simulations||[], items=cur.items||[];
+  if(_btView==='sims'&&!sims.length || _btView==='items'&&!items.length) _btView='overview';
+  const views=(sims.length||items.length)?'<div class="bt-views">'+[['overview','Overview','ti-layout-dashboard'],sims.length&&['sims','Simulations ('+sims.length+')','ti-chart-line'],items.length&&['items','Items ('+items.length+')','ti-coins']].filter(Boolean)
+    .map(v=>'<button class="'+(_btView===v[0]?'on':'')+'" onclick="_btView=\''+v[0]+'\';btRender()"><i class="ti '+v[2]+'"></i> '+v[1]+'</button>').join('')+'</div>':'';
+  const main=_btView==='sims'?btSimsHtml(cur):_btView==='items'?btItemsHtml(cur):btOverviewHtml(b,cur,newN);
+  el.innerHTML=tabs+views+main+'<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
+  if(_btView==='overview') btChart();
+  if(_btView==='sims') btSimChart();
+}
+let _btView='overview', _btChartKind='value', _btSim=null, _btItemsF='all', _btItemOpen=null;
+// Where a number comes from: live, cached, historical or hypothetical.
+function btOrigin(o){
+  if(!o) return '';
+  const m={ live:['Live','#4ade80'], cached:['Cached','#94a3b8'], historical:['Historical','#60a5fa'], hypothetical:['Hypothetical','#fbbf24'] }[o];
+  return m?'<span class="bt-orig" style="--c:'+m[1]+'">'+m[0]+'</span>':'';
+}
+// Tiny coin prices (0.0001 €) keep their digits.
+function btPrice(v){ if(v==null||!isFinite(v)) return '–'; const a=Math.abs(v); return a>=1||a===0 ? btMoney(v) : (+v).toPrecision(3).replace(/\.?0+$/,'')+' €'; }
+function btSigned(v){ return v==null||!isFinite(v) ? '–' : (v>0?'+':'')+btMoney(v); }
+function btCls(v){ return v==null ? '' : v>0.004 ? 'up' : v<-0.004 ? 'down' : ''; }
+function btOverviewHtml(b,cur,newN){
+  const st=cur.status, coin=String(cur.symbol||'BTC/EUR').split('/')[0], up=(st.pnl||0)>0.004, down=(st.pnl||0)<-0.004;
+  const pos = st.halted ? '<span style="color:var(--red)">Stopped</span>' : (st.position==='btc' ? 'In '+escHtml(coin) : 'In cash');
+  const run = cur.running
+    ? '<span class="bt-run on"><i></i>Running · last report '+btAgo(cur.lastSeen)+'</span>'
+    : '<span class="bt-run off"><i></i>Not running · last report '+btAgo(cur.lastSeen)+'</span>';
+  const tile=(k,v,cls)=>'<div class="bt-tile '+(cls||'')+'"><small>'+k+'</small><b>'+v+'</b></div>';
+  const has=k=>st[k]!=null;
+  const trades=(cur.trades||[]).slice(-6).reverse();
+  const pf=cur.perf||{};
+  const per=(lbl,c)=>'<div class="bt-per '+(c?btCls(c.abs):'')+'"><small>'+lbl+'</small><b>'+(c?btSigned(c.abs):'–')+'</b><em>'+(c&&c.pct!=null?btPct(c.pct):(c?'':'not enough history'))+'</em></div>';
+  // A. Profit & loss — realized and unrealized always separate.
+  const secA='<div class="slabel bt-sl"><i class="ti ti-chart-arrows-vertical"></i> Profit &amp; loss</div>'+
+    ((has('pnlRealized')||has('pnlUnrealized'))?'<div class="bt-grid three">'+tile('Realized <span>(closed)</span>',btSigned(st.pnlRealized),btCls(st.pnlRealized))+tile('Unrealized <span>(open)</span>',btSigned(st.pnlUnrealized),btCls(st.pnlUnrealized))+tile('Total',btSigned(st.pnl),btCls(st.pnl))+'</div>':'')+
+    '<div class="bt-pers">'+per('Last 24 h',pf.day)+per('7 days',pf.week)+per('30 days',pf.month)+per('Overall',pf.overall)+'</div>';
+  // B. Investments
+  const secB=(has('invested')||has('investCount'))?'<div class="slabel bt-sl"><i class="ti ti-pig-money"></i> Investments</div><div class="bt-grid three">'+
+    tile('Invested',btMoney(st.invested))+tile('Allocated',btMoney(st.allocated))+tile('Available',btMoney(st.available))+
+    tile('Withdrawn',btMoney(st.withdrawn))+tile('Buys',st.investCount!=null?st.investCount:'–')+tile('Average per buy',st.invested!=null&&st.investCount?btMoney(st.invested/st.investCount):'–')+'</div>':'';
+  // C. Active budget
+  let secC='';
+  if(st.budget && (has('allocated')||has('available')||has('reserved'))){
+    const B=st.budget, al=st.allocated||0, rs=st.reserved||0, av=st.available!=null?st.available:Math.max(0,B-al-rs);
+    const w=v=>Math.max(0,Math.min(100,v/B*100)).toFixed(1)+'%';
+    secC='<div class="slabel bt-sl"><i class="ti ti-wallet"></i> Budget</div>'+
+      '<div class="bt-budget"><div class="bt-bbar"><i class="al" style="width:'+w(al)+'"></i><i class="rs" style="width:'+w(rs)+'"></i><i class="av" style="width:'+w(av)+'"></i></div>'+
+      '<div class="bt-bleg"><span><i class="al"></i>Active '+btMoney(al)+'</span><span><i class="rs"></i>Reserved '+btMoney(rs)+'</span><span><i class="av"></i>Available '+btMoney(av)+'</span></div>'+
+      '<div class="bt-bfoot">Initial '+btMoney(B)+' · remaining '+btMoney(B-al-rs)+' · in use <b>'+Math.round(al/B*100)+'%</b>'+(Math.abs(al+rs+av-B)>0.05?' <span class="bt-mis">(parts don’t add up to the budget)</span>':'')+'</div></div>';
+  }
+  // D. Items by state
+  const items=cur.items||[];
+  const secD=items.length?'<div class="slabel bt-sl"><i class="ti ti-coins"></i> Items</div><div class="bt-states">'+BT_STATES.map(s=>{ const n=items.filter(i=>i.state===s[0]).length; return n?'<button class="bt-stc" style="--c:'+s[2]+'" onclick="_btView=\'items\';_btItemsF=\''+s[3]+'\';btRender()"><b>'+n+'</b> '+s[1]+'</button>':''; }).join('')+'</div>':'';
+  return '<div class="bt-head">'+run+'<span class="bt-modes">'+btOrigin(st.dataOrigin)+'<span class="bt-mode '+(st.mode==='live'?'live':'')+'">'+(st.mode==='live'?'Real money':'Paper money')+'</span></span></div>'+
     '<div class="bt-hero"><small>Value now</small><b>'+btMoney(st.equity)+'</b>'+
       '<span class="bt-pnl '+(up?'up':down?'down':'')+'">'+(up?'▲':down?'▼':'●')+' '+(st.pnl>0?'+':'')+btMoney(st.pnl)+' · '+btPct(st.pnlPct)+' <em>since the start ('+btMoney(st.budget)+')</em></span></div>'+
     (st.halted && st.note ? '<div class="bt-warn"><i class="ti ti-alert-triangle"></i> '+escHtml(st.note)+'</div>' : '')+
-    '<div class="bt-grid">'+tile('Position',pos)+tile('BTC price',btMoney(st.price))+
-      tile('Bought at',st.position==='btc'&&st.entry?btMoney(st.entry):'–')+
-      tile('Stop-loss at',st.position==='btc'&&st.stop?btMoney(st.stop):'–')+'</div>'+
+    (st.configSummary?'<div class="bt-cfg"><i class="ti ti-adjustments"></i> '+escHtml(st.configSummary)+'</div>':'')+
+    '<div class="bt-grid">'+tile('Position',pos)+tile(escHtml(coin)+' price',btPrice(st.price))+
+      tile('Bought at',st.position==='btc'&&st.entry?btPrice(st.entry):'–')+
+      tile('Stop-loss at',st.position==='btc'&&st.stop?btPrice(st.stop):'–')+'</div>'+
+    secA+secB+secC+secD+
     btEventsHtml(newN)+
     '<div id="btChart"></div>'+
     '<div class="slabel" style="margin-top:12px"><i class="ti ti-arrows-exchange"></i> Recent trades</div>'+
@@ -4902,33 +5084,170 @@ function btRender(newN){
         const dt=new Date(t.time); const when=isNaN(dt)?'':dt.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
         const pnl = t.side==='sell' && t.pnl!=null ? '<span class="bt-tp '+(t.pnl>=0?'up':'down')+'">'+(t.pnl>0?'+':'')+btMoney(t.pnl)+'</span>' : '';
         return '<div class="bt-tr"><span class="bt-side '+t.side+'">'+(t.side==='buy'?'Buy':'Sell')+'</span>'+
-          '<span class="bt-tm"><b>'+btMoney(t.quote)+'</b> at '+btMoney(t.price)+'<small>'+escHtml(when)+(t.reason?' · '+escHtml(t.reason):'')+'</small></span>'+pnl+'</div>';
+          '<span class="bt-tm"><b>'+btMoney(t.quote)+'</b> at '+btPrice(t.price)+'<small>'+escHtml(when)+(t.reason?' · '+escHtml(t.reason):'')+'</small></span>'+pnl+'</div>';
       }).join('')+'</div>' : '<div class="cc-empty">No trades yet.</div>')+
     '<div class="slabel" style="margin-top:12px"><i class="ti ti-sunrise"></i> Morning summary</div>'+
     '<div class="bt-sum"><label class="bt-sw"><input type="checkbox" id="btSumOn" '+(b.summary.on?'checked':'')+' onchange="btSaveSummary()"><span>One notification a day at</span></label>'+
       '<input type="time" id="btSumTime" value="'+escHtml(b.summary.time||'08:00')+'" onchange="btSaveSummary()" aria-label="Summary time">'+
       '<button class="sh-chip bt-chip" onclick="btTestSummary(this)"><i class="ti ti-send"></i> Send now</button></div>'+
     '<div class="cc-foot">'+(st.mode==='live'?'Real money on Revolut X.':'Paper trading: virtual money at real Revolut X prices.')+' Updates every 5 minutes while the bot runs on the PC.</div>';
-  btChart();
 }
-// Bot value vs. simply holding the BTC the budget would have bought on day one.
+// [state, label, colour, items filter]
+const BT_STATES=[['watching','watching','#94a3b8','active'],['bought','bought','#60a5fa','active'],['target_hit','target hit','#4ade80','target'],['sold','sold','#c084fc','sold'],['unsellable','unsellable','#fb923c','unsellable'],['worthless','worthless','#f87171','unsellable']];
+// ── A small reusable line chart (SVG). series: [{pts:[[ms,v]],color,dash,width}], band: {pts:[[ms,lo,hi]],color}, marks: [{t,v,color,shape}]
+function btSvgChart(o){
+  const W=340, H=o.h||120, P=8;
+  const all=[], ts=[];
+  (o.series||[]).forEach(s=>s.pts.forEach(p=>{ ts.push(p[0]); all.push(p[1]); }));
+  if(o.band) o.band.pts.forEach(p=>{ ts.push(p[0]); all.push(p[1],p[2]); });
+  if(o.base!=null) all.push(o.base);
+  if(ts.length<2) return '';
+  const t0=Math.min(...ts), t1=Math.max(...ts), lo=Math.min(...all), hi=Math.max(...all), span=(hi-lo)||Math.abs(hi)||1, tspan=(t1-t0)||1;
+  const x=t=>P+(t-t0)/tspan*(W-2*P), y=v=>P+(H-2*P)*(1-(v-lo)/span);
+  let g='';
+  if(o.base!=null) g+='<line x1="'+P+'" x2="'+(W-P)+'" y1="'+y(o.base).toFixed(1)+'" y2="'+y(o.base).toFixed(1)+'" stroke="rgba(255,255,255,.18)" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>';
+  if(o.band&&o.band.pts.length){
+    const b=o.band.pts;
+    g+='<path d="'+b.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[2]).toFixed(1)).join(' ')+' '+b.slice().reverse().map(p=>'L'+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(' ')+' Z" fill="'+o.band.color+'" opacity=".18"/>';
+  }
+  (o.series||[]).forEach(s=>{ if(s.pts.length<1) return; g+='<path d="'+s.pts.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1)).join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="'+(s.width||2)+'" '+(s.dash?'stroke-dasharray="'+s.dash+'"':'')+' stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'; });
+  (o.marks||[]).forEach(m=>{ if(m.t<t0||m.t>t1) return; const cx=x(m.t), cy=y(m.v); g+= m.shape==='down' ? '<path d="M'+(cx-4)+' '+(cy-5)+' L'+(cx+4)+' '+(cy-5)+' L'+cx+' '+(cy+2)+' Z" fill="'+m.color+'"/>' : '<path d="M'+(cx-4)+' '+(cy+5)+' L'+(cx+4)+' '+(cy+5)+' L'+cx+' '+(cy-2)+' Z" fill="'+m.color+'"/>'; });
+  const day=ms=>new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:(new Date(t1).getFullYear()!==new Date(t0).getFullYear()?'2-digit':undefined)});
+  return '<div class="fx-chart" style="height:'+H+'px"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="'+escHtml(o.label||'Chart')+'">'+g+'</svg></div>'+
+    '<div class="fx-axis"><span>'+day(t0)+'</span><span>'+btMoney(lo)+' – '+btMoney(hi)+'</span><span>'+day(t1)+'</span></div>';
+}
+// E. Charts: value (with buys ▲ and sells ▼), profit/loss, or against just holding the coin.
 function btChart(){
   const el=document.getElementById('btChart'); if(!el) return;
-  const eq=(_bt.equity||[]).filter(e=>e.equity!=null&&e.price);
-  if(eq.length<2){ el.innerHTML='<div class="bt-nochart">The chart starts after two days of reports (one point per day).</div>'; return; }
-  const budget=_bt.status.budget||eq[0].equity, p0=eq[0].price;
-  const pts=eq.map(e=>({ t:e.time, a:e.equity, h:budget/p0*e.price }));
-  const W=320,H=96,P=6, all=pts.flatMap(p=>[p.a,p.h]), lo=Math.min(...all), hi=Math.max(...all), span=(hi-lo)||1;
-  const x=i=>P+i*(W-2*P)/(pts.length-1), y=v=>P+(H-2*P)*(1-(v-lo)/span);
-  const line=k=>pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p[k]).toFixed(1)).join(' ');
-  const day=ds=>new Date(ds).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-  const last=pts[pts.length-1];
-  el.innerHTML='<div class="fx-trend-h" style="margin-top:12px"><span><i class="bt-key a"></i>Bot '+btMoney(last.a)+'</span><span><i class="bt-key h"></i>Just holding BTC '+btMoney(last.h)+'</span></div>'+
-    '<div class="fx-chart" style="height:96px"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Bot value '+btMoney(last.a)+' against holding BTC '+btMoney(last.h)+'">'+
-      '<path d="'+line('h')+'" fill="none" stroke="#9AA6C8" stroke-width="1.6" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>'+
-      '<path d="'+line('a')+'" fill="none" stroke="#F7931A" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
-      '<circle cx="'+x(pts.length-1).toFixed(1)+'" cy="'+y(last.a).toFixed(1)+'" r="4" fill="#F7931A" stroke="var(--bg1)" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
-    '</svg></div><div class="fx-axis"><span>'+day(pts[0].t)+'</span><span>'+day(last.t)+'</span></div>';
+  const B=_btCur||_bt, st=B.status||{}, coin=String(B.symbol||'BTC/EUR').split('/')[0];
+  let pts=(B.equity||[]).filter(e=>e.equity!=null).map(e=>[Date.parse(e.time),e.equity,e.price]).filter(p=>isFinite(p[0]));
+  if(pts.length<2) pts=(B.hist||[]).map(p=>[p[0],p[1],null]);
+  if(pts.length<2){ el.innerHTML='<div class="bt-nochart">The charts start after two days of reports.</div>'; return; }
+  pts.sort((a,b)=>a[0]-b[0]);
+  const budget=st.budget||pts[0][1];
+  const kinds=[['value','Value'],['pnl','Profit / loss']].concat(pts.every(p=>p[2])?[['hold','vs holding '+coin]]:[]);
+  if(!kinds.some(k=>k[0]===_btChartKind)) _btChartKind='value';
+  const sw='<div class="bt-chips">'+kinds.map(k=>'<button class="'+(k[0]===_btChartKind?'on':'')+'" onclick="_btChartKind=\''+k[0]+'\';btChart()">'+escHtml(k[1])+'</button>').join('')+'</div>';
+  const marks=(B.trades||[]).map(t=>{ const tm=Date.parse(t.time); if(!isFinite(tm)) return null; let best=pts[0]; for(const p of pts) if(Math.abs(p[0]-tm)<Math.abs(best[0]-tm)) best=p; return { t:tm, v:_btChartKind==='pnl'?best[1]-budget:best[1], color:t.side==='buy'?'#4ade80':'#fb923c', shape:t.side==='buy'?'up':'down' }; }).filter(Boolean);
+  let html='', last=pts[pts.length-1];
+  if(_btChartKind==='pnl'){
+    html='<div class="fx-trend-h"><span><i class="bt-key a"></i>Profit / loss '+btSigned(last[1]-budget)+'</span></div>'+btSvgChart({ series:[{ pts:pts.map(p=>[p[0],p[1]-budget]), color:'#F7931A' }], base:0, marks, label:'Profit and loss over time' });
+  } else if(_btChartKind==='hold'){
+    const p0=pts[0][2];
+    html='<div class="fx-trend-h"><span><i class="bt-key a"></i>Bot '+btMoney(last[1])+'</span><span><i class="bt-key h"></i>Just holding '+escHtml(coin)+' '+btMoney(budget/p0*last[2])+'</span></div>'+
+      btSvgChart({ series:[{ pts:pts.map(p=>[p[0],budget/p0*p[2]]), color:'#9AA6C8', dash:'4 4', width:1.6 },{ pts:pts.map(p=>[p[0],p[1]]), color:'#F7931A' }], label:'Bot value against holding' });
+  } else {
+    html='<div class="fx-trend-h"><span><i class="bt-key a"></i>Value '+btMoney(last[1])+'</span><span class="bt-mk"><i class="b">▲</i> buy <i class="s">▼</i> sell</span></div>'+btSvgChart({ series:[{ pts:pts.map(p=>[p[0],p[1]]), color:'#F7931A' }], base:budget, marks, label:'Value over time' });
+  }
+  el.innerHTML='<div class="slabel bt-sl"><i class="ti ti-chart-line"></i> Charts</div>'+sw+html;
+}
+// ── Simulations (IB-09) ──
+const BT_PAL=['#F7931A','#60a5fa','#4ade80','#c084fc','#f472b6','#facc15','#2dd4bf','#f87171'];
+function btSimsHtml(cur){
+  const sims=cur.simulations||[];
+  const s=sims.find(x=>x.id===_btSim)||sims[0]; _btSim=s.id;
+  const pick=sims.length>1?'<div class="bt-chips">'+sims.map(x=>'<button class="'+(x.id===s.id?'on':'')+'" onclick="_btSim=\''+escHtml(x.id)+'\';btRender()">'+escHtml(x.title||x.id)+'</button>').join('')+'</div>':'';
+  const kind={ dca:'Monthly investing', timing:'Timing comparison', items:'Items portfolio' }[s.kind]||'Simulation';
+  const fmtD=v=>{ const t=Date.parse(v); return isNaN(t)?escHtml(v||''):new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); };
+  const params=Object.entries(s.params||{});
+  const rows=(s.strategies||[]).map((x,i)=>'<tr class="'+(x.best?'best':'')+(x.worst?' worst':'')+'"><td><i class="bt-sw2" style="background:'+BT_PAL[i%BT_PAL.length]+'"></i>'+escHtml(x.name)+(x.best?' <span class="bt-bw b">Best</span>':'')+(x.worst?' <span class="bt-bw w">Worst</span>':'')+'</td>'+
+    '<td>'+btMoney(x.invested)+'</td><td>'+btMoney(x.value)+'</td><td class="'+btCls(x.pnl)+'">'+btSigned(x.pnl)+'</td><td class="'+btCls(x.pnl)+'">'+btPct(x.pnlPct)+'</td></tr>').join('');
+  const lastT=Math.max(0,...(s.strategies||[]).flatMap(x=>x.series.map(p=>Date.parse(p.t)||0)));
+  const firstT=Math.min(...(s.strategies||[]).flatMap(x=>x.series.map(p=>Date.parse(p.t)||Infinity)));
+  const projEnd=s.projection&&s.projection.points.length?Math.max(...s.projection.points.map(p=>Date.parse(p.t)||0)):0;
+  const iso=ms=>isFinite(ms)&&ms>0?new Date(ms).toISOString().slice(0,10):'';
+  return pick+
+    '<div class="bt-simh"><b>'+escHtml(s.title||kind)+'</b><span>'+escHtml(kind)+(s.period&&(s.period.from||s.period.to)?' · '+fmtD(s.period.from)+' – '+fmtD(s.period.to):'')+'</span>'+
+      '<span class="bt-modes">'+btOrigin(s.dataOrigin)+(s.generatedAt?'<small>made '+fmtD(s.generatedAt)+'</small>':'')+'</span></div>'+
+    (params.length?'<div class="bt-params">'+params.map(([k,v])=>'<span><small>'+escHtml(k)+'</small> '+escHtml(String(v))+'</span>').join('')+'</div>':'')+
+    (rows?'<div class="bt-tblw"><table class="bt-tbl"><thead><tr><th>Strategy</th><th>Invested</th><th>Value</th><th>P&amp;L</th><th>Return</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="cc-empty">No strategies in this simulation.</div>')+
+    '<div id="btSimChart"></div>'+
+    '<div class="slabel bt-sl"><i class="ti ti-calendar-search"></i> Value on a date</div>'+
+    '<div class="bt-vod"><input type="date" id="btVod" min="'+iso(firstT)+'" value="'+iso(lastT)+'" onchange="btValueOn()" aria-label="Date"><span>'+(projEnd>lastT?'Pick a past date for the simulated value, or a future date (up to '+fmtD(iso(projEnd))+') for the projection.':'Pick a date within the simulation.')+'</span></div>'+
+    '<div id="btVodOut"></div>'+
+    (s.notes?'<div class="bt-notes"><i class="ti ti-info-circle"></i> '+escHtml(s.notes)+'</div>':'');
+}
+function btSimChart(){
+  const el=document.getElementById('btSimChart'); if(!el) return;
+  const s=((_btCur||{}).simulations||[]).find(x=>x.id===_btSim); if(!s) return;
+  const series=[];
+  (s.strategies||[]).forEach((x,i)=>{
+    const c=BT_PAL[i%BT_PAL.length], pts=x.series.map(p=>[Date.parse(p.t),p.value]).filter(p=>isFinite(p[0])&&p[1]!=null);
+    const inv=x.series.map(p=>[Date.parse(p.t),p.invested]).filter(p=>isFinite(p[0])&&p[1]!=null);
+    if(inv.length) series.push({ pts:inv, color:c, dash:'3 4', width:1.3 });
+    if(pts.length) series.push({ pts, color:c });
+  });
+  const pr=s.projection&&s.projection.points.length?s.projection:null;
+  const band=pr?{ pts:pr.points.map(p=>[Date.parse(p.t),p.low,p.high]).filter(p=>isFinite(p[0])&&p[1]!=null&&p[2]!=null), color:'#fbbf24' }:null;
+  if(pr) series.push({ pts:pr.points.map(p=>[Date.parse(p.t),p.mid]).filter(p=>isFinite(p[0])&&p[1]!=null), color:'#fbbf24', dash:'2 3', width:1.4 });
+  const ch=btSvgChart({ series, band, h:150, label:'Capital growth: invested and value per strategy' });
+  el.innerHTML='<div class="slabel bt-sl"><i class="ti ti-chart-line"></i> Capital growth</div>'+
+    (ch?'<div class="fx-trend-h"><span><i class="bt-key" style="background:repeating-linear-gradient(90deg,#9AA6C8 0 3px,transparent 3px 6px)"></i>invested</span><span><i class="bt-key"></i>value</span>'+(pr?'<span class="bt-hyp"><i class="bt-key" style="background:#fbbf24"></i>future band — hypothetical, not a forecast</span>':'')+'</div>'+ch:'<div class="bt-nochart">No series to draw.</div>')+
+    (pr?'<div class="bt-hypnote"><i class="ti ti-alert-triangle"></i> The shaded part is a <b>hypothetical projection, not a forecast</b>'+(pr.method?' ('+escHtml(pr.method)+')':'')+'. Real results can fall outside it.</div>':'');
+  btValueOn();
+}
+// Past date: the simulation's own value on (or just before) that day. Future: the projection band.
+function btValueOn(){
+  const out=document.getElementById('btVodOut'), inp=document.getElementById('btVod'); if(!out||!inp) return;
+  const s=((_btCur||{}).simulations||[]).find(x=>x.id===_btSim); if(!s||!inp.value) { out.innerHTML=''; return; }
+  const t=Date.parse(inp.value+'T23:59:59Z');
+  const lastT=Math.max(0,...(s.strategies||[]).flatMap(x=>x.series.map(p=>Date.parse(p.t)||0)));
+  const day=ms=>new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  if(t<=lastT+86400e3){
+    const rows=(s.strategies||[]).map((x,i)=>{ let p=null; for(const q of x.series){ const qt=Date.parse(q.t); if(qt<=t && (!p||qt>Date.parse(p.t))) p=q; }
+      return p?'<tr><td><i class="bt-sw2" style="background:'+BT_PAL[i%BT_PAL.length]+'"></i>'+escHtml(x.name)+'</td><td>'+btMoney(p.invested)+'</td><td>'+btMoney(p.value)+'</td><td class="'+btCls((p.value||0)-(p.invested||0))+'">'+btSigned(p.value!=null&&p.invested!=null?p.value-p.invested:null)+'</td><td><small>'+day(Date.parse(p.t))+'</small></td></tr>':''; }).join('');
+    out.innerHTML=rows?'<div class="bt-tblw"><table class="bt-tbl"><thead><tr><th>Strategy</th><th>Invested</th><th>Value</th><th>P&amp;L</th><th>From</th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="bt-vodn">'+btOrigin(s.dataOrigin)+' Simulated value on the last point on or before that date.</div>':'<div class="cc-empty">The simulation starts after that date.</div>';
+    return;
+  }
+  const pr=s.projection;
+  if(!pr||!pr.points.length){ out.innerHTML='<div class="bt-hypnote"><i class="ti ti-info-circle"></i> The bot sent no projection for dates after '+day(lastT)+'.</div>'; return; }
+  let p=pr.points[0]; for(const q of pr.points) if(Math.abs(Date.parse(q.t)-t)<Math.abs(Date.parse(p.t)-t)) p=q;
+  out.innerHTML='<div class="bt-proj"><span class="bt-orig" style="--c:#fbbf24">Hypothetical, not a forecast</span>'+
+    '<div class="bt-grid three">'+['low','mid','high'].map(k=>'<div class="bt-tile"><small>'+({low:'Low',mid:'Middle',high:'High'})[k]+'</small><b>'+btMoney(p[k])+'</b></div>').join('')+'</div>'+
+    '<small>Projection for '+day(Date.parse(p.t))+(pr.method?' · '+escHtml(pr.method):'')+'. A range of possible outcomes — the real value can be anywhere, including outside it.</small></div>';
+}
+// ── Items (IB-13) ──
+const BT_IF=[['all','All'],['active','Active'],['sold','Sold'],['waiting','Waiting for target'],['positive','Positive'],['negative','Negative'],['target','Target hit'],['unsellable','Unsellable']];
+function btItemOk(i,f){
+  return f==='all' || (f==='active'&&(i.state==='watching'||i.state==='bought')) || (f==='sold'&&i.state==='sold') ||
+    (f==='waiting'&&i.state==='bought'&&!(i.targets||[]).some(t=>t.reached)) || (f==='positive'&&(i.pnl||0)>0) || (f==='negative'&&(i.pnl||0)<0) ||
+    (f==='target'&&(i.state==='target_hit'||(i.targets||[]).some(t=>t.reached))) || (f==='unsellable'&&(i.state==='unsellable'||i.state==='worthless'));
+}
+function btItemsHtml(cur){
+  const items=cur.items||[], f=_btItemsF;
+  const chips='<div class="bt-chips wrap">'+BT_IF.map(x=>{ const n=items.filter(i=>btItemOk(i,x[0])).length; return '<button class="'+(x[0]===f?'on':'')+'" onclick="_btItemsF=\''+x[0]+'\';_btItemOpen=null;btRender()">'+x[1]+' <b>'+n+'</b></button>'; }).join('')+'</div>';
+  // Honesty: how many items reached each target, so one winner can't hide many losers.
+  const labels=[...new Set(items.flatMap(i=>(i.targets||[]).map(t=>t.label)).filter(Boolean))];
+  const share=labels.length?'<div class="bt-share"><b class="bt-shh"><i class="ti ti-target-arrow"></i> Targets reached</b>'+labels.map(l=>{ const w=items.filter(i=>(i.targets||[]).some(t=>t.label===l)), r=w.filter(i=>i.targets.some(t=>t.label===l&&t.reached)); return '<span><b>'+escHtml(l)+'</b> reached by '+r.length+' of '+w.length+' ('+(w.length?Math.round(r.length/w.length*100):0)+'%)</span>'; }).join('')+'</div>':'';
+  const tot=items.reduce((a,i)=>({ cost:a.cost+((i.buy&&i.buy.cost)||0), val:a.val+(i.valueNow||0), pnl:a.pnl+(i.pnl||0) }),{cost:0,val:0,pnl:0});
+  const list=items.filter(i=>btItemOk(i,f));
+  const st=s=>{ const x=BT_STATES.find(k=>k[0]===s)||[s,s,'#94a3b8']; return '<span class="bt-ist" style="--c:'+x[2]+'">'+escHtml(x[1])+'</span>'; };
+  return '<div class="bt-grid three">'+'<div class="bt-tile"><small>Cost</small><b>'+btMoney(tot.cost)+'</b></div><div class="bt-tile"><small>Value now</small><b>'+btMoney(tot.val)+'</b></div><div class="bt-tile '+btCls(tot.pnl)+'"><small>P&amp;L</small><b>'+btSigned(tot.pnl)+'</b></div></div>'+
+    chips+share+
+    '<div class="bt-items">'+(list.length?list.map(i=>{ const open=_btItemOpen===i.id;
+      return '<div class="bt-item'+(open?' open':'')+'"><button class="bt-irow" onclick="_btItemOpen='+(open?'null':'\''+escHtml(i.id)+'\'')+';btRender()">'+
+        '<span class="bt-in"><b>'+escHtml(i.name||i.symbol||i.id)+'</b><small>'+escHtml(i.symbol||'')+(i.source?' · '+escHtml(i.source):'')+'</small></span>'+
+        st(i.state)+
+        '<span class="bt-ip"><small>'+(i.buy&&i.buy.price!=null?btPrice(i.buy.price)+' → ':'')+btPrice(i.priceNow)+'</small><b class="'+btCls(i.pnl)+'">'+(i.pnlPct!=null?btPct(i.pnlPct):btSigned(i.pnl))+'</b></span></button>'+
+        ((i.targets||[]).length?'<div class="bt-tg">'+i.targets.map(t=>'<span class="'+(t.reached?'hit':'')+'">'+(t.reached?'<i class="ti ti-check"></i>':'')+escHtml(t.label)+'</span>').join('')+'</div>':'')+
+        (open?btItemDetail(i):'')+'</div>'; }).join(''):'<div class="cc-empty">No items here.</div>')+'</div>'+
+    '<div class="bt-hypnote"><i class="ti ti-info-circle"></i> Items not offered on Revolut X are <b>simulation only</b> — they can’t be bought with the current setup. Very cheap or newly listed coins usually lose most of their value; big multiples like 50,000× are extremely rare.</div>';
+}
+function btItemDetail(i){
+  const pts=(i.series||[]).map(p=>[Date.parse(p.t),p.price]).filter(p=>isFinite(p[0])&&p[1]!=null);
+  const ch=pts.length>1?btSvgChart({ series:[{ pts, color:'#F7931A' }], base:i.buy&&i.buy.price!=null?i.buy.price:undefined, h:90, label:'Price of '+(i.name||i.symbol) }).replace(/>(\d[\d,.]*) € – (\d[\d,.]*) €</,'>'+btPrice(Math.min(...pts.map(p=>p[1])))+' – '+btPrice(Math.max(...pts.map(p=>p[1])))+'<'):'<div class="bt-nochart">No price history yet.</div>';
+  const d=v=>{ const t=Date.parse(v); return isNaN(t)?escHtml(v||'–'):new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); };
+  const row=(k,v)=>'<div><small>'+k+'</small><b>'+v+'</b></div>';
+  const sg=i.signals||{};
+  return '<div class="bt-idet">'+ch+(i.buy&&i.buy.price!=null?'<div class="bt-vodn">Dotted line: the price it was bought at.</div>':'')+
+    '<div class="bt-kv">'+
+      (i.buy?row('Bought',d(i.buy.time)+' · '+(i.buy.qty!=null?(+i.buy.qty).toLocaleString('en-GB')+' units · ':'')+btMoney(i.buy.cost)+(i.buy.fee!=null?' (fee '+btMoney(i.buy.fee)+')':'')):'')+
+      (i.sell?row('Sold',d(i.sell.time)+' at '+btPrice(i.sell.price)+' · '+btMoney(i.sell.value)+(i.sell.reason?' · '+escHtml(i.sell.reason):'')):'')+
+      row('Value now',btMoney(i.valueNow)+' · '+(i.realized?'realized':'unrealized'))+
+      row('First seen',d(i.firstSeen))+
+      (i.targets&&i.targets.length?row('Targets',i.targets.map(t=>escHtml(t.label)+' at '+btPrice(t.price)+(t.reached?' ✓':'')).join(' · ')):'')+
+      ((sg.volumeChange24h!=null||sg.momentum7d!=null||sg.liquidity!=null||sg.ageDays!=null)?row('Signals',[sg.volumeChange24h!=null?'volume 24 h '+btPct(sg.volumeChange24h):'',sg.momentum7d!=null?'momentum 7 d '+btPct(sg.momentum7d):'',sg.liquidity!=null?'liquidity '+btMoney(sg.liquidity):'',sg.ageDays!=null?sg.ageDays+' days old':''].filter(Boolean).join(' · ')):'')+
+    '</div><div class="bt-vodn">'+btOrigin(i.dataOrigin)+'</div></div>';
 }
 async function btSaveSummary(){
   const on=!!(document.getElementById('btSumOn')||{}).checked, time=(document.getElementById('btSumTime')||{}).value||'08:00';
@@ -7313,6 +7632,127 @@ document.addEventListener('keydown', e=>{
     i = e.key==='ArrowUp'? ((r+8)%9)*9+c : e.key==='ArrowDown'? ((r+1)%9)*9+c : e.key==='ArrowLeft'? r*9+(c+8)%9 : r*9+(c+1)%9; sdSelect(i); e.preventDefault(); }
   else if(e.key==='n'||e.key==='N'){ sdToggleNotes(); }
 });
+// ─── DEV TRACKER ─────────────────────────────────────────
+// The Investment Bot's development plan: phases, tasks, dependencies,
+// implementation and test status. Claude in the bot project updates it
+// through the connector (dev_* tools); here you see the roadmap and can
+// change things yourself. The server enforces the rules and says why when
+// something isn't allowed yet; "Start anyway" / "Done anyway" override.
+let _dv={ data:null, view:'road', phase:'', owner:'', status:'', task:null, msg:'' };
+const DV_ST={ todo:['To do','#94a3b8'], in_progress:['In progress','#60a5fa'], blocked:['Blocked','#f87171'], done:['Done','#4ade80'] };
+const DV_TS={ not_tested:['Not tested','#94a3b8'], failing:['Failing','#f87171'], passing:['Passing','#4ade80'] };
+const DV_OWN={ bot:['Bot','ti-robot'], organizer:['Organizer','ti-layout-dashboard'], both:['Both','ti-arrows-left-right'] };
+const DV_BY={ user:'You', 'claude-bot':'Claude · bot project', 'claude-organizer':'Claude · Organizer' };
+async function dvLoad(){ try{ _dv.data=await (await fetch('/api/dev')).json(); }catch(e){ _dv.data=_dv.data||{ error:'Couldn’t reach the server.' }; } return _dv.data; }
+async function openDev(){
+  closeModal();
+  let o=document.getElementById('dvWrap');
+  if(!o){ o=document.createElement('div'); o.id='dvWrap'; o.className='nt-wrap dv-wrap'; document.body.appendChild(o); lockPageScroll(); }
+  o.innerHTML='<div class="nt-top"><button class="pad-x" onclick="dvClose()" aria-label="Close"><i class="ti ti-x"></i></button><b>Dev tracker</b></div><div class="nt-center"><div class="cc-empty"><i class="ti ti-loader-2 spin"></i> Loading…</div></div>';
+  await dvLoad(); dvRender();
+}
+function dvClose(){ const o=document.getElementById('dvWrap'); if(o) o.remove(); unlockPageScroll(); _dv.view='road'; _dv.task=null; }
+function dvBack(){ if(_dv.view==='task'){ _dv.view=_dv.fromList?'list':'road'; _dv.task=null; } else _dv.view='road'; _dv.msg=''; dvRender(); }
+function dvTask(id){ return ((_dv.data||{}).tasks||[]).find(t=>t.id===id); }
+function dvChip(map,k,cls){ const v=map[k]||[k,'#94a3b8']; return '<span class="dv-chip '+(cls||'')+'" style="--c:'+v[1]+'">'+v[0]+'</span>'; }
+function dvAgo(ms){ const s=(Date.now()-ms)/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; return new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+function dvRender(){
+  const o=document.getElementById('dvWrap'); if(!o) return;
+  const D=_dv.data||{};
+  const back=_dv.view!=='road';
+  const top='<div class="nt-top"><button class="pad-x" onclick="'+(back?'dvBack()':'dvClose()')+'" aria-label="'+(back?'Back':'Close')+'"><i class="ti '+(back?'ti-arrow-left':'ti-x')+'"></i></button><b>'+(_dv.view==='task'&&_dv.task?escHtml(_dv.task):'Dev tracker')+'</b>'+
+    (_dv.view!=='task'?'<button class="pad-ic" onclick="_dv.view=\''+(_dv.view==='list'?'road':'list')+'\';dvRender()" aria-label="'+(_dv.view==='list'?'Roadmap':'All tasks')+'"><i class="ti '+(_dv.view==='list'?'ti-route':'ti-list-details')+'"></i></button>':'')+
+    '<button class="pad-ic" onclick="dvLoad().then(dvRender)" aria-label="Refresh"><i class="ti ti-refresh"></i></button></div>';
+  if(D.error){ o.innerHTML=top+'<div class="cc-msg" style="color:var(--red)">'+escHtml(D.error)+'</div>'; return; }
+  let body='';
+  if(_dv.view==='road') body=dvRoadHtml(D);
+  else if(_dv.view==='list') body=dvListHtml(D);
+  else body=dvTaskHtml(D, dvTask(_dv.task));
+  o.innerHTML=top+'<div class="dv-scroll" id="dvScroll">'+body+'</div>';
+}
+function dvRoadHtml(D){
+  const tasks=D.tasks||[], all=tasks.length, done=tasks.filter(t=>t.status==='done').length;
+  const next=tasks.filter(t=>(D.next||[]).includes(t.id));
+  const prog=tasks.filter(t=>t.status==='in_progress');
+  const row=t=>'<button class="dv-row" onclick="dvOpen(\''+t.id+'\',false)"><span class="dv-id">'+t.id+'</span><span class="dv-t">'+escHtml(t.title)+'</span><span class="dv-own"><i class="ti '+DV_OWN[t.owner][1]+'"></i></span>'+dvChip(DV_TS,t.testStatus,'sm')+'</button>';
+  return '<div class="dv-sum"><div><b>'+done+' / '+all+'</b><small>tasks done</small></div><div class="dv-bar big"><i style="width:'+(all?Math.round(done/all*100):0)+'%"></i></div></div>'+
+    (prog.length?'<div class="dv-sec"><i class="ti ti-player-play"></i> In progress</div>'+prog.map(row).join(''):'')+
+    '<div class="dv-sec"><i class="ti ti-flag"></i> Ready to start <small>(everything they depend on is done)</small></div>'+(next.length?next.map(row).join(''):'<div class="dv-empty">Nothing ready — finish what’s in progress first.</div>')+
+    '<div class="dv-sec"><i class="ti ti-route"></i> Phases</div>'+
+    (D.phases||[]).map(p=>{ const c=p.counts, pct=p.total?Math.round(c.done/p.total*100):0, cur=p.id===D.current;
+      return '<button class="dv-phase'+(cur?' cur':'')+(pct===100?' full':'')+'" onclick="_dv.phase=\''+p.id+'\';_dv.owner=\'\';_dv.status=\'\';_dv.view=\'list\';dvRender()">'+
+        '<span class="dv-pid">'+p.id+'</span><span class="dv-pn"><b>'+escHtml(p.name)+'</b>'+(cur?'<em>current</em>':'')+
+        '<span class="dv-bar"><i style="width:'+pct+'%"></i></span><small>'+c.done+' of '+p.total+' done'+(c.in_progress?' · '+c.in_progress+' in progress':'')+(c.blocked?' · '+c.blocked+' blocked':'')+'</small></span><i class="ti ti-chevron-right"></i></button>';
+    }).join('')+
+    '<div class="dv-sec"><i class="ti ti-history"></i> Latest changes</div>'+
+    ((D.log||[]).slice(0,8).map(l=>'<div class="dv-log"><b>'+(l.task==='*'?'Plan':escHtml(l.task))+'</b> '+escHtml(l.what)+'<small>'+escHtml(DV_BY[l.by]||l.by)+' · '+dvAgo(l.at)+'</small></div>').join('')||'<div class="dv-empty">No changes yet.</div>');
+}
+function dvListHtml(D){
+  const sel=(id,cur,opts,lbl)=>'<select class="dv-sel" aria-label="'+lbl+'" onchange="_dv.'+id+'=this.value;dvRender()"><option value="">'+lbl+': all</option>'+opts.map(o=>'<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+escHtml(o[1])+'</option>').join('')+'</select>';
+  const list=(D.tasks||[]).filter(t=>(!_dv.phase||t.phase===_dv.phase)&&(!_dv.owner||t.owner===_dv.owner)&&(!_dv.status||t.status===_dv.status));
+  return '<div class="dv-filters">'+
+      sel('phase',_dv.phase,(D.phases||[]).map(p=>[p.id,p.id+' · '+p.name]),'Phase')+
+      sel('owner',_dv.owner,Object.entries(DV_OWN).map(([k,v])=>[k,v[0]]),'Who')+
+      sel('status',_dv.status,Object.entries(DV_ST).map(([k,v])=>[k,v[0]]),'Status')+
+    '</div>'+
+    '<div class="dv-count">'+list.length+' task'+(list.length===1?'':'s')+'</div>'+
+    list.map(t=>'<button class="dv-card" onclick="dvOpen(\''+t.id+'\',true)">'+
+      '<span class="dv-ch"><span class="dv-id">'+t.id+'</span>'+dvChip({P0:['P0','#f87171'],P1:['P1','#fbbf24'],P2:['P2','#94a3b8']},t.priority,'sm')+dvChip(DV_ST,t.status,'sm')+dvChip(DV_TS,t.testStatus,'sm')+'<span class="dv-own"><i class="ti '+DV_OWN[t.owner][1]+'"></i> '+DV_OWN[t.owner][0]+'</span></span>'+
+      '<b>'+escHtml(t.title)+'</b>'+
+      (t.blockers.length&&t.status!=='done'?'<small class="dv-wait"><i class="ti ti-lock"></i> Waiting for '+t.blockers.join(', ')+'</small>':'')+
+    '</button>').join('')+
+    '<button class="btn dv-add" onclick="dvAddForm()"><i class="ti ti-plus"></i> Add a task</button><div id="dvAddBox"></div>';
+}
+function dvOpen(id, fromList){ _dv.task=id; _dv.fromList=fromList; _dv.view='task'; _dv.msg=''; dvRender(); const s=document.getElementById('dvScroll'); if(s) s.scrollTop=0; }
+function dvTaskHtml(D, t){
+  if(!t) return '<div class="dv-empty">Task not found.</div>';
+  const ph=(D.phases||[]).find(p=>p.id===t.phase)||{};
+  const dep=id=>{ const x=dvTask(id); return '<button class="dv-dep" onclick="dvOpen(\''+id+'\','+(_dv.fromList?'true':'false')+')">'+id+(x?' · '+escHtml(x.title):'')+(x?dvChip(DV_ST,x.status,'sm'):'')+'</button>'; };
+  const sec=(lbl,txt)=>txt?'<div class="dv-f"><small>'+lbl+'</small><p>'+escHtml(txt).replace(/\n/g,'<br>')+'</p></div>':'';
+  const lst=(lbl,a)=>a&&a.length?'<div class="dv-f"><small>'+lbl+'</small><ul>'+a.map(x=>'<li>'+escHtml(x)+'</li>').join('')+'</ul></div>':'';
+  const stBtn=k=>'<button class="'+(t.status===k?'on':'')+'" style="--c:'+DV_ST[k][1]+'" onclick="dvSet(\''+t.id+'\',{status:\''+k+'\'})">'+DV_ST[k][0]+'</button>';
+  const tsBtn=k=>'<button class="'+(t.testStatus===k?'on':'')+'" style="--c:'+DV_TS[k][1]+'" onclick="dvSet(\''+t.id+'\',{testStatus:\''+k+'\'})">'+DV_TS[k][0]+'</button>';
+  const hist=(D.log||[]).filter(l=>l.task===t.id).slice(0,10);
+  return '<div class="dv-head"><b>'+escHtml(t.title)+'</b><span>'+escHtml(t.phase+' · '+(ph.name||''))+'</span>'+
+      '<span class="dv-ch">'+dvChip({P0:['P0','#f87171'],P1:['P1','#fbbf24'],P2:['P2','#94a3b8']},t.priority)+'<span class="dv-own"><i class="ti '+DV_OWN[t.owner][1]+'"></i> '+DV_OWN[t.owner][0]+'</span></span></div>'+
+    (t.blockers.length&&t.status!=='done'?'<div class="dv-warn"><i class="ti ti-lock"></i> Waiting for '+t.blockers.join(', ')+' to be done.</div>':'')+
+    '<div class="dv-f"><small>Status</small><div class="dv-seg">'+['todo','in_progress','blocked','done'].map(stBtn).join('')+'</div></div>'+
+    '<div class="dv-f"><small>Tests</small><div class="dv-seg">'+['not_tested','failing','passing'].map(tsBtn).join('')+'</div></div>'+
+    '<div id="dvMsg">'+(_dv.msg||'')+'</div>'+
+    sec('Description',t.description)+sec('Objective',t.objective)+sec('Expected behaviour',t.expected)+sec('Required changes',t.changes)+
+    lst('Acceptance criteria',t.acceptance)+lst('Testing',t.testing)+
+    (t.dependsOn.length?'<div class="dv-f"><small>Depends on</small>'+t.dependsOn.map(dep).join('')+'</div>':'')+
+    (t.dependents.length?'<div class="dv-f"><small>Needed by</small>'+t.dependents.map(dep).join('')+'</div>':'')+
+    '<div class="dv-f"><small>Notes</small>'+(t.notes.length?t.notes.slice().reverse().map(n=>'<div class="dv-note"><p>'+escHtml(n.text).replace(/\n/g,'<br>')+'</p><small>'+escHtml(DV_BY[n.by]||n.by)+' · '+dvAgo(n.at)+'</small></div>').join(''):'<div class="dv-empty">No notes yet.</div>')+
+      '<textarea id="dvNote" rows="2" placeholder="Add a note…"></textarea><button class="btn sm acc" onclick="dvNote(\''+t.id+'\')"><i class="ti ti-send"></i> Add note</button></div>'+
+    (hist.length?'<div class="dv-f"><small>History</small>'+hist.map(l=>'<div class="dv-log">'+escHtml(l.what)+'<small>'+escHtml(DV_BY[l.by]||l.by)+' · '+dvAgo(l.at)+'</small></div>').join('')+'</div>':'');
+}
+async function dvSet(id, ch, force){
+  let r;
+  try{ const res=await fetch('/api/dev/task',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ id, ...ch, force:!!force })}); r=await res.json(); }catch(e){ r={ error:'Couldn’t reach the server.' }; }
+  if(r.dev){ _dv.data=r.dev; _dv.msg=''; dvRender(); return; }
+  const k=JSON.stringify(ch).replace(/"/g,"'");
+  _dv.msg='<div class="dv-warn"><i class="ti ti-alert-triangle"></i> '+escHtml(r.error||'Not saved.')+(r.needsOverride?' <button class="btn sm" onclick="dvSet(\''+id+'\','+k+',true)">'+(ch.status==='done'?'Done anyway':'Start anyway')+'</button>':'')+'</div>';
+  const m=document.getElementById('dvMsg'); if(m) m.innerHTML=_dv.msg;
+}
+async function dvNote(id){ const t=document.getElementById('dvNote'); const v=t&&t.value.trim(); if(!v) return; await dvSet(id,{ note:v }); }
+function dvAddForm(){
+  const b=document.getElementById('dvAddBox'); if(!b) return;
+  const D=_dv.data||{};
+  b.innerHTML='<div class="dv-addf"><input id="dvAT" class="cc-input" placeholder="Task title">'+
+    '<select id="dvAP" class="dv-sel">'+(D.phases||[]).map(p=>'<option value="'+p.id+'"'+(p.id===(_dv.phase||D.current)?' selected':'')+'>'+p.id+' · '+escHtml(p.name)+'</option>').join('')+'</select>'+
+    '<select id="dvAO" class="dv-sel"><option value="bot">Bot</option><option value="organizer">Organizer</option><option value="both">Both</option></select>'+
+    '<select id="dvAPr" class="dv-sel"><option>P1</option><option>P0</option><option>P2</option></select>'+
+    '<input id="dvAD" class="cc-input" placeholder="Depends on (e.g. IB-03, IB-04)">'+
+    '<textarea id="dvADesc" rows="3" placeholder="Description (optional)"></textarea>'+
+    '<button class="btn acc" onclick="dvAddSave()"><i class="ti ti-check"></i> Add</button></div>';
+  setTimeout(()=>document.getElementById('dvAT')?.focus(),50);
+}
+async function dvAddSave(){
+  const v=id=>(document.getElementById(id)||{}).value||'';
+  const body={ title:v('dvAT'), phase:v('dvAP'), owner:v('dvAO'), priority:v('dvAPr'), dependsOn:v('dvAD').toUpperCase().split(/[\s,;]+/).filter(Boolean), description:v('dvADesc') };
+  try{ const r=await (await fetch('/api/dev/task/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json(); if(r.dev){ _dv.data=r.dev; dvOpen(r.task.id,true); } else showToast(r.error||'Not added'); }catch(e){ showToast('Couldn’t add'); }
+}
 // ─── WORLD CLOCKS ────────────────────────────────────────
 // Local time in other cities with the current temperature (Open-Meteo, no
 // key). Windy's own API only returns real data on a paid plan, so each city
@@ -8079,7 +8519,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-10-29-games-soft';
+const APP_BUILD='2026-11-02-bot-dashboard';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -8103,9 +8543,36 @@ function flashEvent(evId){
   setTimeout(()=>card.classList.remove('flash'), 2600);
 }
 // Opened fresh from a notification: ?d=YYYY-MM-DD&ev=<id>
+// A notification tap is handled once, from whichever arrives first: the
+// address (?bot=1 …), the service worker's message, or the copy the service
+// worker left in the 'organizer-intent' cache (that one survives a reload).
+let _openDone=0;
+function openFromQs(qs){
+  try{
+    const q=new URLSearchParams(qs||'');
+    if(q.get('dev')){ setTimeout(()=>openDev().then(()=>dvOpen(q.get('dev'),false)), 400); return true; }
+    if(q.get('concerts')){ setTimeout(()=>openConcerts(), 400); return true; }
+    if(q.get('bot')){ setTimeout(()=>openBot(), 400); return true; }
+    const d=q.get('d');
+    if(d){ openOnDate(d, q.get('ev')); if(q.get('alert') && q.get('ev')) setTimeout(()=>openAlerts(q.get('ev'), d), 500); return true; }
+  }catch(e){}
+  return false;
+}
+async function takeOpenIntent(apply){
+  try{
+    if(!('caches' in window)) return;
+    const c=await caches.open('organizer-intent'); const r=await c.match('open'); if(!r) return;
+    const it=JSON.parse(await r.text()); await c.delete('open');
+    // Only a fresh tap (last 3 minutes), and not one already handled.
+    if(apply && it && it.qs && Date.now()-it.at < 180000 && Date.now()-_openDone > 4000){ _openDone=Date.now(); openFromQs(it.qs); }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(()=>takeOpenIntent(true), 300); });
 function handleOpenParams(){
   try{
     const q=new URLSearchParams(location.search);
+    if(q.get('concerts') || q.get('bot') || q.get('d') || q.get('dev')){ _openDone=Date.now(); takeOpenIntent(false); if(q.get('dev')){ history.replaceState({}, '', location.pathname); openFromQs(location.search||('?dev='+q.get('dev'))); return; } }   // the address already says where to go
+    else setTimeout(()=>takeOpenIntent(true), 200);
     if(q.get('concerts')){
       history.replaceState({}, '', location.pathname);
       setTimeout(()=>openConcerts(), 400);
@@ -8129,10 +8596,12 @@ function handleOpenParams(){
 // Already open: the service worker tells us which day to show.
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message', e=>{
+    if(e.data && /^OPEN_/.test(e.data.type||'')){ if(Date.now()-_openDone < 4000) return; _openDone=Date.now(); takeOpenIntent(false); }
     if(e.data && e.data.type==='OPEN_DATE' && e.data.date){ openOnDate(e.data.date, e.data.id); if(e.data.alert && e.data.id) setTimeout(()=>openAlerts(e.data.id, e.data.date), 250); }
     if(e.data && e.data.type==='ALERTS_CHANGED') loadAlerts();
     if(e.data && e.data.type==='OPEN_CONCERTS') openConcerts();
     if(e.data && e.data.type==='OPEN_BOT') openBot();
+    if(e.data && e.data.type==='OPEN_DEV' && e.data.id) openDev().then(()=>dvOpen(e.data.id,false));
   });
 }
 
@@ -8378,7 +8847,7 @@ function alRemLabel(a){
 function remLabelShort(m){ m=+m; if(m%43200===0) return (m/43200)+' month'+(m>43200?'s':''); if(m%10080===0) return (m/10080)+' week'+(m>10080?'s':''); if(m>=1440) return Math.round(m/1440)+' day'+(m>=2880?'s':''); if(m>=60) return (m%60? (m/60).toFixed(1).replace('.0','') : m/60)+' hour'+(m>60?'s':''); return m+' min'; }
 function alBotCard(g, focus){
   const a=g.items[0], k=escHtml(g.evId)+'\',\''+g.date;
-  const col = a.kind==='trade' ? '#F7931A' : '#f87171';
+  const col = a.kind==='trade' ? '#F7931A' : a.kind==='target' ? '#4ade80' : '#f87171';
   return '<div class="ecard task al-card al-bot'+(focus?' focus':'')+'" data-key="'+escHtml(g.key)+'">'+
     '<div class="ec-top"><div class="ec-bar" style="background:'+col+'"></div><div class="ec-body">'+
       '<div class="ec-title">'+escHtml(a.title||'Trading bot')+'</div>'+
@@ -8387,7 +8856,7 @@ function alBotCard(g, focus){
     '<div class="ec-actions">'+
       '<button class="ea grn" onclick="alClear(\''+k+'\')"><i class="ti ti-checks"></i>Clear</button>'+
       '<button class="ea ylw" onclick="alSnoozeMenu(this)"><i class="ti ti-alarm-snooze"></i>Snooze</button>'+
-      '<button class="ea" onclick="closeModal();openBot()"><i class="ti ti-currency-bitcoin"></i>Open bot</button>'+
+      '<button class="ea" onclick="closeModal();'+(a.bot?'_btTab=\''+escHtml(a.bot)+'\';':'')+'openBot()"><i class="ti ti-currency-bitcoin"></i>Open bot</button>'+
     '</div>'+
     '<div class="al-snooze" hidden>'+[[10,'10 min'],[30,'30 min'],[60,'1 hour'],[180,'3 hours'],['tm','Tomorrow 9:00']].map(s=>'<button class="sh-chip" onclick="alSnooze(\''+k+'\',\''+s[0]+'\')">'+s[1]+'</button>').join('')+'</div>'+
   '</div>';
