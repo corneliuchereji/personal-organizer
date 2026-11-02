@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v16';
+const CACHE = 'organizer-shell-v19';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -140,10 +140,19 @@ self.addEventListener('notificationclick', event => {
   // tomorrow, and landing on today showed the wrong events entirely.
   const d = (event.notification.data) || {};
   // A new-concert notification opens the Concerts widget instead of a day.
-  const qs = d.concert ? '?concerts=1'
+  // The bot's morning summary (no alert behind it) opens the Trading bot widget.
+  // A Dev tracker notice (task done / tests failing) opens that task.
+  const qs = d.dev ? '?dev=' + encodeURIComponent(d.dev) : d.concert ? '?concerts=1'
+    : (d.bot && !d.alertId) ? '?bot=1'
     : d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '') + (d.alertId ? '&alert=1' : '')) : '';
   const target = new URL('/' + qs, self.location.origin).href;
   event.waitUntil((async () => {
+    // Also leave the request where the page can find it later. An app that
+    // was in the background since yesterday reloads itself on its first
+    // look at the new day, and a reload throws away the message below —
+    // the notification then seemed to "disappear". The page picks this up
+    // on load / when it comes back (index.html → takeOpenIntent).
+    try { const c = await caches.open('organizer-intent'); await c.put('open', new Response(JSON.stringify({ qs, at: Date.now() }))); } catch (e) {}
     const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
     // Prefer an existing window belonging to this app. On iOS the installed
     // PWA often isn't returned as a focusable client, in which case the tap
@@ -155,7 +164,7 @@ self.addEventListener('notificationclick', event => {
           // An already-open window is told which day to show, rather than
           // being navigated — reloading would lose any unsaved state.
           try {
-            c.postMessage(d.concert ? { type:'OPEN_CONCERTS' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null, alert: !!d.alertId });
+            c.postMessage(d.dev ? { type:'OPEN_DEV', id: d.dev } : d.concert ? { type:'OPEN_CONCERTS' } : (d.bot && !d.alertId) ? { type:'OPEN_BOT' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null, alert: !!d.alertId });
           } catch (e) {}
           return c.focus();
         }
