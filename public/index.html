@@ -1241,13 +1241,19 @@ select option:checked{background:#2E3A78;color:#fff}
 .tb-over[hidden]{display:none}
 .tb-over b{font-size:24px}
 .tb-over span{font-size:14px;color:var(--txt2)}
-.tb-pad{flex:none;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 4px 4px;max-width:520px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none}
-.tb-dpad,.tb-act{display:flex;gap:10px;align-items:center}
-.tb-b{width:64px;height:64px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font-size:28px;display:grid;place-items:center;cursor:pointer;touch-action:none;transition:transform 90ms var(--ease-out),background-color 90ms ease}
+.tb-pad{flex:none;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 6px 4px;max-width:520px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none;touch-action:none}
+.gm-wrap,.gm-wrap *{touch-action:manipulation}
+.gm-wrap .tb-pad,.gm-wrap .tb-pad *,.gm-wrap .tb-board canvas{touch-action:none}
+.tb-cross{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,52px);gap:2px;place-items:center}
+.tb-cross .up{grid-column:2;grid-row:1}.tb-cross .lf{grid-column:1;grid-row:2}.tb-cross .rt{grid-column:3;grid-row:2}.tb-cross .dn{grid-column:2;grid-row:3}
+.tb-act{display:grid;grid-template-columns:auto;gap:12px;justify-items:center;align-items:center}
+.tb-b{width:58px;height:58px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font-size:26px;display:grid;place-items:center;cursor:pointer;touch-action:none;transition:transform 90ms var(--ease-out),background-color 90ms ease}
 .tb-b.on{transform:scale(.92);background:rgba(140,160,190,.28)}
-.tb-b.rot{width:76px;height:76px;font-size:32px;background:rgba(140,160,190,.22);border-color:rgba(160,175,200,.45)}
-.tb-b.drop{width:58px;height:58px;font-size:24px}
-@media (max-width:360px){ .tb-b{width:54px;height:54px;font-size:24px} .tb-b.rot{width:64px;height:64px} .tb-side{width:80px} }
+.tb-b.rot{background:rgba(140,160,190,.18)}
+.tb-b.drop{width:78px;height:78px;font-size:32px;background:rgba(140,160,190,.22);border-color:rgba(160,175,200,.45)}
+.tb-b.pause{width:46px;height:46px;font-size:20px;background:rgba(255,255,255,.05)}
+.gm-newbest{color:#fde68a}
+@media (max-width:360px){ .tb-cross{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,48px)} .tb-b{width:52px;height:52px;font-size:23px} .tb-b.drop{width:68px;height:68px} .tb-side{width:80px} }
 /* Sudoku */
 .sk-meta{margin-left:auto;font-size:13px;color:var(--txt2);font-variant-numeric:tabular-nums}
 .sk-play{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -1406,11 +1412,29 @@ select option:checked{background:#2E3A78;color:#fff}
 .bt-idet{padding:0 11px 11px}
 .bt-kv{display:flex;flex-direction:column;gap:5px;margin-top:6px}
 .bt-kv div{display:flex;gap:8px;font-size:12.5px}.bt-kv small{flex:none;width:76px;color:var(--txt3)}.bt-kv b{font-weight:500}
+
+/* Widget dialogs: full-screen mode and the size button */
+.mbox{position:relative}
+.msize{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt2);display:grid;place-items:center;font-size:17px;cursor:pointer;z-index:2}
+.msize[hidden]{display:none}
+#modal:has(#mSize:not([hidden])) #mTitle{padding-right:44px}
+.mbg.full .mbox{width:min(1100px,calc(100vw - 32px));height:calc(100vh - 32px);max-height:none}
+@supports (height:100dvh){ .mbg.full .mbox{height:calc(100dvh - 32px)} }
+@media (max-width:600px){
+  .mbg.full{padding:0 !important;align-items:stretch}
+  .mbg.full .mbox{width:100vw;max-width:100vw;height:100vh;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom))}
+  @supports (height:100dvh){ .mbg.full .mbox{height:100dvh} }
+  .mbg.full #mBody{margin:0 -16px;padding:0 16px}
+  .mbg.full .msize{top:calc(10px + env(safe-area-inset-top))}
+}
+.wsort{margin-left:auto;margin-right:6px;height:30px;border-radius:9px;border:1px solid var(--border);background:#16203d;color:var(--txt);font:inherit;font-size:12.5px;padding:0 6px}
+.wsort option{background:#16203d;color:#e8ecf8}
 /* Notes */
 .nt-wrap{position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;background:#0B1128;color:var(--txt);
   padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));animation:mbgIn 160ms ease-out}
 .nt-top{display:flex;align-items:center;gap:8px;flex:none;margin-bottom:8px}
 .nt-top > b{flex:1;font-size:20px;font-weight:700;letter-spacing:-.3px}
+.nt-binbtn{position:relative}.nt-binbtn span{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:#64748b;color:#fff;font-size:10.5px;font-weight:700;line-height:17px}
 .nt-top .pad-ic.on{background:rgba(250,204,21,.18);border-color:rgba(250,204,21,.5);color:#facc15}
 .nt-center{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto}
 .nt-lock{width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
@@ -1581,6 +1605,55 @@ select option:checked{background:#2E3A78;color:#fff}
 .pad-lock-box b{font-size:17px}
 .pad-lock-box p{font-size:13px;color:var(--txt2);line-height:1.5;margin:0}
 .pad-lock-box .btn{align-self:flex-start}
+/* Screen remote v2: tabs for screen view, clipboard, files and PC */
+.px-tabs{display:flex;gap:4px;flex:none;padding:3px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
+.px-tabs::-webkit-scrollbar{display:none}
+.px-tabs button{flex:1 0 auto;height:36px;padding:0 10px;border:0;border-radius:11px;background:none;color:var(--txt2);font-family:inherit;font-size:12.5px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;touch-action:manipulation;cursor:pointer}
+.px-tabs button.on{background:rgba(245,158,11,.22);color:var(--txt)}
+.px-tabs button i{font-size:16px}
+.px-pane{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.px-pane[hidden]{display:none}
+.px-bar{display:flex;gap:6px;flex-wrap:wrap;flex:none;align-items:center}
+.px-bar .grow{flex:1}
+.px-chip{height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt);font-family:inherit;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;gap:5px;touch-action:manipulation;cursor:pointer}
+.px-chip.on{background:rgba(245,158,11,.25);border-color:rgba(245,158,11,.55)}
+.px-chip:disabled{opacity:.45}
+.px-chip.danger{color:#fca5a5;border-color:rgba(248,113,113,.4)}
+.px-view{flex:1;min-height:0;overflow:auto;border-radius:18px;background:#000;border:1px solid rgba(255,255,255,.10);position:relative;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+.px-view img{display:block;width:100%;height:auto;-webkit-user-drag:none;user-select:none}
+.px-view.z2 img{width:200%}.px-view.z3 img{width:300%}
+.px-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--txt3);font-size:13px;line-height:1.6;pointer-events:none}
+.px-dotmark{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px solid #fbbf24;pointer-events:none;animation:pxPing 450ms ease-out forwards}
+@keyframes pxPing{from{transform:scale(.4);opacity:1}to{transform:scale(1.4);opacity:0}}
+.px-info{font-size:12px;color:var(--txt3);flex:none;min-height:16px}
+.px-ta{flex:1;min-height:120px;width:100%;box-sizing:border-box;resize:none;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);
+  font-family:inherit;font-size:14px;line-height:1.5;padding:12px;-webkit-user-select:text;user-select:text}
+.px-crumb{font-size:13px;color:var(--txt2);display:flex;align-items:center;gap:6px;flex:none;min-height:24px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.px-list{flex:1;min-height:0;overflow:auto;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.px-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer}
+.px-row:last-child{border-bottom:0}
+.px-row:active{background:rgba(255,255,255,.06)}
+.px-row > i{font-size:20px;color:var(--txt2);flex:none}
+.px-row.dir > i{color:#fbbf24}
+.px-row span{flex:1;min-width:0;display:flex;flex-direction:column}
+.px-row b{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.px-row small{font-size:11.5px;color:var(--txt3)}
+.px-jobs{flex:none;display:flex;flex-direction:column;gap:6px}
+.px-job{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);font-size:12.5px}
+.px-job span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.px-job progress{width:70px;height:6px}
+.px-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none}
+.px-big{min-height:72px;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:var(--txt);font-family:inherit;font-size:12.5px;font-weight:600;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;cursor:pointer}
+.px-big i{font-size:24px}
+.px-big:active{transform:scale(.97);background:rgba(245,158,11,.2)}
+.px-big.danger i{color:#f87171}
+.px-big.ok i{color:#4ade80}
+.px-sub{font-size:12px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;flex:none;margin-top:4px}
+.px-old{margin:auto;max-width:340px;text-align:center;font-size:13.5px;line-height:1.6;color:var(--txt2);padding:20px}
+.px-old i{font-size:30px;color:#fbbf24;display:block;margin-bottom:8px}
 /* Holidays: add to calendar */
 .hol-acts{display:flex;gap:6px;flex:none;align-items:center}
 .hol-see{width:36px;padding:0;justify-content:center}
@@ -1801,6 +1874,7 @@ select option:checked{background:#2E3A78;color:#fff}
 <div class="mbg" id="modal">
   <div class="mbox">
     <h2 id="mTitle">Event</h2>
+    <button class="msize" id="mSize" hidden onclick="mToggleSize()" aria-label="Full screen"><i class="ti ti-arrows-maximize"></i></button>
     <div id="mBody"></div>
     <div class="macts" id="mActs"></div>
   </div>
@@ -2218,7 +2292,10 @@ function agendaEventsOnDay(ds){
 // ─── MODAL ───────────────────────────────────────────────
 function closeModal(){
   // The life timer ticks once a second; stop it as soon as its dialog goes.
-  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }document.getElementById('modal').classList.remove('open');unlockPageScroll();if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}if(typeof _rmPoll!=='undefined'&&_rmPoll){clearInterval(_rmPoll);_rmPoll=null;}if(typeof _plTimer!=='undefined'&&_plTimer){clearInterval(_plTimer);_plTimer=null;}}
+  if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }
+  if(_mFit){ _mFit.disconnect(); _mFit=null; }
+  { const md=document.getElementById('modal'); md.classList.remove('full'); md.dataset.w=''; const sb=document.getElementById('mSize'); if(sb) sb.hidden=true; }
+  document.getElementById('modal').classList.remove('open');unlockPageScroll();if(_fxRefreshTimer){clearInterval(_fxRefreshTimer);_fxRefreshTimer=null;}if(typeof _rmPoll!=='undefined'&&_rmPoll){clearInterval(_rmPoll);_rmPoll=null;}if(typeof _plTimer!=='undefined'&&_plTimer){clearInterval(_plTimer);_plTimer=null;}}
 // While a dialog is open the page behind it is frozen in place. On iPhone a
 // swipe that started on the dim backdrop scrolled the calendar underneath,
 // and the dialog's own list then wouldn't scroll.
@@ -2237,7 +2314,39 @@ function unlockPageScroll(){
   el.style.overflow='';
   el.scrollTop=_lockTop;
 }
+// Widget dialogs can use the whole screen: the busy ones open that way, any
+// other one grows by itself when its content is long, and the corner button
+// switches (remembered per widget, on this device).
+let _modalWidget=null, _mFit=null;
+const WIDGET_FULL=['bot','concerts','shopping','tithe','worship','plugs','holidays','bible','remote','fx'];
+function mSizePref(a){ try{ return localStorage.getItem('org:wsize:'+a); }catch(e){ return null; } }
+function mApplySize(full){
+  const m=document.getElementById('modal'); m.classList.toggle('full', !!full);
+  const b=document.getElementById('mSize'); if(b){ b.innerHTML='<i class="ti '+(full?'ti-arrows-minimize':'ti-arrows-maximize')+'"></i>'; b.setAttribute('aria-label', full?'Smaller':'Full screen'); }
+}
+function mToggleSize(){
+  const m=document.getElementById('modal'), full=!m.classList.contains('full'), a=m.dataset.w;
+  mApplySize(full);
+  if(a) try{ localStorage.setItem('org:wsize:'+a, full?'full':'small'); }catch(e){}
+}
 function showModal(title,body,acts){
+  const mw=(_modalWidget && Date.now()-_modalWidget.at<4000) ? _modalWidget.action : '';
+  _modalWidget=null;
+  const md=document.getElementById('modal');
+  const same = md.classList.contains('open') && md.dataset.w && !mw;         // a widget re-drawing its own dialog keeps its size
+  if(!same){
+    md.dataset.w=mw; document.getElementById('mSize').hidden=!mw;
+    const pref=mw?mSizePref(mw):null;
+    mApplySize(pref ? pref==='full' : WIDGET_FULL.includes(mw));
+    if(_mFit){ _mFit.disconnect(); _mFit=null; }
+    // No saved choice: a long widget grows to full screen by itself.
+    if(mw && !pref && 'MutationObserver' in window){
+      const mb0=document.getElementById('mBody');
+      _mFit=new MutationObserver(()=>{ if(!md.classList.contains('full') && mb0.scrollHeight > mb0.clientHeight*1.35){ mApplySize(true); } });
+      _mFit.observe(mb0,{ childList:true, subtree:true });
+      setTimeout(()=>{ if(mb0.scrollHeight > mb0.clientHeight*1.35) mApplySize(true); }, 60);
+    }
+  }
   document.getElementById('mTitle').textContent=title;
   const mb=document.getElementById('mBody');
   mb.innerHTML=body; mb.scrollTop=0;
@@ -4716,12 +4825,23 @@ function getWidgets(){
   const missing = builtIns.filter(b => !saved.some(x => x.id === b.id || x.action === b.action));
   return missing.length ? [...missing, ...saved] : saved;
 }
+// Launcher order: your own order (Manage), A–Z, Z–A, or most used on this device.
+function wSort(){ try{ return localStorage.getItem('org:wsort')||'custom'; }catch(e){ return 'custom'; } }
+function wUses(){ try{ return JSON.parse(localStorage.getItem('org:wuse')||'{}'); }catch(e){ return {}; } }
+function wSetSort(v){ try{ localStorage.setItem('org:wsort', v); }catch(e){} closeWidgets(); toggleWidgets(); }
+function wSorted(list){
+  const m=wSort(), u=wUses(), name=w=>String(w.name||'').toLowerCase();
+  if(m==='az') return list.slice().sort((a,b)=>name(a).localeCompare(name(b)));
+  if(m==='za') return list.slice().sort((a,b)=>name(b).localeCompare(name(a)));
+  if(m==='used') return list.slice().sort((a,b)=>(u[b.id]||0)-(u[a.id]||0) || name(a).localeCompare(name(b)));
+  return list;
+}
 function toggleWidgets(e){
   if(e) e.stopPropagation();
   const d=document.getElementById('wdrop');
   const open=d.classList.contains('open');
   if(open) return closeWidgets();
-  const list=getWidgets();
+  const list=wSorted(getWidgets());
   const tools=list.filter(w=>w.action), links=list.filter(w=>!w.action);
   const tile=w=>{
     const c=WIDGET_TINT[w.action]||'#8CA8FF';
@@ -4734,7 +4854,9 @@ function toggleWidgets(e){
       '<span class="wlink-t"><b>'+escHtml(w.name)+'</b>'+(w.desc?'<small>'+escHtml(w.desc)+'</small>':'')+'</span>'+
       '<i class="ti ti-arrow-up-right wgo"></i></button>';
   d.innerHTML =
-    '<div class="wpanel-head"><b>Widgets</b><button class="btn sm ghost" onclick="manageWidgets()"><i class="ti ti-adjustments"></i> Manage</button></div>'+
+    '<div class="wpanel-head"><b>Widgets</b><select class="wsort" aria-label="Sort widgets" onchange="wSetSort(this.value)" onclick="event.stopPropagation()">'+
+      [['custom','Your order'],['az','A to Z'],['za','Z to A'],['used','Most used']].map(o=>'<option value="'+o[0]+'"'+(wSort()===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>'+
+      '<button class="btn sm ghost" onclick="manageWidgets()"><i class="ti ti-adjustments"></i> Manage</button></div>'+
     (tools.length ? '<div class="wgrid">'+tools.map(tile).join('')+'</div>' : '')+
     (links.length ? '<div class="wsec">Links</div><div class="wlinks">'+links.map(link).join('')+'</div>' : '')+
     (!list.length ? '<div class="wempty">No widgets yet.</div>' : '');
@@ -4762,12 +4884,19 @@ window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeWidgets(); });
 
 const WIDGET_ACTIONS={ bible: ()=>openBiblePlan(), timer: ()=>openLifeTimer(), tithe: ()=>openTithe(), concerts: ()=>openConcerts(),
   clocks: ()=>openClocks(), holidays: ()=>openHolidays(), shopping: ()=>openShopping(), fx: ()=>openFx(), remote: ()=>openRemote(), worship: ()=>openWorship(), plugs: ()=>openPlugs(), notes: ()=>openNotes(), verse: ()=>openVerse(), games: ()=>openGames(), dev: ()=>openDev(), bot: ()=>openBot() };
+// Every way into a widget dialog (launcher, bell, notification, chat…) marks
+// it as that widget, so it gets its size button and remembered size.
+{ const FN={ bible:'openBiblePlan', timer:'openLifeTimer', tithe:'openTithe', concerts:'openConcerts', clocks:'openClocks', holidays:'openHolidays', shopping:'openShopping', fx:'openFx', remote:'openRemote', worship:'openWorship', plugs:'openPlugs', bot:'openBot' };
+  for(const [k, name] of Object.entries(FN)){ const f=window[name]; if(typeof f!=='function') continue;
+    window[name]=function(){ _modalWidget={ action:k, at:Date.now() }; return f.apply(this, arguments); }; } }
 // Each built-in widget's accent, used for its tile in the launcher.
 const WIDGET_TINT={ bible:'#a78bfa', timer:'#38bdf8', tithe:'#34d399', concerts:'#f472b6', clocks:'#fbbf24', holidays:'#fb7185', shopping:'#4ade80', fx:'#22d3ee', remote:'#f59e0b', worship:'#fbbf24', plugs:'#a3e635', notes:'#facc15', verse:'#E2C08D', games:'#a78bfa', dev:'#2dd4bf', bot:'#F7931A' };
 function openWidget(id){
   const w=getWidgets().find(x=>x.id===id);
   closeWidgets();
   if(!w) return;
+  try{ const u=wUses(); u[w.id]=(u[w.id]||0)+1; localStorage.setItem('org:wuse', JSON.stringify(u)); }catch(e){}
+  _modalWidget={ action:w.action||'', at:Date.now() };
   // Some widgets are built in and open a dialog here rather than a new tab.
   if(w.action && WIDGET_ACTIONS[w.action]) return WIDGET_ACTIONS[w.action]();
   if(!w.url) return;
@@ -5638,10 +5767,11 @@ function rmRender(){
         '<button class="btn acc sm" onclick="rmDownload()"><i class="ti ti-download"></i> Download helper</button>'+
         (_rm.paired?'<button class="btn sm" onclick="rmUnpair()"><i class="ti ti-unlink"></i> Unpair laptop</button>':'')+
       '</div>'+
-      '<div class="cc-foot">Works from anywhere, not only at home. Only the four screen modes can be sent — nothing else on the laptop is reachable. Needs Windows 10 or 11.</div>'+
+      '<div class="cc-foot">Works from anywhere, not only at home. Only these can be used: the screen modes, touchpad and keyboard, a picture of the screen, the clipboard, files in Downloads, Desktop, Documents and Pictures, and lock / sleep / shut down — nothing else on the laptop is reachable. After an update, download the helper again and open it once. Needs Windows 10 or 11.</div>'+
     '</details>';
-  const pad = '<button class="rm-padbtn" '+(dis?'disabled ':'')+'onclick="rmPadOpen()"><i class="ti ti-hand-finger"></i><span><b>Touchpad &amp; keyboard</b><small>'+
-    (dis ? 'Needs the laptop online' : (_rm.touchpad===false ? 'Download the helper again once to enable this' : 'Control the mouse and type from here'))+'</small></span><i class="ti ti-chevron-right"></i></button>';
+  const pad = '<button class="rm-padbtn" '+(dis?'disabled ':'')+'onclick="rmPadOpen()"><i class="ti ti-hand-finger"></i><span><b>Touchpad, screen &amp; files</b><small>'+
+    (dis ? 'Needs the laptop online' : (_rm.touchpad===false ? 'Download the helper again once to enable this'
+      : (_rm.helper && _rm.helper<2 ? 'Touchpad ready · download the helper again for the screen, clipboard, files and PC controls' : 'Touchpad, see the screen, clipboard, files and PC controls')))+'</small></span><i class="ti ti-chevron-right"></i></button>';
   el.innerHTML = st + pad + '<div class="slabel" style="padding-top:14px"><i class="ti ti-device-tv"></i> Screens</div>' + grid + note + setup;
 }
 async function rmSend(cmd){
@@ -5731,18 +5861,24 @@ function rmPadOpen(){
       '<button class="pad-ic" id="padSensBtn" onclick="rmSensCycle()" aria-label="Pointer speed"><i class="ti ti-gauge"></i><b id="padSens">'+rmSens()+'</b></button>'+
       '<button class="pad-ic" onclick="rmKbToggle()" aria-label="Keyboard"><i class="ti ti-keyboard"></i></button>'+
     '</div>'+
+    pxTabsHtml()+
+    '<div class="px-pane" id="pxPad">'+
     '<div class="pad-keys" id="padKeys">'+RM_KEYS.map(k=>'<button onclick="rmKey(\''+k[0]+'\')">'+k[1]+'</button>').join('')+'</div>'+
     '<div class="pad-main">'+
       '<div class="pad-area" id="padArea"><div class="pad-hint" id="padHint">Move with one finger · tap to click<br>Two fingers: scroll · two-finger tap: right-click<br>Press and hold to drag</div></div>'+
       '<div class="pad-scroll" id="padScroll" aria-label="Scroll"><i class="ti ti-chevron-up"></i><i class="ti ti-arrows-vertical"></i><i class="ti ti-chevron-down"></i></div>'+
     '</div>'+
     '<div class="pad-btns"><button id="padL">Left</button><button id="padR">Right</button></div>'+
+    '</div>'+pxPanesHtml()+
     '<div class="pad-lock" id="padLock" hidden></div>'+
     '<input id="padKb" class="pad-kb" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Type on the laptop">';
   document.body.appendChild(o);
   lockPageScroll();
-  _pad={ ws:null, ax:0, ay:0, sx:0, sy:0, raf:0, alive:true, retry:0, laptop:false };
+  _pad={ ws:null, ax:0, ay:0, sx:0, sy:0, raf:0, alive:true, retry:0, laptop:false, ver:(_rm&&_rm.helper)||1, tab:'pad', zoom:1 };
   rmPadWire();
+  pxWireScreen();
+  let t0='pad'; try{ t0=localStorage.getItem('org:rmTab')||'pad'; }catch(e){}
+  if(PX_TABS.some(t=>t[0]===t0)) pxTab(t0);
   rmPadConnect();
 }
 function rmPadClose(){
@@ -5750,7 +5886,7 @@ function rmPadClose(){
   _pad.alive=false;
   try{ if(_pad.drag) rmPadSend('u l'); }catch(e){}
   try{ _pad.ws && _pad.ws.close(); }catch(e){}
-  clearInterval(_pad.ping); clearTimeout(_pad.retryT); cancelAnimationFrame(_pad.raf);
+  clearInterval(_pad.ping); clearTimeout(_pad.retryT); clearTimeout(_pad.shotT); cancelAnimationFrame(_pad.raf);
   const o=document.getElementById('rmPad'); if(o) o.remove();
   _pad=null;
   unlockPageScroll();
@@ -5771,8 +5907,10 @@ function rmPadConnect(){
   _pad.ws=ws;
   ws.onopen=()=>{ ws.send('auth '+tok); _pad.retry=0; };
   ws.onmessage=e=>{
-    if(e.data==='laptop on'){ _pad.laptop=true; rmPadStatus('on', escHtml((_rm&&_rm.host)||'Laptop')+' connected'); }
+    if(typeof e.data!=='string' || !_pad) return;
+    if(e.data==='laptop on'){ _pad.laptop=true; rmPadStatus('on', escHtml((_rm&&_rm.host)||'Laptop')+' connected'); if(_pad.tab!=='pad') pxTab(_pad.tab); }
     else if(e.data==='laptop off'){ _pad.laptop=false; rmPadStatus('off','Laptop offline — is it on?'); }
+    else pxOnMessage(e.data);
   };
   ws.onclose=e=>{
     if(!_pad || !_pad.alive) return;
@@ -5812,6 +5950,297 @@ function rmPadSend(msg){
   try{ _pad.ws.send(msg); return true; }catch(e){ return false; }
 }
 function rmKey(k){ rmPadSend('k '+k); if(navigator.vibrate) navigator.vibrate(8); }
+// ── Screen remote v2: see the screen, clipboard, files, PC controls ──
+// Everything goes over the same live link as the touchpad. The laptop
+// helper must be version 2 (download it again once).
+const PX_TABS=[['pad','ti-hand-finger','Touchpad'],['scr','ti-device-desktop','Screen'],['clip','ti-clipboard','Clipboard'],['files','ti-folder','Files'],['pc','ti-power','PC']];
+const PX_FOLDERS=[['downloads','Downloads','ti-download'],['desktop','Desktop','ti-device-desktop'],['documents','Documents','ti-file-text'],['pictures','Pictures','ti-photo']];
+const PX_UP_MAX=100*1024*1024, PX_UP_CHUNK=196608;
+function pxRid(){ return Math.random().toString(36).slice(2,10).padEnd(8,'0'); }
+function pxSize(n){ return n<1024?n+' B':n<1048576?(n/1024).toFixed(0)+' KB':(n/1048576).toFixed(n<10485760?1:0)+' MB'; }
+function pxPanesHtml(){
+  return '<div class="px-pane" id="pxScr" hidden>'+
+      '<div class="px-bar">'+
+        '<button class="px-chip" id="pxLive" onclick="pxLiveToggle()"><i class="ti ti-player-pause"></i> Pause</button>'+
+        '<button class="px-chip" id="pxZoom" onclick="pxZoomCycle()"><i class="ti ti-zoom-in"></i> <b>1×</b></button>'+
+        '<button class="px-chip" id="pxQual" onclick="pxQualToggle()"><i class="ti ti-adjustments"></i> <b>Fast</b></button>'+
+        '<span class="grow"></span>'+
+        '<button class="px-chip" onclick="rmKbToggle()" aria-label="Keyboard"><i class="ti ti-keyboard"></i></button>'+
+      '</div>'+
+      '<div class="px-view" id="pxView"><img id="pxImg" alt="Laptop screen"><div class="px-msg" id="pxMsg">Waiting for the picture…</div></div>'+
+      '<div class="px-info" id="pxInfo">Tap to click · press and hold to right-click · use 2× or 3× and scroll for small text</div>'+
+    '</div>'+
+    '<div class="px-pane" id="pxClip" hidden>'+
+      '<div class="px-sub">Phone → laptop</div>'+
+      '<div class="px-bar">'+
+        '<button class="px-chip" onclick="pxClipPastePhone()"><i class="ti ti-clipboard-text"></i> Paste here</button>'+
+        '<button class="px-chip" onclick="pxClipSend(false)"><i class="ti ti-send"></i> Send to laptop</button>'+
+        '<button class="px-chip" onclick="pxClipSend(true)"><i class="ti ti-arrow-big-down-lines"></i> Send &amp; paste</button>'+
+      '</div>'+
+      '<textarea class="px-ta" id="pxClipTx" placeholder="Type or paste text here, then send it to the laptop’s clipboard."></textarea>'+
+      '<div class="px-sub">Laptop → phone</div>'+
+      '<div class="px-bar">'+
+        '<button class="px-chip" onclick="pxClipGet()"><i class="ti ti-download"></i> Get laptop clipboard</button>'+
+        '<button class="px-chip" id="pxClipCopy" onclick="pxClipCopy()" disabled><i class="ti ti-copy"></i> Copy to phone</button>'+
+      '</div>'+
+      '<div class="px-info" id="pxClipInfo"></div>'+
+    '</div>'+
+    '<div class="px-pane" id="pxFiles" hidden>'+
+      '<div class="px-bar">'+PX_FOLDERS.map(f=>'<button class="px-chip" data-f="'+f[0]+'" onclick="pxLs(\''+f[0]+'\',\'\')"><i class="ti '+f[2]+'"></i> '+f[1]+'</button>').join('')+'</div>'+
+      '<div class="px-crumb" id="pxCrumb"></div>'+
+      '<div class="px-list" id="pxList"></div>'+
+      '<div class="px-jobs" id="pxJobs"></div>'+
+      '<div class="px-bar"><button class="px-chip on" onclick="document.getElementById(\'pxUp\').click()"><i class="ti ti-upload"></i> Send files to the laptop</button>'+
+        '<span class="px-info" style="flex:1">They go into Downloads</span></div>'+
+      '<input type="file" id="pxUp" multiple hidden onchange="pxUpload(this.files);this.value=\'\'">'+
+    '</div>'+
+    '<div class="px-pane" id="pxPc" hidden>'+
+      '<div class="px-sub">Sound &amp; media</div>'+
+      '<div class="px-grid">'+
+        '<button class="px-big" onclick="rmKey(\'voldn\')"><i class="ti ti-volume-2"></i>Volume −</button>'+
+        '<button class="px-big" onclick="rmKey(\'mute\')"><i class="ti ti-volume-off"></i>Mute</button>'+
+        '<button class="px-big" onclick="rmKey(\'volup\')"><i class="ti ti-volume"></i>Volume +</button>'+
+        '<button class="px-big" onclick="rmKey(\'prev\')"><i class="ti ti-player-skip-back"></i>Previous</button>'+
+        '<button class="px-big" onclick="rmKey(\'play\')"><i class="ti ti-player-play"></i>Play / pause</button>'+
+        '<button class="px-big" onclick="rmKey(\'next\')"><i class="ti ti-player-skip-forward"></i>Next</button>'+
+      '</div>'+
+      '<div class="px-sub">Power</div>'+
+      '<div class="px-grid">'+
+        '<button class="px-big" onclick="pxPc(\'lock\')"><i class="ti ti-lock"></i>Lock</button>'+
+        '<button class="px-big" onclick="pxPc(\'screenoff\')"><i class="ti ti-device-desktop-off"></i>Screen off</button>'+
+        '<button class="px-big" onclick="pxPc(\'sleep\')"><i class="ti ti-moon"></i>Sleep</button>'+
+        '<button class="px-big danger" onclick="pxPc(\'restart\')"><i class="ti ti-refresh"></i>Restart</button>'+
+        '<button class="px-big danger" onclick="pxPc(\'shutdown\')"><i class="ti ti-power"></i>Shut down</button>'+
+        '<button class="px-big ok" onclick="pxPc(\'cancel\')"><i class="ti ti-player-stop"></i>Cancel shut down</button>'+
+      '</div>'+
+      '<div class="px-info" id="pxPcInfo">Restart and Shut down wait 1 minute, so you can still cancel.</div>'+
+    '</div>'+
+    '<div class="px-pane" id="pxOld" hidden><div class="px-old"><i class="ti ti-download"></i>'+
+      'The helper on your laptop is the older version. On the laptop, open the Screen remote → <b>Laptop setup</b> → <b>Download helper</b> and open it once. Then the screen, clipboard, files and PC controls work here.</div></div>';
+}
+function pxTabsHtml(){ return '<div class="px-tabs" id="pxTabs">'+PX_TABS.map(t=>'<button data-t="'+t[0]+'"'+(t[0]==='pad'?' class="on"':'')+' onclick="pxTab(\''+t[0]+'\')"><i class="ti '+t[1]+'"></i>'+t[2]+'</button>').join('')+'</div>'; }
+function pxTab(t){
+  if(!_pad) return;
+  _pad.tab=t;
+  try{ localStorage.setItem('org:rmTab',t); }catch(e){}
+  document.querySelectorAll('#pxTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  const old = t!=='pad' && _pad.laptop && (_pad.ver||1)<2;
+  const show={ pad:'pxPad', scr:'pxScr', clip:'pxClip', files:'pxFiles', pc:'pxPc' };
+  Object.values(show).concat('pxOld').forEach(id=>{ const el=document.getElementById(id); if(el) el.hidden=true; });
+  const el=document.getElementById(old?'pxOld':show[t]); if(el) el.hidden=false;
+  if(old) return;
+  if(t==='scr') pxShotNext(0);
+  if(t==='files' && !_pad.files){ pxLs('downloads',''); }
+}
+function pxReady(){ return _pad && _pad.laptop && (_pad.ver||1)>=2 && _pad.ws && _pad.ws.readyState===1; }
+// Screen: ask for the next picture once the previous one has arrived.
+function pxShotNext(delay){
+  if(!_pad) return;
+  clearTimeout(_pad.shotT);
+  _pad.shotT=setTimeout(()=>{
+    if(!_pad || _pad.tab!=='scr' || _pad.scrPaused || document.hidden) return;
+    if(!pxReady()){ pxShotNext(1500); return; }
+    const v=document.getElementById('pxView'); if(!v) return;
+    const z=_pad.zoom||1;
+    const w=Math.max(480, Math.min(z>1?2560:1920, Math.round(v.clientWidth*(window.devicePixelRatio||1)*z)));
+    const q=_pad.sharp?72:45;
+    if(rmPadSend('shot '+w+' '+q)){ _pad.shotWait=Date.now(); _pad.shotT=setTimeout(()=>pxShotNext(0), 8000); }
+  }, delay);
+}
+function pxFrame(rest){
+  const p=rest.split(' '); if(p.length<5) return;
+  const img=document.getElementById('pxImg'), msg=document.getElementById('pxMsg');
+  if(img){ img.src='data:image/jpeg;base64,'+p[4]; }
+  if(msg) msg.style.display='none';
+  if(_pad) _pad.frames=(_pad.frames||0)+1;
+  pxShotNext(_pad && _pad.sharp ? 350 : 120);
+}
+function pxLiveToggle(){
+  if(!_pad) return; _pad.scrPaused=!_pad.scrPaused;
+  const b=document.getElementById('pxLive'); if(b) b.innerHTML=_pad.scrPaused?'<i class="ti ti-player-play"></i> Live':'<i class="ti ti-player-pause"></i> Pause';
+  if(!_pad.scrPaused) pxShotNext(0);
+}
+function pxZoomCycle(){
+  if(!_pad) return; _pad.zoom=(_pad.zoom||1)%3+1;
+  const v=document.getElementById('pxView'); if(v){ v.classList.remove('z2','z3'); if(_pad.zoom>1) v.classList.add('z'+_pad.zoom); }
+  const b=document.querySelector('#pxZoom b'); if(b) b.textContent=_pad.zoom+'×';
+}
+function pxQualToggle(){
+  if(!_pad) return; _pad.sharp=!_pad.sharp;
+  const b=document.querySelector('#pxQual b'); if(b) b.textContent=_pad.sharp?'Sharp':'Fast';
+}
+function pxWireScreen(){
+  const img=document.getElementById('pxImg'), v=document.getElementById('pxView'); if(!img||!v) return;
+  let t0=0, x0=0, y0=0, moved=false, hold=null, held=false;
+  const at=(cx,cy)=>{ const r=img.getBoundingClientRect(); if(!r.width||!r.height) return null;
+    const fx=(cx-r.left)/r.width, fy=(cy-r.top)/r.height; if(fx<0||fx>1||fy<0||fy>1) return null;
+    return [Math.round(fx*10000), Math.round(fy*10000), cx-v.getBoundingClientRect().left+v.scrollLeft, cy-v.getBoundingClientRect().top+v.scrollTop]; };
+  const mark=(a)=>{ const d=document.createElement('div'); d.className='px-dotmark'; d.style.left=a[2]+'px'; d.style.top=a[3]+'px'; v.appendChild(d); setTimeout(()=>d.remove(),500); };
+  const fire=(cx,cy,right)=>{ const a=at(cx,cy); if(!a || !pxReady()) return; rmPadSend('tap '+a[0]+' '+a[1]+(right?' r':'')); mark(a); if(navigator.vibrate) navigator.vibrate(right?20:8); pxShotNext(150); };
+  img.addEventListener('touchstart', e=>{ if(e.touches.length!==1){ clearTimeout(hold); moved=true; return; }
+    t0=performance.now(); x0=e.touches[0].clientX; y0=e.touches[0].clientY; moved=false; held=false;
+    clearTimeout(hold); hold=setTimeout(()=>{ if(!moved){ held=true; fire(x0,y0,true); } }, 550); }, {passive:true});
+  img.addEventListener('touchmove', e=>{ const t=e.touches[0]; if(Math.abs(t.clientX-x0)+Math.abs(t.clientY-y0)>10){ moved=true; clearTimeout(hold); } }, {passive:true});
+  img.addEventListener('touchend', e=>{ clearTimeout(hold); if(!moved && !held && performance.now()-t0<450){ e.preventDefault(); fire(x0,y0,false); } }, {passive:false});
+  img.addEventListener('click', e=>{ if('ontouchstart' in window) return; fire(e.clientX,e.clientY,false); });
+  img.addEventListener('contextmenu', e=>{ e.preventDefault(); if(!('ontouchstart' in window)) fire(e.clientX,e.clientY,true); });
+  img.addEventListener('dblclick', e=>e.preventDefault());
+}
+// Clipboard
+async function pxClipPastePhone(){
+  const ta=document.getElementById('pxClipTx'), i=document.getElementById('pxClipInfo');
+  try{ const t=await navigator.clipboard.readText(); if(ta) ta.value=t; }
+  catch(e){ if(i) i.textContent='The phone didn’t allow reading the clipboard — long-press the box and choose Paste.'; if(ta) ta.focus(); }
+}
+function pxClipSend(paste){
+  const ta=document.getElementById('pxClipTx'), i=document.getElementById('pxClipInfo'); const t=(ta&&ta.value)||'';
+  if(!t){ if(i) i.textContent='Nothing to send yet.'; return; }
+  if(t.length>65536){ if(i) i.textContent='That’s too long (most 64 000 characters).'; return; }
+  if(!pxReady()){ if(i) i.textContent='The laptop isn’t connected.'; return; }
+  _pad.clipPaste=!!paste;
+  rmPadSend('clip set '+t);
+  if(i) i.textContent='Sending…';
+}
+function pxClipGet(){
+  const i=document.getElementById('pxClipInfo');
+  if(!pxReady()){ if(i) i.textContent='The laptop isn’t connected.'; return; }
+  rmPadSend('clip get'); if(i) i.textContent='Asking the laptop…';
+}
+async function pxClipCopy(){
+  const i=document.getElementById('pxClipInfo'); const t=_pad&&_pad.clipIn||'';
+  try{ await navigator.clipboard.writeText(t); if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> Copied to this phone.'; }
+  catch(e){ const ta=document.getElementById('pxClipTx'); if(ta){ ta.value=t; ta.focus(); ta.select(); } if(i) i.textContent='Copy wasn’t allowed — the text is selected in the box above, copy it from there.'; }
+}
+// Files
+function pxLs(folder, rel){
+  if(!_pad) return;
+  _pad.files={ folder, rel, items:null };
+  document.querySelectorAll('#pxFiles .px-bar [data-f]').forEach(b=>b.classList.toggle('on', b.dataset.f===folder));
+  pxFilesRender('Loading…');
+  if(!pxReady()){ pxFilesRender('The laptop isn’t connected.'); return; }
+  rmPadSend('ls '+folder+(rel?' '+rel:''));
+}
+function pxFilesRender(msg){
+  const L=document.getElementById('pxList'), C=document.getElementById('pxCrumb'); if(!L||!_pad||!_pad.files) return;
+  const f=_pad.files, name=(PX_FOLDERS.find(x=>x[0]===f.folder)||[,'Folder'])[1];
+  const parts=f.rel?f.rel.split('/'):[];
+  C.innerHTML=(parts.length?'<button class="px-chip" onclick="pxUp()"><i class="ti ti-arrow-left"></i></button>':'')+'<i class="ti ti-folder"></i> '+escHtml([name].concat(parts).join(' › '));
+  if(msg || !f.items){ L.innerHTML='<div class="px-row" style="cursor:default"><span><small>'+escHtml(msg||'')+'</small></span></div>'; return; }
+  if(!f.items.length){ L.innerHTML='<div class="px-row" style="cursor:default"><span><small>This folder is empty.</small></span></div>'; return; }
+  L.innerHTML=f.items.map((it,ix)=>{
+    const ic=it.d?'ti-folder':/\.(jpe?g|png|gif|webp|heic|bmp)$/i.test(it.n)?'ti-photo':/\.(mp4|mov|mkv|avi|webm)$/i.test(it.n)?'ti-movie':/\.(mp3|wav|m4a|flac|ogg)$/i.test(it.n)?'ti-music':/\.pdf$/i.test(it.n)?'ti-file-type-pdf':/\.(zip|rar|7z)$/i.test(it.n)?'ti-file-zip':'ti-file';
+    const when=it.t?new Date(it.t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
+    return '<div class="px-row'+(it.d?' dir':'')+'" onclick="pxOpen('+ix+')"><i class="ti '+ic+'"></i><span><b>'+escHtml(it.n)+'</b><small>'+(it.d?'Folder':pxSize(it.s))+(when?' · '+when:'')+'</small></span>'+
+      (it.d?'<i class="ti ti-chevron-right"></i>':'<i class="ti ti-download"></i>')+'</div>';
+  }).join('');
+}
+function pxUp(){ const f=_pad&&_pad.files; if(!f) return; const p=f.rel.split('/'); p.pop(); pxLs(f.folder,p.join('/')); }
+function pxOpen(ix){
+  const f=_pad&&_pad.files; if(!f||!f.items) return; const it=f.items[ix]; if(!it) return;
+  const rel=(f.rel?f.rel+'/':'')+it.n;
+  if(it.d){ pxLs(f.folder, rel); return; }
+  if(it.s>PX_UP_MAX){ showToast('Files bigger than 100 MB can’t be fetched from here.'); return; }
+  const rid=pxRid();
+  _pad.jobs=_pad.jobs||{};
+  _pad.jobs[rid]={ kind:'get', name:it.n, size:it.s, parts:[], got:0, total:0 };
+  pxJobsRender();
+  rmPadSend('get '+rid+' '+f.folder+' '+rel);
+}
+function pxJobsRender(){
+  const J=document.getElementById('pxJobs'); if(!J||!_pad) return;
+  const jobs=Object.entries(_pad.jobs||{});
+  J.innerHTML=jobs.map(([rid,j])=>{
+    const pct = j.kind==='get' ? (j.total?j.got/j.total:0) : (j.size?j.sent/j.size:0);
+    let right;
+    if(j.err) right='<span style="color:var(--red);flex:none">'+escHtml(j.err)+'</span><button class="px-chip" onclick="pxJobDrop(\''+rid+'\')"><i class="ti ti-x"></i></button>';
+    else if(j.blob) right='<button class="px-chip on" onclick="pxSave(\''+rid+'\')"><i class="ti ti-device-floppy"></i> Save</button><button class="px-chip" onclick="pxJobDrop(\''+rid+'\')"><i class="ti ti-x"></i></button>';
+    else if(j.done) right='<span style="color:var(--green);flex:none"><i class="ti ti-check"></i> In Downloads'+(j.saved&&j.saved!==j.name?' as '+escHtml(j.saved):'')+'</span><button class="px-chip" onclick="pxJobDrop(\''+rid+'\')"><i class="ti ti-x"></i></button>';
+    else right='<progress max="1" value="'+pct.toFixed(3)+'"></progress>';
+    return '<div class="px-job"><i class="ti '+(j.kind==='get'?'ti-download':'ti-upload')+'"></i><span>'+escHtml(j.name)+' · '+pxSize(j.size||0)+'</span>'+right+'</div>';
+  }).join('');
+}
+function pxJobDrop(rid){ if(_pad&&_pad.jobs){ delete _pad.jobs[rid]; pxJobsRender(); } }
+function pxB64ToBytes(b){ const s=atob(b), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+function pxBytesToB64(u){ let s=''; for(let i=0;i<u.length;i+=32768) s+=String.fromCharCode.apply(null,u.subarray(i,i+32768)); return btoa(s); }
+function pxFget(rest){
+  const m=rest.match(/^(\S+) (\d+) (\d+) ([01]) ?([\s\S]*)$/); if(!m||!_pad||!_pad.jobs) return;
+  const j=_pad.jobs[m[1]]; if(!j||j.kind!=='get') return;
+  j.parts[+m[2]]=pxB64ToBytes(m[5]); j.got=+m[2]+1; j.total=+m[3];
+  if(m[4]==='1'){
+    j.blob=new Blob(j.parts,{type:pxMime(j.name)}); j.parts=null;
+    if(!('ontouchstart' in window)) pxSave(m[1]);
+  }
+  pxJobsRender();
+}
+function pxMime(n){ const e=(n.split('.').pop()||'').toLowerCase();
+  return ({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',pdf:'application/pdf',txt:'text/plain',mp4:'video/mp4',mov:'video/quicktime',mp3:'audio/mpeg',zip:'application/zip',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})[e]||'application/octet-stream'; }
+async function pxSave(rid){
+  const j=_pad&&_pad.jobs&&_pad.jobs[rid]; if(!j||!j.blob) return;
+  const file=new File([j.blob], j.name, {type:j.blob.type});
+  if('ontouchstart' in window && navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file]}); return; }catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(j.blob); a.download=j.name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+async function pxUpload(files){
+  if(!_pad || !files || !files.length) return;
+  if(!pxReady()){ showToast('The laptop isn’t connected.'); return; }
+  _pad.jobs=_pad.jobs||{};
+  for(const f of Array.from(files)){
+    const rid=pxRid();
+    if(f.size>PX_UP_MAX){ _pad.jobs[rid]={ kind:'put', name:f.name, size:f.size, sent:0, err:'Bigger than 100 MB' }; pxJobsRender(); continue; }
+    const j=_pad.jobs[rid]={ kind:'put', name:f.name, size:f.size, sent:0 };
+    pxJobsRender();
+    const ws=_pad.ws;
+    const safe=f.name.replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').slice(0,180)||'file';
+    ws.send('putb '+rid+' '+f.size+' '+safe);
+    for(let off=0; off<f.size || off===0; off+=PX_UP_CHUNK){
+      if(!_pad || _pad.ws!==ws || ws.readyState!==1){ j.err='Connection lost'; break; }
+      const buf=new Uint8Array(await f.slice(off, off+PX_UP_CHUNK).arrayBuffer());
+      if(buf.length) ws.send('putc '+rid+' '+pxBytesToB64(buf));
+      j.sent=Math.min(f.size, off+buf.length);
+      pxJobsRender();
+      while(ws.readyState===1 && ws.bufferedAmount>1048576) await new Promise(r=>setTimeout(r,60));
+      if(f.size===0) break;
+    }
+    if(!j.err) ws.send('pute '+rid);
+    pxJobsRender();
+  }
+}
+// PC
+function pxPc(what){
+  const i=document.getElementById('pxPcInfo');
+  if(!pxReady()){ if(i) i.textContent='The laptop isn’t connected.'; return; }
+  const ask={ sleep:'Put the laptop to sleep? The remote disconnects until it wakes up.', restart:'Restart the laptop in 1 minute?', shutdown:'Shut the laptop down in 1 minute?' };
+  if(ask[what] && !confirm(ask[what])) return;
+  rmPadSend('pc '+what);
+  if(i) i.textContent='Sent…';
+}
+function pxOnMessage(d){
+  const sp=d.indexOf(' '), op=sp<0?d:d.slice(0,sp), rest=sp<0?'':d.slice(sp+1);
+  switch(op){
+    case 'ver': _pad.ver=+rest||1; if(_pad.tab&&_pad.tab!=='pad') pxTab(_pad.tab); return true;
+    case 'frame': pxFrame(rest); return true;
+    case 'frame-err': { const m=document.getElementById('pxMsg'); if(m){ m.style.display=''; m.textContent='The laptop couldn’t take a picture: '+rest; } pxShotNext(3000); return true; }
+    case 'clipok': { const i=document.getElementById('pxClipInfo');
+      if(_pad.clipPaste){ _pad.clipPaste=false; setTimeout(()=>rmPadSend('k ctrlv'),120); if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> Sent and pasted on the laptop.'; }
+      else if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> On the laptop’s clipboard — press Ctrl+V there to paste.'; return true; }
+    case 'clip': { _pad.clipIn=rest; const i=document.getElementById('pxClipInfo'), b=document.getElementById('pxClipCopy');
+      if(b) b.disabled=!rest;
+      if(i) i.innerHTML = rest ? '<b>From the laptop:</b> '+escHtml(rest.length>300?rest.slice(0,300)+'…':rest) : 'The laptop clipboard has no text (it may hold a picture or files).';
+      return true; }
+    case 'ls': { try{ const j=JSON.parse(rest); if(_pad.files && j.folder===_pad.files.folder){ _pad.files.rel=j.rel||''; _pad.files.items=Array.isArray(j.items)?j.items:(j.items?[j.items]:[]); pxFilesRender(); } }catch(e){} return true; }
+    case 'lserr': pxFilesRender('Couldn’t open: '+rest); return true;
+    case 'fget': pxFget(rest); return true;
+    case 'ferr': case 'puterr': { const m=rest.match(/^(\S+) ([\s\S]*)$/); const j=m&&_pad.jobs&&_pad.jobs[m[1]]; if(j){ j.err=m[2].slice(0,120); pxJobsRender(); } return true; }
+    case 'putok': { const m=rest.match(/^(\S+) ([\s\S]*)$/); const j=m&&_pad.jobs&&_pad.jobs[m[1]]; if(j){ j.done=true; j.saved=m[2]; pxJobsRender(); if(_pad.files&&_pad.files.folder==='downloads'&&!_pad.files.rel) rmPadSend('ls downloads'); } return true; }
+    case 'pcok': { const i=document.getElementById('pxPcInfo'); const t={ lock:'Locked.', screenoff:'Screen switched off — it wakes when the mouse moves.', sleep:'Going to sleep…', shutdown:'Shutting down in 1 minute — tap Cancel shut down to stop it.', restart:'Restarting in 1 minute — tap Cancel shut down to stop it.', cancel:'Cancelled.' }[rest]||rest;
+      if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> '+escHtml(t); return true; }
+  }
+  return false;
+}
+
 function rmSensCycle(){
   const v=rmSens()%5+1; try{ localStorage.setItem(RM_SENS_KEY,String(v)); }catch(e){}
   const b=document.getElementById('padSens'); if(b) b.textContent=v;
@@ -6682,7 +7111,9 @@ function ntLink(t){ return t.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" targe
 function ntShowList(){
   const o=document.getElementById('ntWrap'); if(!o) return;
   _nt.view='list'; _nt.cur=null;
-  const right='<button class="pad-ic" onclick="ntMenu()" aria-label="Notes settings"><i class="ti ti-dots"></i></button><button class="pad-ic" onclick="ntLock()" aria-label="Lock"><i class="ti ti-lock"></i></button>';
+  const binN=_nt.notes.filter(n=>n.deleted).length;
+  const right=(!_nt.bin?'<button class="pad-ic nt-binbtn" onclick="_nt.bin=true;ntShowList()" aria-label="Bin'+(binN?' ('+binN+')':'')+'" title="Bin"><i class="ti ti-trash"></i>'+(binN?'<span>'+binN+'</span>':'')+'</button>':'')+
+    '<button class="pad-ic" onclick="ntMenu()" aria-label="Notes settings"><i class="ti ti-dots"></i></button><button class="pad-ic" onclick="ntLock()" aria-label="Lock"><i class="ti ti-lock"></i></button>';
   o.innerHTML=ntTop(_nt.bin?'Bin':'Notes', right)+'<div id="ntBanner"></div>'+
     (_nt.bin?'':'<div class="nt-search"><i class="ti ti-search"></i><input id="ntQ" placeholder="Search notes" value="'+escHtml(_nt.q)+'" oninput="_nt.q=this.value;ntRenderCards()" autocomplete="off"></div>')+
     '<div class="nt-scroll" id="ntScroll"><div id="ntMenuBox"></div><div id="ntCards"></div></div>'+
@@ -7015,7 +7446,7 @@ async function ntDelete(){
   const n=_nt.cur; clearTimeout(_nt.saveT);
   if(n.id){ try{ await ntApi('/api/notes/delete',{ id:n.id }); const x=_nt.notes.find(k=>k.id===n.id); if(x) x.deleted=Date.now(); }catch(e){ return; } }
   _nt.cur=null; _nt.dirty=false; ntShowList();
-  if(n.id){ const b=document.getElementById('ntBanner'); if(b) b.innerHTML='<div class="nt-banner"><i class="ti ti-trash"></i><span>Moved to the bin.</span><button class="btn sm" onclick="ntRestore(\''+n.id+'\')">Undo</button></div>'; }
+  if(n.id){ const b=document.getElementById('ntBanner'); if(b) b.innerHTML='<div class="nt-banner"><i class="ti ti-trash"></i><span>Moved to the bin.</span><button class="btn sm" onclick="ntRestore(\''+n.id+'\')">Undo</button><button class="btn sm" onclick="_nt.bin=true;ntShowList()"><i class="ti ti-trash"></i> Open bin</button></div>'; }
 }
 async function ntRestore(id){ try{ await ntApi('/api/notes/delete',{ id, restore:true }); const x=_nt.notes.find(k=>k.id===id); if(x){ delete x.deleted; x.updated=Date.now(); } }catch(e){ return; } const b=document.getElementById('ntBanner'); if(b) b.innerHTML=''; ntRenderCards(); }
 async function ntForever(id, btn){
@@ -7248,8 +7679,19 @@ let _gm={ rec:null, view:'home' };
 const GM_KEY='org:games';
 function gmPrefs(){ try{ return Object.assign({ rows:1, speed:1, sdLevel:'beginner' }, JSON.parse(localStorage.getItem(GM_KEY)||'{}')); }catch(e){ return { rows:1, speed:1, sdLevel:'beginner' }; } }
 function gmSavePrefs(p){ try{ localStorage.setItem(GM_KEY, JSON.stringify(p)); }catch(e){} }
-async function gmLoadRec(){ try{ _gm.rec=await (await fetch('/api/games/records')).json(); }catch(e){ _gm.rec=_gm.rec||{}; } return _gm.rec; }
-async function gmPostRec(game, data){ try{ const d=await (await fetch('/api/games/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ game, ...data })})).json(); if(d && d.records) _gm.rec=d.records; return d; }catch(e){ return {}; } }
+async function gmLoadRec(){ gmFlushRec(); try{ _gm.rec=await (await fetch('/api/games/records')).json(); }catch(e){ _gm.rec=_gm.rec||{}; } return _gm.rec; }
+async function gmPostRec(game, data){
+  try{ const k='org:gmPending'; const q=JSON.parse(localStorage.getItem(k)||'[]'); q.push({ game, ...data }); localStorage.setItem(k, JSON.stringify(q.slice(-20))); }catch(e){}
+  return gmFlushRec();
+}
+async function gmFlushRec(){
+  let q=[]; try{ q=JSON.parse(localStorage.getItem('org:gmPending')||'[]'); }catch(e){}
+  let last={};
+  for(const item of q){ try{ last=await gmSendRec(item.game, item); q=q.filter(x=>x!==item); }catch(e){ break; } }
+  try{ localStorage.setItem('org:gmPending', JSON.stringify(q)); }catch(e){}
+  return last;
+}
+async function gmSendRec(game, data){ const { game:_g, ...rest }=data; const r=await fetch('/api/games/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ game, ...rest })}); if(!r.ok && r.status>=500) throw new Error('server'); const d=await r.json(); if(d && d.records) _gm.rec=d.records; return d; }
 function gmTime(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 function openGames(){
   closeModal();
@@ -7258,6 +7700,10 @@ function openGames(){
   gmHome();
   gmLoadRec().then(()=>{ if(_gm.view==='home') gmHome(); });
 }
+// A quick second tap next to a button must not zoom the page (iPhone).
+let _gmLastTouch=0;
+document.addEventListener('touchend', e=>{ if(!document.getElementById('gmWrap')) return; const now=Date.now(); if(now-_gmLastTouch<350 && !e.target.closest('input,select,textarea')) e.preventDefault(); _gmLastTouch=now; }, { passive:false });
+document.addEventListener('dblclick', e=>{ if(document.getElementById('gmWrap')) e.preventDefault(); });
 function gmClose(){ tbStop(); sdSave(); sdStop(); const o=document.getElementById('gmWrap'); if(o) o.remove(); unlockPageScroll(); _gm.view='home'; }
 function gmTop(title, right, back){
   return '<div class="nt-top"><button class="pad-x" onclick="'+(back?'gmBack()':'gmClose()')+'" aria-label="'+(back?'Back to games':'Close')+'"><i class="ti '+(back?'ti-arrow-left':'ti-x')+'"></i></button><b>'+title+'</b>'+(right||'')+'</div>';
@@ -7330,12 +7776,14 @@ function tbLayout(){
         '<div class="tb-box"><small>Score</small><b id="tbScore">0</b></div>'+
         '<div class="tb-box"><small>Lines</small><b id="tbLines">0</b></div>'+
         '<div class="tb-box"><small>Speed</small><b id="tbSpeed">'+_tb.speed+'</b></div>'+
-        '<div class="tb-box"><small>Best</small><b>'+(((_gm.rec||{}).tetris||{}).best||0).toLocaleString('en-GB')+'</b></div>'+
+        '<div class="tb-box"><small>Best</small><b id="tbBest">'+(((_gm.rec||{}).tetris||{}).best||0).toLocaleString('en-GB')+'</b></div>'+
       '</div>'+
     '</div>'+
+    // Game-pad layout: a cross on the left (turn on top, left / right, down
+    // below), drop and pause grouped on the right.
     '<div class="tb-pad">'+
-      '<div class="tb-dpad">'+btn('left','ti-chevron-left','Move left')+btn('down','ti-chevron-down','Faster down')+btn('right','ti-chevron-right','Move right')+'</div>'+
-      '<div class="tb-act">'+btn('drop','ti-arrow-bar-to-down','Drop','drop')+btn('rot','ti-rotate-clockwise','Turn','rot')+'</div>'+
+      '<div class="tb-cross">'+btn('rot','ti-rotate-clockwise','Turn','up rot')+btn('left','ti-chevron-left','Move left','lf')+btn('right','ti-chevron-right','Move right','rt')+btn('down','ti-chevron-down','Faster down','dn')+'</div>'+
+      '<div class="tb-act">'+btn('drop','ti-arrow-bar-to-down','Drop','drop')+'<button class="tb-b pause" data-k="pause" aria-label="Pause"><i class="ti ti-player-pause"></i></button></div>'+
     '</div>';
   // Size the board to the space left on this screen.
   const play=o.querySelector('.tb-play'), side=o.querySelector('.tb-side');
@@ -7347,7 +7795,7 @@ function tbLayout(){
   // Buttons: press-and-hold repeats for move and down.
   o.querySelectorAll('.tb-b').forEach(b=>{
     const k=b.dataset.k;
-    const start=e=>{ e.preventDefault(); if(_tb.over||_tb.paused) return; b.classList.add('on'); tbKey(k);
+    const start=e=>{ e.preventDefault(); if(k==='pause'){ tbPause(); return; } if(_tb.over||_tb.paused) return; b.classList.add('on'); tbKey(k);
       if(k==='left'||k==='right'||k==='down'){ clearTimeout(_tb.rep); clearInterval(_tb.rep2); _tb.rep=setTimeout(()=>{ _tb.rep2=setInterval(()=>tbKey(k), k==='down'?40:70); }, 180); } };
     const end=()=>{ b.classList.remove('on'); clearTimeout(_tb.rep); clearInterval(_tb.rep2); };
     b.addEventListener('pointerdown', start); ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,end));
@@ -7429,12 +7877,15 @@ function tbDraw(){
     x.fillStyle=TB_COL[_tb.next]; sh.forEach(([a,b])=>{ x.beginPath(); x.roundRect?x.roundRect(ox+a*q+1,oy+b*q+1,q-2,q-2,3):x.rect(ox+a*q+1,oy+b*q+1,q-2,q-2); x.fill(); }); }
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   set('tbScore',_tb.score.toLocaleString('en-GB')); set('tbLines',_tb.lines); set('tbSpeed',_tb.speed);
+  const best=((_gm.rec||{}).tetris||{}).best||0;
+  if(_tb.score>best){ set('tbBest',_tb.score.toLocaleString('en-GB')); const e=document.getElementById('tbBest'); if(e) e.classList.add('gm-newbest'); }
 }
 function tbPause(force){
   if(!_tb||_tb.over) return;
   _tb.paused = force!==undefined ? force : !_tb.paused;
   const ov=document.getElementById('tbOver'), b=document.getElementById('tbPauseBtn');
   if(b) b.innerHTML='<i class="ti '+(_tb.paused?'ti-player-play':'ti-player-pause')+'"></i>';
+  const pb=document.querySelector('.tb-b.pause'); if(pb) pb.innerHTML='<i class="ti '+(_tb.paused?'ti-player-play':'ti-player-pause')+'"></i>';
   if(ov){ ov.hidden=!_tb.paused; ov.innerHTML='<b>Paused</b><button class="btn acc" onclick="tbPause(false)"><i class="ti ti-player-play"></i> Continue</button>'; }
 }
 async function tbGameOver(){
@@ -7446,7 +7897,12 @@ async function tbGameOver(){
     '<button class="btn acc" onclick="tbStart()"><i class="ti ti-refresh"></i> Play again</button><button class="btn" onclick="tbSetup()">Change level</button>'; }
   if(_tb.score>0 || _tb.lines>0) await gmPostRec('tetris', { score:_tb.score, lines:_tb.lines });
 }
-function tbStop(){ if(_tb){ cancelAnimationFrame(_tb.raf); clearTimeout(_tb.rep); clearInterval(_tb.rep2); } _tb=null; }
+// Leaving a game (back, close, another game) still counts its score for the records.
+function tbStop(){
+  if(_tb){ cancelAnimationFrame(_tb.raf); clearTimeout(_tb.rep); clearInterval(_tb.rep2);
+    if(!_tb.over && (_tb.score>0 || _tb.lines>0)) gmPostRec('tetris', { score:_tb.score, lines:_tb.lines }); }
+  _tb=null;
+}
 document.addEventListener('keydown', e=>{
   if(_gm.view!=='tb' || !_tb || !document.getElementById('gmWrap')) return;
   const m={ ArrowLeft:'left', ArrowRight:'right', ArrowDown:'down', ArrowUp:'rot', ' ':'drop', x:'rot', X:'rot', p:'pause', P:'pause', Escape:'pause' }[e.key];
@@ -8519,7 +8975,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-02-bot-dashboard';
+const APP_BUILD='2026-11-02-remote-plus';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
