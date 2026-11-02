@@ -1064,7 +1064,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-11-02-remote-plus';
+const BUILD_VERSION = '2026-11-02-widgets-games';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3815,7 +3815,6 @@ function remoteStatus(){
     pending: _rmQueue ? { cmd:_rmQueue.cmd, sent: !!_rmQueue.sentAt } : null,
     last: _rmLast, modes: REMOTE_MODES,
     touchpad: rmLaptopOpen(),          // the live connection the touchpad needs (new helper)
-    helper: rmLaptopOpen() ? _rmVer : null,   // 2 = screen view, clipboard, files, PC controls
     phones: ((readData().settings||{}).remotePhones||[]).length
   };
 }
@@ -3892,32 +3891,6 @@ function rmPhoneOk(tok){
 }
 function rmTellPhones(msg){ for(const p of _rmPhones){ try{ if(p.readyState===1) p.send(msg); }catch(e){} } }
 // What a phone may send: relative moves, clicks, scroll, text, a few keys.
-// Version 2 of the helper adds: a picture of the screen, tap-to-click on it,
-// the clipboard both ways, files in four folders (Downloads, Desktop,
-// Documents, Pictures — nothing else) and lock / sleep / shut down.
-const RM_FOLDERS = '(downloads|desktop|documents|pictures)';
-const RM_X_RES = [
-  /^shot \d{3,4} \d{2}$/,
-  /^tap \d{1,5} \d{1,5}( [rm])?$/,
-  /^clip get$/,
-  new RegExp('^ls ' + RM_FOLDERS + '( [^\\0]{1,400})?$'),
-  new RegExp('^get [a-z0-9]{4,16} ' + RM_FOLDERS + ' [^\\0]{1,400}$'),
-  /^putb [a-z0-9]{4,16} \d{1,9} [^\0\/\\:*?"<>|]{1,200}$/,
-  /^pute [a-z0-9]{4,16}$/,
-  /^pc (lock|screenoff|sleep|shutdown|restart|cancel)$/
-];
-const RM_CLIP_MAX = 65536, RM_CHUNK_MAX = 1100000;
-function rmPhoneAllowed(m){
-  if(m.length <= 260 && RM_INPUT_RE.test(m)) return true;
-  if(m.startsWith('clip set ')) return m.length <= RM_CLIP_MAX + 9;
-  if(m.startsWith('putc ')){ const p = m.match(/^putc ([a-z0-9]{4,16}) /); return !!p && m.length <= RM_CHUNK_MAX && /^[A-Za-z0-9+/=]+$/.test(m.slice(p[0].length)); }
-  if(m.length > 700) return false;
-  if(/^(ls|get) /.test(m) && /(^|[\\/ ])\.\.([\\/]|$)|:/.test(m.split(' ').slice(m.startsWith('get') ? 3 : 2).join(' '))) return false;
-  return RM_X_RES.some(r => r.test(m));
-}
-// What the laptop may pass on to the phones.
-const RM_TO_PHONE_RE = /^(frame|frame-err|clip|clipok|ls|lserr|fget|ferr|putok|puterr|pcok) /;
-let _rmVer = 1;
 const RM_INPUT_RE = /^(m -?\d{1,4} -?\d{1,4}|s -?\d{1,5} -?\d{1,5}|c [lr]|dbl|d l|u l|k (enter|back|del|esc|tab|space|up|down|left|right|home|end|pgup|pgdn|win|alttab|altf4|f5|f11|volup|voldn|mute|play|next|prev|ctrlc|ctrlv|ctrlz|ctrla|ctrlw|ctrlt|ctrll)|t [\s\S]{1,200})$/;
 app.post('/api/remote/phone-pair', requirePrivate, (req, res) => {
   const d = readData(); d.settings = d.settings || {};
@@ -3933,7 +3906,7 @@ function attachRemoteSockets(httpServer){
   let WebSocketServer;
   try{ ({ WebSocketServer } = require('ws')); }
   catch(e){ console.log('   Touchpad: the "ws" package is missing — add it to package.json.'); return; }
-  _rmWss = new WebSocketServer({ noServer:true, maxPayload: 2 * 1024 * 1024 });
+  _rmWss = new WebSocketServer({ noServer:true, maxPayload: 4096 });
   httpServer.on('upgrade', (req, socket, head) => {
     let url; try{ url = new URL(req.url, 'http://x'); }catch(e){ socket.destroy(); return; }
     const role = url.pathname === '/ws/remote/laptop' ? 'laptop' : url.pathname === '/ws/remote/phone' ? 'phone' : null;
@@ -3948,17 +3921,13 @@ function attachRemoteSockets(httpServer){
       ws.isAlive = true; ws.on('pong', () => { ws.isAlive = true; });
       if(role === 'laptop'){
         if(_rmLaptop){ try{ _rmLaptop.close(4000,'replaced'); }catch(e){} }
-        _rmLaptop = ws; _rmSeen = Date.now(); _rmVer = 1;
+        _rmLaptop = ws; _rmSeen = Date.now();
         _rmHost = String(req.headers['x-remote-host']||'').slice(0,60);
         rmTellPhones('laptop on');
         remoteHand();
         ws.on('message', buf => {
           _rmSeen = Date.now();
-          const full = String(buf);
-          if(full === 'clipok' || RM_TO_PHONE_RE.test(full)){ rmTellPhones(full); return; }
-          const h = full.match(/^hello (\d{1,3})$/);
-          if(h){ _rmVer = +h[1]; rmTellPhones('ver ' + _rmVer); return; }
-          const m = full.slice(0,400);
+          const m = String(buf).slice(0,400);
           const p = m.match(/^done (\S+) ([01]) ?([\s\S]*)$/);
           if(p && _rmQueue && p[1] === _rmQueue.id){
             _rmLast = { cmd:_rmQueue.cmd, ok: p[2]==='1', msg: p[3].slice(0,300), at: new Date().toISOString() };
@@ -3974,12 +3943,12 @@ function attachRemoteSockets(httpServer){
           const m = String(buf);
           if(!authed){
             const a = m.match(/^auth (\S+)$/);
-            if(a && rmPhoneOk(a[1])){ authed = true; clearTimeout(t); _rmPhones.add(ws); ws.send(rmLaptopOpen() ? 'laptop on' : 'laptop off'); if(rmLaptopOpen()) ws.send('ver ' + _rmVer); }
+            if(a && rmPhoneOk(a[1])){ authed = true; clearTimeout(t); _rmPhones.add(ws); ws.send(rmLaptopOpen() ? 'laptop on' : 'laptop off'); }
             else { try{ ws.close(4401,'bad token'); }catch(e){} }
             return;
           }
           if(m === 'ping'){ try{ ws.send('pong'); }catch(e){} return; }
-          if(!rmPhoneAllowed(m)) return;
+          if(!RM_INPUT_RE.test(m)) return;
           if(rmLaptopOpen()){ try{ _rmLaptop.send(m); }catch(e){} }
         });
         ws.on('close', () => { clearTimeout(t); _rmPhones.delete(ws); });
@@ -4077,11 +4046,6 @@ public static class OrgInput {
   [DllImport("user32.dll")] static extern int SetDisplayConfig(uint nPaths, IntPtr paths, uint nModes, IntPtr modes, uint flags);
   // Same call Windows+P makes: 1 internal, 2 clone, 4 extend, 8 external; 0x80 = apply now.
   public static int Topology(uint t){ return SetDisplayConfig(0, IntPtr.Zero, 0, IntPtr.Zero, t | 0x80u); }
-  [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
-  [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
-  [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
-  // Turns the screens off (they wake on mouse or keyboard).
-  public static void ScreenOff(){ PostMessage((IntPtr)0xFFFF, 0x0112, (IntPtr)0xF170, (IntPtr)2); }
 }
 '@
 
@@ -4124,132 +4088,6 @@ function Run-Mode($ws, $cmd, $id){
   }catch{ $ok = 0; $msg = $_.Exception.Message }
   Send-Text $ws ('done ' + $id + ' ' + $ok + ' ' + $msg)
 }
-
-# ---- Version 2: screen view, clipboard, files, PC controls ----
-# Real pixel sizes on high-resolution screens (otherwise Windows scales the
-# picture and the taps land in the wrong place).
-[void][OrgInput]::SetProcessDPIAware()
-Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName System.Windows.Forms
-$HelperVersion = 2
-$JpegCodec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' } | Select-Object -First 1
-$script:Puts = @{}
-
-# A picture of all screens, made smaller, with a ring where the pointer is.
-function Send-Shot($ws, [int]$maxW, [int]$q){
-  try{
-    $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
-    $bmp = New-Object System.Drawing.Bitmap $vs.Width, $vs.Height
-    $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.CopyFromScreen($vs.Left, $vs.Top, 0, 0, $bmp.Size)
-    $cp = [System.Windows.Forms.Cursor]::Position
-    $r = [Math]::Max(8, [int]($vs.Width / 120))
-    $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(235, 255, 170, 0)), ([single][Math]::Max(3, [int]($r / 3)))
-    $g.DrawEllipse($pen, ($cp.X - $vs.Left - $r), ($cp.Y - $vs.Top - $r), (2 * $r), (2 * $r))
-    $pen.Dispose(); $g.Dispose()
-    $w = [Math]::Min($maxW, $vs.Width); $h = [int]($vs.Height * $w / $vs.Width)
-    $small = New-Object System.Drawing.Bitmap $w, $h
-    $g2 = [System.Drawing.Graphics]::FromImage($small)
-    $g2.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBilinear
-    $g2.DrawImage($bmp, 0, 0, $w, $h)
-    $g2.Dispose(); $bmp.Dispose()
-    $ep = New-Object System.Drawing.Imaging.EncoderParameters 1
-    $ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality), ([long]$q)
-    $ms = New-Object System.IO.MemoryStream
-    $small.Save($ms, $JpegCodec, $ep); $small.Dispose()
-    Send-Text $ws ('frame ' + $vs.Left + ' ' + $vs.Top + ' ' + $vs.Width + ' ' + $vs.Height + ' ' + [Convert]::ToBase64String($ms.ToArray()))
-    $ms.Dispose()
-  }catch{
-    Send-Text $ws ('frame-err ' + $_.Exception.Message)
-  }
-}
-# Only these four folders (and what's inside them) can be listed or used.
-function Get-Root([string]$f){
-  switch($f){
-    'downloads' { return (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path }
-    'desktop'   { return [Environment]::GetFolderPath('Desktop') }
-    'documents' { return [Environment]::GetFolderPath('MyDocuments') }
-    'pictures'  { return [Environment]::GetFolderPath('MyPictures') }
-  }
-  throw 'Unknown folder'
-}
-function Safe-Path([string]$folder, [string]$rel){
-  $root = [IO.Path]::GetFullPath((Get-Root $folder))
-  $rel = ($rel -replace '/', '\\').Trim('\\')
-  if($rel -match '\\.\\.' -or $rel -match ':'){ throw 'Not allowed' }
-  $full = if($rel){ [IO.Path]::GetFullPath((Join-Path $root $rel)) } else { $root }
-  if(-not $full.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)){ throw 'Not allowed' }
-  return $full
-}
-function Do-List($ws, [string]$arg){
-  $sp2 = $arg.IndexOf(' ')
-  $f = if($sp2 -lt 0){ $arg } else { $arg.Substring(0, $sp2) }
-  $rel = if($sp2 -lt 0){ '' } else { $arg.Substring($sp2 + 1) }
-  try{
-    $p = Safe-Path $f $rel
-    $items = @(Get-ChildItem -LiteralPath $p -Force -ErrorAction Stop | Where-Object { -not ($_.Attributes -band [IO.FileAttributes]::Hidden) -and -not ($_.Attributes -band [IO.FileAttributes]::System) } |
-      Sort-Object @{ Expression = { $_.PSIsContainer }; Descending = $true }, @{ Expression = { $_.LastWriteTime }; Descending = $true } | Select-Object -First 300)
-    $list = @($items | ForEach-Object { [ordered]@{ n = $_.Name; d = [bool]$_.PSIsContainer; s = $(if($_.PSIsContainer){ 0 } else { $_.Length }); t = $_.LastWriteTime.ToString('s') } })
-    Send-Text $ws ('ls ' + (ConvertTo-Json -InputObject ([ordered]@{ folder = $f; rel = $rel; items = $list }) -Compress -Depth 4))
-  }catch{ Send-Text $ws ('lserr ' + $_.Exception.Message) }
-}
-# A file to the phone, in pieces.
-function Do-Get($ws, [string]$arg){
-  $p = $arg.Split(' ', 3); $rid = $p[0]
-  try{
-    $fp = Safe-Path $p[1] $p[2]
-    $fi = Get-Item -LiteralPath $fp -ErrorAction Stop
-    if($fi.PSIsContainer){ throw 'That is a folder' }
-    if($fi.Length -gt 104857600){ throw 'Bigger than 100 MB' }
-    $size = 393216
-    $total = [Math]::Max(1, [int][Math]::Ceiling($fi.Length / $size))
-    $fs = [IO.File]::Open($fp, 'Open', 'Read', 'ReadWrite')
-    try{
-      $chunk = New-Object byte[] $size; $seq = 0
-      do{
-        $n = $fs.Read($chunk, 0, $size)
-        $last = if($fs.Position -ge $fs.Length){ 1 } else { 0 }
-        Send-Text $ws ('fget ' + $rid + ' ' + $seq + ' ' + $total + ' ' + $last + ' ' + [Convert]::ToBase64String($chunk, 0, $n))
-        $seq++
-      } while($last -eq 0)
-    } finally { $fs.Dispose() }
-  }catch{ Send-Text $ws ('ferr ' + $rid + ' ' + $_.Exception.Message) }
-}
-# A file from the phone goes to Downloads (a number is added if the name is taken).
-function Do-PutBegin($ws, [string]$arg){
-  $p = $arg.Split(' ', 3); $rid = $p[0]
-  try{
-    $name = ([IO.Path]::GetFileName($p[2]) -replace '[<>:"/\\\\|?*]', '_').Trim()
-    if(-not $name){ $name = 'file' }
-    $dir = Get-Root 'downloads'
-    $target = Join-Path $dir $name; $i = 1
-    while(Test-Path -LiteralPath $target){ $target = Join-Path $dir ([IO.Path]::GetFileNameWithoutExtension($name) + ' (' + $i + ')' + [IO.Path]::GetExtension($name)); $i++ }
-    $script:Puts[$rid] = @{ fs = [IO.File]::Create($target); path = $target }
-  }catch{ Send-Text $ws ('puterr ' + $rid + ' ' + $_.Exception.Message) }
-}
-function Do-PutChunk([string]$arg){
-  $p = $arg.Split(' ', 2); $u = $script:Puts[$p[0]]
-  if($u){ $b = [Convert]::FromBase64String($p[1]); $u.fs.Write($b, 0, $b.Length) }
-}
-function Do-PutEnd($ws, [string]$rid){
-  $u = $script:Puts[$rid]
-  if($u){ $u.fs.Dispose(); $script:Puts.Remove($rid); Send-Text $ws ('putok ' + $rid + ' ' + [IO.Path]::GetFileName($u.path)) }
-}
-function Close-Puts(){
-  foreach($k in @($script:Puts.Keys)){ try{ $u = $script:Puts[$k]; $u.fs.Dispose(); Remove-Item -LiteralPath $u.path -Force -ErrorAction SilentlyContinue }catch{} }
-  $script:Puts = @{}
-}
-function Do-Pc($ws, [string]$what){
-  switch($what){
-    'lock'      { Send-Text $ws 'pcok lock'; Start-Process -FilePath 'rundll32.exe' -ArgumentList 'user32.dll,LockWorkStation' }
-    'screenoff' { Send-Text $ws 'pcok screenoff'; Start-Sleep -Milliseconds 300; [OrgInput]::ScreenOff() }
-    'sleep'     { Send-Text $ws 'pcok sleep'; Start-Sleep -Milliseconds 500; [void][System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, $false, $false) }
-    'shutdown'  { Start-Process -FilePath 'shutdown.exe' -ArgumentList '/s /t 60 /c "Shutting down from the Organizer in 1 minute."' -WindowStyle Hidden; Send-Text $ws 'pcok shutdown' }
-    'restart'   { Start-Process -FilePath 'shutdown.exe' -ArgumentList '/r /t 60 /c "Restarting from the Organizer in 1 minute."' -WindowStyle Hidden; Send-Text $ws 'pcok restart' }
-    'cancel'    { Start-Process -FilePath 'shutdown.exe' -ArgumentList '/a' -WindowStyle Hidden; Send-Text $ws 'pcok cancel' }
-  }
-}
-
 function Handle($ws, [string]$m){
   $sp = $m.IndexOf(' ')
   $op = if($sp -lt 0){ $m } else { $m.Substring(0,$sp) }
@@ -4267,29 +4105,11 @@ function Handle($ws, [string]$m){
       elseif($Combos.ContainsKey($arg)){ $k = $Combos[$arg]; [OrgInput]::Combo([uint16]$k[0], [uint16]$k[1], $false) }
     }
     'mode' { $p = $arg.Split(' '); Run-Mode $ws $p[0] $p[1] }
-    'shot' { $p = $arg.Split(' '); Send-Shot $ws ([int]$p[0]) ([int]$p[1]) }
-    'tap'  {
-      $p = $arg.Split(' '); $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
-      [void][OrgInput]::SetCursorPos([int]($vs.Left + [double]$p[0] * $vs.Width / 10000), [int]($vs.Top + [double]$p[1] * $vs.Height / 10000))
-      Start-Sleep -Milliseconds 40
-      $right = ($p.Length -gt 2 -and $p[2] -eq 'r')
-      if(-not ($p.Length -gt 2 -and $p[2] -eq 'm')){ [OrgInput]::Click($right) }
-    }
-    'clip' {
-      if($arg -eq 'get'){ $t = Get-Clipboard -Raw -ErrorAction SilentlyContinue; if($null -eq $t){ $t = '' }; if($t.Length -gt 200000){ $t = $t.Substring(0, 200000) }; Send-Text $ws ('clip ' + $t) }
-      elseif($arg.StartsWith('set ')){ Set-Clipboard -Value $arg.Substring(4); Send-Text $ws 'clipok' }
-    }
-    'ls'   { Do-List $ws $arg }
-    'get'  { Do-Get $ws $arg }
-    'putb' { Do-PutBegin $ws $arg }
-    'putc' { Do-PutChunk $arg }
-    'pute' { Do-PutEnd $ws $arg }
-    'pc'   { Do-Pc $ws $arg }
   }
 }
 
 $WsUrl = ($Server -replace '^http', 'ws') + '/ws/remote/laptop'
-$buf = New-Object byte[] 65536
+$buf = New-Object byte[] 8192
 while($true){
   $ws = $null
   try{
@@ -4299,22 +4119,17 @@ while($true){
     $ws.Options.KeepAliveInterval = [TimeSpan]::FromSeconds(20)
     $ws.ConnectAsync([Uri]$WsUrl, [Threading.CancellationToken]::None).Wait()
     $seg = [ArraySegment[byte]]::new($buf)
-    Send-Text $ws ('hello ' + $HelperVersion)
     while($ws.State -eq [Net.WebSockets.WebSocketState]::Open){
-      # A message can arrive in several pieces; join the bytes first so
-      # letters such as ă or ș that fall on a boundary aren't broken.
-      $ms = New-Object System.IO.MemoryStream
+      $sb = New-Object System.Text.StringBuilder
       do{
         $r = $ws.ReceiveAsync($seg, [Threading.CancellationToken]::None).GetAwaiter().GetResult()
         if($r.MessageType -eq [Net.WebSockets.WebSocketMessageType]::Close){ break }
-        $ms.Write($buf, 0, $r.Count)
+        [void]$sb.Append([Text.Encoding]::UTF8.GetString($buf, 0, $r.Count))
       } while(-not $r.EndOfMessage)
-      if($r.MessageType -eq [Net.WebSockets.WebSocketMessageType]::Close){ $ms.Dispose(); break }
-      $text = [Text.Encoding]::UTF8.GetString($ms.ToArray()); $ms.Dispose()
-      try{ Handle $ws $text }catch{}
+      if($r.MessageType -eq [Net.WebSockets.WebSocketMessageType]::Close){ break }
+      try{ Handle $ws $sb.ToString() }catch{}
     }
   }catch{}
-  try{ Close-Puts }catch{}
   try{ if($ws){ $ws.Dispose() } }catch{}
   Start-Sleep -Seconds 5
 }
