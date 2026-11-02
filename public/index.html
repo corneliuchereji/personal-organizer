@@ -1605,55 +1605,6 @@ select option:checked{background:#2E3A78;color:#fff}
 .pad-lock-box b{font-size:17px}
 .pad-lock-box p{font-size:13px;color:var(--txt2);line-height:1.5;margin:0}
 .pad-lock-box .btn{align-self:flex-start}
-/* Screen remote v2: tabs for screen view, clipboard, files and PC */
-.px-tabs{display:flex;gap:4px;flex:none;padding:3px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
-.px-tabs::-webkit-scrollbar{display:none}
-.px-tabs button{flex:1 0 auto;height:36px;padding:0 10px;border:0;border-radius:11px;background:none;color:var(--txt2);font-family:inherit;font-size:12.5px;font-weight:600;
-  display:inline-flex;align-items:center;justify-content:center;gap:5px;touch-action:manipulation;cursor:pointer}
-.px-tabs button.on{background:rgba(245,158,11,.22);color:var(--txt)}
-.px-tabs button i{font-size:16px}
-.px-pane{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
-.px-pane[hidden]{display:none}
-.px-bar{display:flex;gap:6px;flex-wrap:wrap;flex:none;align-items:center}
-.px-bar .grow{flex:1}
-.px-chip{height:36px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--txt);font-family:inherit;font-size:13px;font-weight:600;
-  display:inline-flex;align-items:center;gap:5px;touch-action:manipulation;cursor:pointer}
-.px-chip.on{background:rgba(245,158,11,.25);border-color:rgba(245,158,11,.55)}
-.px-chip:disabled{opacity:.45}
-.px-chip.danger{color:#fca5a5;border-color:rgba(248,113,113,.4)}
-.px-view{flex:1;min-height:0;overflow:auto;border-radius:18px;background:#000;border:1px solid rgba(255,255,255,.10);position:relative;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
-.px-view img{display:block;width:100%;height:auto;-webkit-user-drag:none;user-select:none}
-.px-view.z2 img{width:200%}.px-view.z3 img{width:300%}
-.px-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--txt3);font-size:13px;line-height:1.6;pointer-events:none}
-.px-dotmark{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:2px solid #fbbf24;pointer-events:none;animation:pxPing 450ms ease-out forwards}
-@keyframes pxPing{from{transform:scale(.4);opacity:1}to{transform:scale(1.4);opacity:0}}
-.px-info{font-size:12px;color:var(--txt3);flex:none;min-height:16px}
-.px-ta{flex:1;min-height:120px;width:100%;box-sizing:border-box;resize:none;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);
-  font-family:inherit;font-size:14px;line-height:1.5;padding:12px;-webkit-user-select:text;user-select:text}
-.px-crumb{font-size:13px;color:var(--txt2);display:flex;align-items:center;gap:6px;flex:none;min-height:24px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.px-list{flex:1;min-height:0;overflow:auto;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
-.px-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer}
-.px-row:last-child{border-bottom:0}
-.px-row:active{background:rgba(255,255,255,.06)}
-.px-row > i{font-size:20px;color:var(--txt2);flex:none}
-.px-row.dir > i{color:#fbbf24}
-.px-row span{flex:1;min-width:0;display:flex;flex-direction:column}
-.px-row b{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.px-row small{font-size:11.5px;color:var(--txt3)}
-.px-jobs{flex:none;display:flex;flex-direction:column;gap:6px}
-.px-job{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);font-size:12.5px}
-.px-job span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.px-job progress{width:70px;height:6px}
-.px-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none}
-.px-big{min-height:72px;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:var(--txt);font-family:inherit;font-size:12.5px;font-weight:600;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;cursor:pointer}
-.px-big i{font-size:24px}
-.px-big:active{transform:scale(.97);background:rgba(245,158,11,.2)}
-.px-big.danger i{color:#f87171}
-.px-big.ok i{color:#4ade80}
-.px-sub{font-size:12px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;flex:none;margin-top:4px}
-.px-old{margin:auto;max-width:340px;text-align:center;font-size:13.5px;line-height:1.6;color:var(--txt2);padding:20px}
-.px-old i{font-size:30px;color:#fbbf24;display:block;margin-bottom:8px}
 /* Holidays: add to calendar */
 .hol-acts{display:flex;gap:6px;flex:none;align-items:center}
 .hol-see{width:36px;padding:0;justify-content:center}
@@ -5767,11 +5718,10 @@ function rmRender(){
         '<button class="btn acc sm" onclick="rmDownload()"><i class="ti ti-download"></i> Download helper</button>'+
         (_rm.paired?'<button class="btn sm" onclick="rmUnpair()"><i class="ti ti-unlink"></i> Unpair laptop</button>':'')+
       '</div>'+
-      '<div class="cc-foot">Works from anywhere, not only at home. Only these can be used: the screen modes, touchpad and keyboard, a picture of the screen, the clipboard, files in Downloads, Desktop, Documents and Pictures, and lock / sleep / shut down — nothing else on the laptop is reachable. After an update, download the helper again and open it once. Needs Windows 10 or 11.</div>'+
+      '<div class="cc-foot">Works from anywhere, not only at home. Only the four screen modes can be sent — nothing else on the laptop is reachable. Needs Windows 10 or 11.</div>'+
     '</details>';
-  const pad = '<button class="rm-padbtn" '+(dis?'disabled ':'')+'onclick="rmPadOpen()"><i class="ti ti-hand-finger"></i><span><b>Touchpad, screen &amp; files</b><small>'+
-    (dis ? 'Needs the laptop online' : (_rm.touchpad===false ? 'Download the helper again once to enable this'
-      : (_rm.helper && _rm.helper<2 ? 'Touchpad ready · download the helper again for the screen, clipboard, files and PC controls' : 'Touchpad, see the screen, clipboard, files and PC controls')))+'</small></span><i class="ti ti-chevron-right"></i></button>';
+  const pad = '<button class="rm-padbtn" '+(dis?'disabled ':'')+'onclick="rmPadOpen()"><i class="ti ti-hand-finger"></i><span><b>Touchpad &amp; keyboard</b><small>'+
+    (dis ? 'Needs the laptop online' : (_rm.touchpad===false ? 'Download the helper again once to enable this' : 'Control the mouse and type from here'))+'</small></span><i class="ti ti-chevron-right"></i></button>';
   el.innerHTML = st + pad + '<div class="slabel" style="padding-top:14px"><i class="ti ti-device-tv"></i> Screens</div>' + grid + note + setup;
 }
 async function rmSend(cmd){
@@ -5861,24 +5811,18 @@ function rmPadOpen(){
       '<button class="pad-ic" id="padSensBtn" onclick="rmSensCycle()" aria-label="Pointer speed"><i class="ti ti-gauge"></i><b id="padSens">'+rmSens()+'</b></button>'+
       '<button class="pad-ic" onclick="rmKbToggle()" aria-label="Keyboard"><i class="ti ti-keyboard"></i></button>'+
     '</div>'+
-    pxTabsHtml()+
-    '<div class="px-pane" id="pxPad">'+
     '<div class="pad-keys" id="padKeys">'+RM_KEYS.map(k=>'<button onclick="rmKey(\''+k[0]+'\')">'+k[1]+'</button>').join('')+'</div>'+
     '<div class="pad-main">'+
       '<div class="pad-area" id="padArea"><div class="pad-hint" id="padHint">Move with one finger · tap to click<br>Two fingers: scroll · two-finger tap: right-click<br>Press and hold to drag</div></div>'+
       '<div class="pad-scroll" id="padScroll" aria-label="Scroll"><i class="ti ti-chevron-up"></i><i class="ti ti-arrows-vertical"></i><i class="ti ti-chevron-down"></i></div>'+
     '</div>'+
     '<div class="pad-btns"><button id="padL">Left</button><button id="padR">Right</button></div>'+
-    '</div>'+pxPanesHtml()+
     '<div class="pad-lock" id="padLock" hidden></div>'+
     '<input id="padKb" class="pad-kb" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Type on the laptop">';
   document.body.appendChild(o);
   lockPageScroll();
-  _pad={ ws:null, ax:0, ay:0, sx:0, sy:0, raf:0, alive:true, retry:0, laptop:false, ver:(_rm&&_rm.helper)||1, tab:'pad', zoom:1 };
+  _pad={ ws:null, ax:0, ay:0, sx:0, sy:0, raf:0, alive:true, retry:0, laptop:false };
   rmPadWire();
-  pxWireScreen();
-  let t0='pad'; try{ t0=localStorage.getItem('org:rmTab')||'pad'; }catch(e){}
-  if(PX_TABS.some(t=>t[0]===t0)) pxTab(t0);
   rmPadConnect();
 }
 function rmPadClose(){
@@ -5886,7 +5830,7 @@ function rmPadClose(){
   _pad.alive=false;
   try{ if(_pad.drag) rmPadSend('u l'); }catch(e){}
   try{ _pad.ws && _pad.ws.close(); }catch(e){}
-  clearInterval(_pad.ping); clearTimeout(_pad.retryT); clearTimeout(_pad.shotT); cancelAnimationFrame(_pad.raf);
+  clearInterval(_pad.ping); clearTimeout(_pad.retryT); cancelAnimationFrame(_pad.raf);
   const o=document.getElementById('rmPad'); if(o) o.remove();
   _pad=null;
   unlockPageScroll();
@@ -5907,10 +5851,8 @@ function rmPadConnect(){
   _pad.ws=ws;
   ws.onopen=()=>{ ws.send('auth '+tok); _pad.retry=0; };
   ws.onmessage=e=>{
-    if(typeof e.data!=='string' || !_pad) return;
-    if(e.data==='laptop on'){ _pad.laptop=true; rmPadStatus('on', escHtml((_rm&&_rm.host)||'Laptop')+' connected'); if(_pad.tab!=='pad') pxTab(_pad.tab); }
+    if(e.data==='laptop on'){ _pad.laptop=true; rmPadStatus('on', escHtml((_rm&&_rm.host)||'Laptop')+' connected'); }
     else if(e.data==='laptop off'){ _pad.laptop=false; rmPadStatus('off','Laptop offline — is it on?'); }
-    else pxOnMessage(e.data);
   };
   ws.onclose=e=>{
     if(!_pad || !_pad.alive) return;
@@ -5950,297 +5892,6 @@ function rmPadSend(msg){
   try{ _pad.ws.send(msg); return true; }catch(e){ return false; }
 }
 function rmKey(k){ rmPadSend('k '+k); if(navigator.vibrate) navigator.vibrate(8); }
-// ── Screen remote v2: see the screen, clipboard, files, PC controls ──
-// Everything goes over the same live link as the touchpad. The laptop
-// helper must be version 2 (download it again once).
-const PX_TABS=[['pad','ti-hand-finger','Touchpad'],['scr','ti-device-desktop','Screen'],['clip','ti-clipboard','Clipboard'],['files','ti-folder','Files'],['pc','ti-power','PC']];
-const PX_FOLDERS=[['downloads','Downloads','ti-download'],['desktop','Desktop','ti-device-desktop'],['documents','Documents','ti-file-text'],['pictures','Pictures','ti-photo']];
-const PX_UP_MAX=100*1024*1024, PX_UP_CHUNK=196608;
-function pxRid(){ return Math.random().toString(36).slice(2,10).padEnd(8,'0'); }
-function pxSize(n){ return n<1024?n+' B':n<1048576?(n/1024).toFixed(0)+' KB':(n/1048576).toFixed(n<10485760?1:0)+' MB'; }
-function pxPanesHtml(){
-  return '<div class="px-pane" id="pxScr" hidden>'+
-      '<div class="px-bar">'+
-        '<button class="px-chip" id="pxLive" onclick="pxLiveToggle()"><i class="ti ti-player-pause"></i> Pause</button>'+
-        '<button class="px-chip" id="pxZoom" onclick="pxZoomCycle()"><i class="ti ti-zoom-in"></i> <b>1×</b></button>'+
-        '<button class="px-chip" id="pxQual" onclick="pxQualToggle()"><i class="ti ti-adjustments"></i> <b>Fast</b></button>'+
-        '<span class="grow"></span>'+
-        '<button class="px-chip" onclick="rmKbToggle()" aria-label="Keyboard"><i class="ti ti-keyboard"></i></button>'+
-      '</div>'+
-      '<div class="px-view" id="pxView"><img id="pxImg" alt="Laptop screen"><div class="px-msg" id="pxMsg">Waiting for the picture…</div></div>'+
-      '<div class="px-info" id="pxInfo">Tap to click · press and hold to right-click · use 2× or 3× and scroll for small text</div>'+
-    '</div>'+
-    '<div class="px-pane" id="pxClip" hidden>'+
-      '<div class="px-sub">Phone → laptop</div>'+
-      '<div class="px-bar">'+
-        '<button class="px-chip" onclick="pxClipPastePhone()"><i class="ti ti-clipboard-text"></i> Paste here</button>'+
-        '<button class="px-chip" onclick="pxClipSend(false)"><i class="ti ti-send"></i> Send to laptop</button>'+
-        '<button class="px-chip" onclick="pxClipSend(true)"><i class="ti ti-arrow-big-down-lines"></i> Send &amp; paste</button>'+
-      '</div>'+
-      '<textarea class="px-ta" id="pxClipTx" placeholder="Type or paste text here, then send it to the laptop’s clipboard."></textarea>'+
-      '<div class="px-sub">Laptop → phone</div>'+
-      '<div class="px-bar">'+
-        '<button class="px-chip" onclick="pxClipGet()"><i class="ti ti-download"></i> Get laptop clipboard</button>'+
-        '<button class="px-chip" id="pxClipCopy" onclick="pxClipCopy()" disabled><i class="ti ti-copy"></i> Copy to phone</button>'+
-      '</div>'+
-      '<div class="px-info" id="pxClipInfo"></div>'+
-    '</div>'+
-    '<div class="px-pane" id="pxFiles" hidden>'+
-      '<div class="px-bar">'+PX_FOLDERS.map(f=>'<button class="px-chip" data-f="'+f[0]+'" onclick="pxLs(\''+f[0]+'\',\'\')"><i class="ti '+f[2]+'"></i> '+f[1]+'</button>').join('')+'</div>'+
-      '<div class="px-crumb" id="pxCrumb"></div>'+
-      '<div class="px-list" id="pxList"></div>'+
-      '<div class="px-jobs" id="pxJobs"></div>'+
-      '<div class="px-bar"><button class="px-chip on" onclick="document.getElementById(\'pxUp\').click()"><i class="ti ti-upload"></i> Send files to the laptop</button>'+
-        '<span class="px-info" style="flex:1">They go into Downloads</span></div>'+
-      '<input type="file" id="pxUp" multiple hidden onchange="pxUpload(this.files);this.value=\'\'">'+
-    '</div>'+
-    '<div class="px-pane" id="pxPc" hidden>'+
-      '<div class="px-sub">Sound &amp; media</div>'+
-      '<div class="px-grid">'+
-        '<button class="px-big" onclick="rmKey(\'voldn\')"><i class="ti ti-volume-2"></i>Volume −</button>'+
-        '<button class="px-big" onclick="rmKey(\'mute\')"><i class="ti ti-volume-off"></i>Mute</button>'+
-        '<button class="px-big" onclick="rmKey(\'volup\')"><i class="ti ti-volume"></i>Volume +</button>'+
-        '<button class="px-big" onclick="rmKey(\'prev\')"><i class="ti ti-player-skip-back"></i>Previous</button>'+
-        '<button class="px-big" onclick="rmKey(\'play\')"><i class="ti ti-player-play"></i>Play / pause</button>'+
-        '<button class="px-big" onclick="rmKey(\'next\')"><i class="ti ti-player-skip-forward"></i>Next</button>'+
-      '</div>'+
-      '<div class="px-sub">Power</div>'+
-      '<div class="px-grid">'+
-        '<button class="px-big" onclick="pxPc(\'lock\')"><i class="ti ti-lock"></i>Lock</button>'+
-        '<button class="px-big" onclick="pxPc(\'screenoff\')"><i class="ti ti-device-desktop-off"></i>Screen off</button>'+
-        '<button class="px-big" onclick="pxPc(\'sleep\')"><i class="ti ti-moon"></i>Sleep</button>'+
-        '<button class="px-big danger" onclick="pxPc(\'restart\')"><i class="ti ti-refresh"></i>Restart</button>'+
-        '<button class="px-big danger" onclick="pxPc(\'shutdown\')"><i class="ti ti-power"></i>Shut down</button>'+
-        '<button class="px-big ok" onclick="pxPc(\'cancel\')"><i class="ti ti-player-stop"></i>Cancel shut down</button>'+
-      '</div>'+
-      '<div class="px-info" id="pxPcInfo">Restart and Shut down wait 1 minute, so you can still cancel.</div>'+
-    '</div>'+
-    '<div class="px-pane" id="pxOld" hidden><div class="px-old"><i class="ti ti-download"></i>'+
-      'The helper on your laptop is the older version. On the laptop, open the Screen remote → <b>Laptop setup</b> → <b>Download helper</b> and open it once. Then the screen, clipboard, files and PC controls work here.</div></div>';
-}
-function pxTabsHtml(){ return '<div class="px-tabs" id="pxTabs">'+PX_TABS.map(t=>'<button data-t="'+t[0]+'"'+(t[0]==='pad'?' class="on"':'')+' onclick="pxTab(\''+t[0]+'\')"><i class="ti '+t[1]+'"></i>'+t[2]+'</button>').join('')+'</div>'; }
-function pxTab(t){
-  if(!_pad) return;
-  _pad.tab=t;
-  try{ localStorage.setItem('org:rmTab',t); }catch(e){}
-  document.querySelectorAll('#pxTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  const old = t!=='pad' && _pad.laptop && (_pad.ver||1)<2;
-  const show={ pad:'pxPad', scr:'pxScr', clip:'pxClip', files:'pxFiles', pc:'pxPc' };
-  Object.values(show).concat('pxOld').forEach(id=>{ const el=document.getElementById(id); if(el) el.hidden=true; });
-  const el=document.getElementById(old?'pxOld':show[t]); if(el) el.hidden=false;
-  if(old) return;
-  if(t==='scr') pxShotNext(0);
-  if(t==='files' && !_pad.files){ pxLs('downloads',''); }
-}
-function pxReady(){ return _pad && _pad.laptop && (_pad.ver||1)>=2 && _pad.ws && _pad.ws.readyState===1; }
-// Screen: ask for the next picture once the previous one has arrived.
-function pxShotNext(delay){
-  if(!_pad) return;
-  clearTimeout(_pad.shotT);
-  _pad.shotT=setTimeout(()=>{
-    if(!_pad || _pad.tab!=='scr' || _pad.scrPaused || document.hidden) return;
-    if(!pxReady()){ pxShotNext(1500); return; }
-    const v=document.getElementById('pxView'); if(!v) return;
-    const z=_pad.zoom||1;
-    const w=Math.max(480, Math.min(z>1?2560:1920, Math.round(v.clientWidth*(window.devicePixelRatio||1)*z)));
-    const q=_pad.sharp?72:45;
-    if(rmPadSend('shot '+w+' '+q)){ _pad.shotWait=Date.now(); _pad.shotT=setTimeout(()=>pxShotNext(0), 8000); }
-  }, delay);
-}
-function pxFrame(rest){
-  const p=rest.split(' '); if(p.length<5) return;
-  const img=document.getElementById('pxImg'), msg=document.getElementById('pxMsg');
-  if(img){ img.src='data:image/jpeg;base64,'+p[4]; }
-  if(msg) msg.style.display='none';
-  if(_pad) _pad.frames=(_pad.frames||0)+1;
-  pxShotNext(_pad && _pad.sharp ? 350 : 120);
-}
-function pxLiveToggle(){
-  if(!_pad) return; _pad.scrPaused=!_pad.scrPaused;
-  const b=document.getElementById('pxLive'); if(b) b.innerHTML=_pad.scrPaused?'<i class="ti ti-player-play"></i> Live':'<i class="ti ti-player-pause"></i> Pause';
-  if(!_pad.scrPaused) pxShotNext(0);
-}
-function pxZoomCycle(){
-  if(!_pad) return; _pad.zoom=(_pad.zoom||1)%3+1;
-  const v=document.getElementById('pxView'); if(v){ v.classList.remove('z2','z3'); if(_pad.zoom>1) v.classList.add('z'+_pad.zoom); }
-  const b=document.querySelector('#pxZoom b'); if(b) b.textContent=_pad.zoom+'×';
-}
-function pxQualToggle(){
-  if(!_pad) return; _pad.sharp=!_pad.sharp;
-  const b=document.querySelector('#pxQual b'); if(b) b.textContent=_pad.sharp?'Sharp':'Fast';
-}
-function pxWireScreen(){
-  const img=document.getElementById('pxImg'), v=document.getElementById('pxView'); if(!img||!v) return;
-  let t0=0, x0=0, y0=0, moved=false, hold=null, held=false;
-  const at=(cx,cy)=>{ const r=img.getBoundingClientRect(); if(!r.width||!r.height) return null;
-    const fx=(cx-r.left)/r.width, fy=(cy-r.top)/r.height; if(fx<0||fx>1||fy<0||fy>1) return null;
-    return [Math.round(fx*10000), Math.round(fy*10000), cx-v.getBoundingClientRect().left+v.scrollLeft, cy-v.getBoundingClientRect().top+v.scrollTop]; };
-  const mark=(a)=>{ const d=document.createElement('div'); d.className='px-dotmark'; d.style.left=a[2]+'px'; d.style.top=a[3]+'px'; v.appendChild(d); setTimeout(()=>d.remove(),500); };
-  const fire=(cx,cy,right)=>{ const a=at(cx,cy); if(!a || !pxReady()) return; rmPadSend('tap '+a[0]+' '+a[1]+(right?' r':'')); mark(a); if(navigator.vibrate) navigator.vibrate(right?20:8); pxShotNext(150); };
-  img.addEventListener('touchstart', e=>{ if(e.touches.length!==1){ clearTimeout(hold); moved=true; return; }
-    t0=performance.now(); x0=e.touches[0].clientX; y0=e.touches[0].clientY; moved=false; held=false;
-    clearTimeout(hold); hold=setTimeout(()=>{ if(!moved){ held=true; fire(x0,y0,true); } }, 550); }, {passive:true});
-  img.addEventListener('touchmove', e=>{ const t=e.touches[0]; if(Math.abs(t.clientX-x0)+Math.abs(t.clientY-y0)>10){ moved=true; clearTimeout(hold); } }, {passive:true});
-  img.addEventListener('touchend', e=>{ clearTimeout(hold); if(!moved && !held && performance.now()-t0<450){ e.preventDefault(); fire(x0,y0,false); } }, {passive:false});
-  img.addEventListener('click', e=>{ if('ontouchstart' in window) return; fire(e.clientX,e.clientY,false); });
-  img.addEventListener('contextmenu', e=>{ e.preventDefault(); if(!('ontouchstart' in window)) fire(e.clientX,e.clientY,true); });
-  img.addEventListener('dblclick', e=>e.preventDefault());
-}
-// Clipboard
-async function pxClipPastePhone(){
-  const ta=document.getElementById('pxClipTx'), i=document.getElementById('pxClipInfo');
-  try{ const t=await navigator.clipboard.readText(); if(ta) ta.value=t; }
-  catch(e){ if(i) i.textContent='The phone didn’t allow reading the clipboard — long-press the box and choose Paste.'; if(ta) ta.focus(); }
-}
-function pxClipSend(paste){
-  const ta=document.getElementById('pxClipTx'), i=document.getElementById('pxClipInfo'); const t=(ta&&ta.value)||'';
-  if(!t){ if(i) i.textContent='Nothing to send yet.'; return; }
-  if(t.length>65536){ if(i) i.textContent='That’s too long (most 64 000 characters).'; return; }
-  if(!pxReady()){ if(i) i.textContent='The laptop isn’t connected.'; return; }
-  _pad.clipPaste=!!paste;
-  rmPadSend('clip set '+t);
-  if(i) i.textContent='Sending…';
-}
-function pxClipGet(){
-  const i=document.getElementById('pxClipInfo');
-  if(!pxReady()){ if(i) i.textContent='The laptop isn’t connected.'; return; }
-  rmPadSend('clip get'); if(i) i.textContent='Asking the laptop…';
-}
-async function pxClipCopy(){
-  const i=document.getElementById('pxClipInfo'); const t=_pad&&_pad.clipIn||'';
-  try{ await navigator.clipboard.writeText(t); if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> Copied to this phone.'; }
-  catch(e){ const ta=document.getElementById('pxClipTx'); if(ta){ ta.value=t; ta.focus(); ta.select(); } if(i) i.textContent='Copy wasn’t allowed — the text is selected in the box above, copy it from there.'; }
-}
-// Files
-function pxLs(folder, rel){
-  if(!_pad) return;
-  _pad.files={ folder, rel, items:null };
-  document.querySelectorAll('#pxFiles .px-bar [data-f]').forEach(b=>b.classList.toggle('on', b.dataset.f===folder));
-  pxFilesRender('Loading…');
-  if(!pxReady()){ pxFilesRender('The laptop isn’t connected.'); return; }
-  rmPadSend('ls '+folder+(rel?' '+rel:''));
-}
-function pxFilesRender(msg){
-  const L=document.getElementById('pxList'), C=document.getElementById('pxCrumb'); if(!L||!_pad||!_pad.files) return;
-  const f=_pad.files, name=(PX_FOLDERS.find(x=>x[0]===f.folder)||[,'Folder'])[1];
-  const parts=f.rel?f.rel.split('/'):[];
-  C.innerHTML=(parts.length?'<button class="px-chip" onclick="pxUp()"><i class="ti ti-arrow-left"></i></button>':'')+'<i class="ti ti-folder"></i> '+escHtml([name].concat(parts).join(' › '));
-  if(msg || !f.items){ L.innerHTML='<div class="px-row" style="cursor:default"><span><small>'+escHtml(msg||'')+'</small></span></div>'; return; }
-  if(!f.items.length){ L.innerHTML='<div class="px-row" style="cursor:default"><span><small>This folder is empty.</small></span></div>'; return; }
-  L.innerHTML=f.items.map((it,ix)=>{
-    const ic=it.d?'ti-folder':/\.(jpe?g|png|gif|webp|heic|bmp)$/i.test(it.n)?'ti-photo':/\.(mp4|mov|mkv|avi|webm)$/i.test(it.n)?'ti-movie':/\.(mp3|wav|m4a|flac|ogg)$/i.test(it.n)?'ti-music':/\.pdf$/i.test(it.n)?'ti-file-type-pdf':/\.(zip|rar|7z)$/i.test(it.n)?'ti-file-zip':'ti-file';
-    const when=it.t?new Date(it.t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
-    return '<div class="px-row'+(it.d?' dir':'')+'" onclick="pxOpen('+ix+')"><i class="ti '+ic+'"></i><span><b>'+escHtml(it.n)+'</b><small>'+(it.d?'Folder':pxSize(it.s))+(when?' · '+when:'')+'</small></span>'+
-      (it.d?'<i class="ti ti-chevron-right"></i>':'<i class="ti ti-download"></i>')+'</div>';
-  }).join('');
-}
-function pxUp(){ const f=_pad&&_pad.files; if(!f) return; const p=f.rel.split('/'); p.pop(); pxLs(f.folder,p.join('/')); }
-function pxOpen(ix){
-  const f=_pad&&_pad.files; if(!f||!f.items) return; const it=f.items[ix]; if(!it) return;
-  const rel=(f.rel?f.rel+'/':'')+it.n;
-  if(it.d){ pxLs(f.folder, rel); return; }
-  if(it.s>PX_UP_MAX){ showToast('Files bigger than 100 MB can’t be fetched from here.'); return; }
-  const rid=pxRid();
-  _pad.jobs=_pad.jobs||{};
-  _pad.jobs[rid]={ kind:'get', name:it.n, size:it.s, parts:[], got:0, total:0 };
-  pxJobsRender();
-  rmPadSend('get '+rid+' '+f.folder+' '+rel);
-}
-function pxJobsRender(){
-  const J=document.getElementById('pxJobs'); if(!J||!_pad) return;
-  const jobs=Object.entries(_pad.jobs||{});
-  J.innerHTML=jobs.map(([rid,j])=>{
-    const pct = j.kind==='get' ? (j.total?j.got/j.total:0) : (j.size?j.sent/j.size:0);
-    let right;
-    if(j.err) right='<span style="color:var(--red);flex:none">'+escHtml(j.err)+'</span><button class="px-chip" onclick="pxJobDrop(\''+rid+'\')"><i class="ti ti-x"></i></button>';
-    else if(j.blob) right='<button class="px-chip on" onclick="pxSave(\''+rid+'\')"><i class="ti ti-device-floppy"></i> Save</button><button class="px-chip" onclick="pxJobDrop(\''+rid+'\')"><i class="ti ti-x"></i></button>';
-    else if(j.done) right='<span style="color:var(--green);flex:none"><i class="ti ti-check"></i> In Downloads'+(j.saved&&j.saved!==j.name?' as '+escHtml(j.saved):'')+'</span><button class="px-chip" onclick="pxJobDrop(\''+rid+'\')"><i class="ti ti-x"></i></button>';
-    else right='<progress max="1" value="'+pct.toFixed(3)+'"></progress>';
-    return '<div class="px-job"><i class="ti '+(j.kind==='get'?'ti-download':'ti-upload')+'"></i><span>'+escHtml(j.name)+' · '+pxSize(j.size||0)+'</span>'+right+'</div>';
-  }).join('');
-}
-function pxJobDrop(rid){ if(_pad&&_pad.jobs){ delete _pad.jobs[rid]; pxJobsRender(); } }
-function pxB64ToBytes(b){ const s=atob(b), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
-function pxBytesToB64(u){ let s=''; for(let i=0;i<u.length;i+=32768) s+=String.fromCharCode.apply(null,u.subarray(i,i+32768)); return btoa(s); }
-function pxFget(rest){
-  const m=rest.match(/^(\S+) (\d+) (\d+) ([01]) ?([\s\S]*)$/); if(!m||!_pad||!_pad.jobs) return;
-  const j=_pad.jobs[m[1]]; if(!j||j.kind!=='get') return;
-  j.parts[+m[2]]=pxB64ToBytes(m[5]); j.got=+m[2]+1; j.total=+m[3];
-  if(m[4]==='1'){
-    j.blob=new Blob(j.parts,{type:pxMime(j.name)}); j.parts=null;
-    if(!('ontouchstart' in window)) pxSave(m[1]);
-  }
-  pxJobsRender();
-}
-function pxMime(n){ const e=(n.split('.').pop()||'').toLowerCase();
-  return ({jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',pdf:'application/pdf',txt:'text/plain',mp4:'video/mp4',mov:'video/quicktime',mp3:'audio/mpeg',zip:'application/zip',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})[e]||'application/octet-stream'; }
-async function pxSave(rid){
-  const j=_pad&&_pad.jobs&&_pad.jobs[rid]; if(!j||!j.blob) return;
-  const file=new File([j.blob], j.name, {type:j.blob.type});
-  if('ontouchstart' in window && navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file]}); return; }catch(e){ if(e && e.name==='AbortError') return; }
-  }
-  const a=document.createElement('a'); a.href=URL.createObjectURL(j.blob); a.download=j.name; document.body.appendChild(a); a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
-}
-async function pxUpload(files){
-  if(!_pad || !files || !files.length) return;
-  if(!pxReady()){ showToast('The laptop isn’t connected.'); return; }
-  _pad.jobs=_pad.jobs||{};
-  for(const f of Array.from(files)){
-    const rid=pxRid();
-    if(f.size>PX_UP_MAX){ _pad.jobs[rid]={ kind:'put', name:f.name, size:f.size, sent:0, err:'Bigger than 100 MB' }; pxJobsRender(); continue; }
-    const j=_pad.jobs[rid]={ kind:'put', name:f.name, size:f.size, sent:0 };
-    pxJobsRender();
-    const ws=_pad.ws;
-    const safe=f.name.replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').slice(0,180)||'file';
-    ws.send('putb '+rid+' '+f.size+' '+safe);
-    for(let off=0; off<f.size || off===0; off+=PX_UP_CHUNK){
-      if(!_pad || _pad.ws!==ws || ws.readyState!==1){ j.err='Connection lost'; break; }
-      const buf=new Uint8Array(await f.slice(off, off+PX_UP_CHUNK).arrayBuffer());
-      if(buf.length) ws.send('putc '+rid+' '+pxBytesToB64(buf));
-      j.sent=Math.min(f.size, off+buf.length);
-      pxJobsRender();
-      while(ws.readyState===1 && ws.bufferedAmount>1048576) await new Promise(r=>setTimeout(r,60));
-      if(f.size===0) break;
-    }
-    if(!j.err) ws.send('pute '+rid);
-    pxJobsRender();
-  }
-}
-// PC
-function pxPc(what){
-  const i=document.getElementById('pxPcInfo');
-  if(!pxReady()){ if(i) i.textContent='The laptop isn’t connected.'; return; }
-  const ask={ sleep:'Put the laptop to sleep? The remote disconnects until it wakes up.', restart:'Restart the laptop in 1 minute?', shutdown:'Shut the laptop down in 1 minute?' };
-  if(ask[what] && !confirm(ask[what])) return;
-  rmPadSend('pc '+what);
-  if(i) i.textContent='Sent…';
-}
-function pxOnMessage(d){
-  const sp=d.indexOf(' '), op=sp<0?d:d.slice(0,sp), rest=sp<0?'':d.slice(sp+1);
-  switch(op){
-    case 'ver': _pad.ver=+rest||1; if(_pad.tab&&_pad.tab!=='pad') pxTab(_pad.tab); return true;
-    case 'frame': pxFrame(rest); return true;
-    case 'frame-err': { const m=document.getElementById('pxMsg'); if(m){ m.style.display=''; m.textContent='The laptop couldn’t take a picture: '+rest; } pxShotNext(3000); return true; }
-    case 'clipok': { const i=document.getElementById('pxClipInfo');
-      if(_pad.clipPaste){ _pad.clipPaste=false; setTimeout(()=>rmPadSend('k ctrlv'),120); if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> Sent and pasted on the laptop.'; }
-      else if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> On the laptop’s clipboard — press Ctrl+V there to paste.'; return true; }
-    case 'clip': { _pad.clipIn=rest; const i=document.getElementById('pxClipInfo'), b=document.getElementById('pxClipCopy');
-      if(b) b.disabled=!rest;
-      if(i) i.innerHTML = rest ? '<b>From the laptop:</b> '+escHtml(rest.length>300?rest.slice(0,300)+'…':rest) : 'The laptop clipboard has no text (it may hold a picture or files).';
-      return true; }
-    case 'ls': { try{ const j=JSON.parse(rest); if(_pad.files && j.folder===_pad.files.folder){ _pad.files.rel=j.rel||''; _pad.files.items=Array.isArray(j.items)?j.items:(j.items?[j.items]:[]); pxFilesRender(); } }catch(e){} return true; }
-    case 'lserr': pxFilesRender('Couldn’t open: '+rest); return true;
-    case 'fget': pxFget(rest); return true;
-    case 'ferr': case 'puterr': { const m=rest.match(/^(\S+) ([\s\S]*)$/); const j=m&&_pad.jobs&&_pad.jobs[m[1]]; if(j){ j.err=m[2].slice(0,120); pxJobsRender(); } return true; }
-    case 'putok': { const m=rest.match(/^(\S+) ([\s\S]*)$/); const j=m&&_pad.jobs&&_pad.jobs[m[1]]; if(j){ j.done=true; j.saved=m[2]; pxJobsRender(); if(_pad.files&&_pad.files.folder==='downloads'&&!_pad.files.rel) rmPadSend('ls downloads'); } return true; }
-    case 'pcok': { const i=document.getElementById('pxPcInfo'); const t={ lock:'Locked.', screenoff:'Screen switched off — it wakes when the mouse moves.', sleep:'Going to sleep…', shutdown:'Shutting down in 1 minute — tap Cancel shut down to stop it.', restart:'Restarting in 1 minute — tap Cancel shut down to stop it.', cancel:'Cancelled.' }[rest]||rest;
-      if(i) i.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> '+escHtml(t); return true; }
-  }
-  return false;
-}
-
 function rmSensCycle(){
   const v=rmSens()%5+1; try{ localStorage.setItem(RM_SENS_KEY,String(v)); }catch(e){}
   const b=document.getElementById('padSens'); if(b) b.textContent=v;
@@ -8975,7 +8626,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-02-remote-plus';
+const APP_BUILD='2026-11-02-widgets-games';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
