@@ -16,7 +16,20 @@ const SEED_FILE = path.join(__dirname, 'data.json'); // template shipped with th
 const APP_URL   = process.env.APP_URL || ''; // e.g. https://personal-organizer-xxx.up.railway.app
 
 // Note pictures arrive as JSON (base64), so allow bigger bodies than the 100 kB default.
+// Bot reports: at most ~1 MB (checked before reading the body, with a clear answer).
+const BOT_REPORT_MAX = 1024*1024;
+app.use('/api/bot/report', (req, res, next) => {
+  const n = parseInt(req.get('content-length')||'0');
+  if(n > BOT_REPORT_MAX) return res.status(413).json({ error:'Report too large ('+Math.round(n/1024)+' KB). The limit is 1 MB — send fewer points in the series.' });
+  next();
+});
 app.use(express.json({ limit:'12mb' }));
+// A body that isn't valid JSON gets a clear JSON answer (instead of an HTML error page).
+app.use((err, req, res, next) => {
+  if(err && (err.type === 'entity.parse.failed' || err instanceof SyntaxError)) return res.status(400).json({ error:'The request body is not valid JSON: '+String(err.message).slice(0,120) });
+  if(err && err.type === 'entity.too.large') return res.status(413).json({ error:'Request too large.' });
+  next(err);
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ═══════════════════════════════════════════════════
@@ -57,7 +70,7 @@ function requirePrivate(req, res, next){
 // Kept only on the server and never replaced by a browser save, a backup
 // restore or a snapshot roll-back: notes (and their PIN/passkeys/pictures)
 // and the list of notifications still waiting to be cleared.
-const KEEP_SERVER_SIDE = ['notes','notesAuth','notesImgs','alerts','games','bot'];
+const KEEP_SERVER_SIDE = ['notes','notesAuth','notesImgs','alerts','games','dev','bot'];
 function publicView(d){
   const out = { ...d };
   const st = { ...(d.settings||{}) };
@@ -69,6 +82,7 @@ function publicView(d){
   delete out.notes; delete out.notesAuth; delete out.notesImgs;   // only via /api/notes, behind the PIN
   delete out.alerts;                                // served by /api/alerts
   delete out.games;                                 // served by /api/games/records
+  delete out.dev;                                   // served by /api/dev
   delete out.bot;                                   // served by /api/bot
   if(d.travelCache){
     out.travelCache = {};
@@ -1050,7 +1064,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-10-29-games-soft';
+const BUILD_VERSION = '2026-11-02-bot-dashboard';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2868,8 +2882,22 @@ const MCP_TOOLS = [
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string'}, date:{type:'string', description:'YYYY-MM-DD, to pick one if several match'} } } },
   { name:'follow_artist', description:'Follow a music artist: their concerts in Europe show in the Concerts widget and new dates send a notification.',
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string', description:'Artist or band name'} } } },
-  { name:'bot_status', description:'Status of the BTC trading bot: value now, profit/loss, position, last report and recent trades.',
+  { name:'bot_status', description:'Status of every trading bot that reports to the Organizer (main and practice bots): value now, profit/loss, position, last report, recent trades and recent bot messages.',
     inputSchema:{ type:'object', properties:{} } },
+  { name:'dev_roadmap', description:'Dev tracker (Investment Bot development plan kept in the Organizer): every phase with its task counts by status, the current phase, and what can be worked on next (tasks whose dependencies are all done). Used by Claude in the Investment Bot project — a different project — to see the plan.',
+    inputSchema:{ type:'object', properties:{ project:{type:'string', description:'Defaults to invest-bot'} } } },
+  { name:'dev_tasks_list', description:'List Dev tracker tasks (id, title, phase, owner, priority, status, test status, what blocks them). Filter by project, phase (P1…P10), status (todo, in_progress, blocked, done) or owner (bot, organizer, both).',
+    inputSchema:{ type:'object', properties:{ project:{type:'string'}, phase:{type:'string'}, status:{type:'string'}, owner:{type:'string'} } } },
+  { name:'dev_task_get', description:'One Dev tracker task in full: description, objective, expected behaviour, required changes, dependencies (and which still block it), acceptance criteria, testing requirements, notes and its change log.',
+    inputSchema:{ type:'object', required:['id'], properties:{ id:{type:'string', description:'e.g. IB-03'} } } },
+  { name:'dev_task_update', description:'Update a Dev tracker task. This is how Claude in the Investment Bot project (another project) reports progress. The Organizer enforces the rules: a task cannot become in_progress or done while a task it depends on is not done, and done needs testStatus passing (set testStatus:"passing" in the same call or before). Always add a note saying what changed and how it was tested. Text fields (description, objective, expected, changes, acceptance, testing) can be filled in too. Returns the task, or the reason it was refused.',
+    inputSchema:{ type:'object', required:['id'], properties:{ id:{type:'string'}, status:{type:'string', enum:['todo','in_progress','blocked','done']}, testStatus:{type:'string', enum:['not_tested','failing','passing']},
+      note:{type:'string', description:'What changed and how it was tested'}, description:{type:'string'}, objective:{type:'string'}, expected:{type:'string'}, changes:{type:'string'},
+      acceptance:{type:'array', items:{type:'string'}}, testing:{type:'array', items:{type:'string'}} } } },
+  { name:'dev_task_add', description:'Add a task to the Dev tracker (used by Claude in the Investment Bot project when the plan needs a new task). Gets the next free id (IB-23 …).',
+    inputSchema:{ type:'object', required:['title','phase'], properties:{ project:{type:'string', description:'Defaults to invest-bot'}, phase:{type:'string', description:'P1…P10'}, title:{type:'string'},
+      owner:{type:'string', enum:['bot','organizer','both']}, priority:{type:'string', enum:['P0','P1','P2']}, dependsOn:{type:'array', items:{type:'string'}},
+      description:{type:'string'}, acceptance:{type:'array', items:{type:'string'}}, testing:{type:'array', items:{type:'string'}} } } },
   { name:'concerts_upcoming', description:'Upcoming European concerts of the followed artists, with whether each is in the calendar.',
     inputSchema:{ type:'object', properties:{} } },
   { name:'add_to_shopping_list', description:'Add items to the shopping list (the next planned shopping trip, or the first list). Several at once, comma-separated; quantities allowed (e.g. "2 kg roșii, lapte, ouă x10").',
@@ -2994,13 +3022,48 @@ async function mcpCall(name, args){
         items: l.items.map(i=>(i.done?'[x] ':'[ ] ')+i.name+(i.qty?' ('+i.qty+')':'')) }; });
       return mcpText(lists.some(x=>x.items.length) ? { lists } : 'The shopping list is empty.');
     }
+    case 'dev_roadmap': {
+      const had = !!(d.dev && d.dev.tasks); const dv = devView(devOf(d)); if(!had || _devDirty){ _devDirty = false; writeData(d); }
+      const pr = args.project || 'invest-bot';
+      return mcpText({ project: (dv.projects.find(p=>p.id===pr)||dv.projects[0]).name, currentPhase: dv.current,
+        phases: dv.phases.filter(p=>p.project===pr).map(p => ({ id:p.id, name:p.name, tasks:p.total, ...p.counts })),
+        readyToStart: dv.tasks.filter(t => dv.next.includes(t.id) && t.project===pr).map(t => ({ id:t.id, title:t.title, owner:t.owner, priority:t.priority })),
+        inProgress: dv.tasks.filter(t => t.status==='in_progress' && t.project===pr).map(t => ({ id:t.id, title:t.title, owner:t.owner, testStatus:t.testStatus })) });
+    }
+    case 'dev_tasks_list': {
+      const had = !!(d.dev && d.dev.tasks); const dv = devView(devOf(d)); if(!had || _devDirty){ _devDirty = false; writeData(d); }
+      const list = dv.tasks.filter(t => (!args.project || t.project===args.project) && (!args.phase || t.phase===args.phase) && (!args.status || t.status===args.status) && (!args.owner || t.owner===args.owner));
+      return mcpText(list.map(t => ({ id:t.id, phase:t.phase, title:t.title, owner:t.owner, priority:t.priority, status:t.status, testStatus:t.testStatus, dependsOn:t.dependsOn, waitingFor:t.blockers })));
+    }
+    case 'dev_task_get': {
+      const had = !!(d.dev && d.dev.tasks); const dv = devView(devOf(d)); if(!had || _devDirty){ _devDirty = false; writeData(d); }
+      const t = dv.tasks.find(x => x.id === String(args.id||'').toUpperCase());
+      if(!t) return mcpText('No task '+args.id+'.');
+      return mcpText({ ...t, notes: t.notes.map(n => ({ ...n, at:new Date(n.at).toISOString() })), updatedAt:new Date(t.updatedAt).toISOString(),
+        history: dv.log.filter(l => l.task===t.id).slice(0,20).map(l => ({ at:new Date(l.at).toISOString(), by:l.by, what:l.what })) });
+    }
+    case 'dev_task_update': {
+      const dev = devOf(d);
+      const r = devUpdate(dev, String(args.id||'').toUpperCase(), args, 'claude-bot', false);
+      if(!r.ok) return mcpText({ refused:true, reason:r.error, waitingFor:r.blockers||[] });
+      writeData(d); devNotify(r, 'claude-bot');
+      return mcpText({ ok:true, id:r.task.id, status:r.task.status, testStatus:r.task.testStatus, changes:r.changes||[], unchanged:!!r.unchanged });
+    }
+    case 'dev_task_add': {
+      const dev = devOf(d);
+      const r = devAdd(dev, args, 'claude-bot');
+      if(!r.ok) return mcpText({ refused:true, reason:r.error });
+      writeData(d);
+      return mcpText({ ok:true, id:r.task.id, task:r.task });
+    }
     case 'bot_status': {
       const b = botPublic(d);
       if(!b.connected) return mcpText('The trading bot is not connected yet (Settings → Private → Trading bot).');
-      if(!b.status) return mcpText('The bot is connected but has not reported yet.');
-      return mcpText({ ...b.status, running: b.running,
-        lastReport: b.lastSeen ? new Date(b.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest'}) : null,
-        recentTrades: b.trades.slice(-5) });
+      if(!b.bots.length) return mcpText('The bot is connected but has not reported yet.');
+      return mcpText({ bots: b.bots.map(x => ({ id:x.id, name:x.name, role:x.role, symbol:x.symbol, timeframe:x.timeframe, contract:x.contract, simulations:x.simCount, items:x.itemCount,
+        running:x.running, lastReport: x.lastSeen ? new Date(x.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest'}) : null,
+        ...(x.status||{}), change:x.perf, recentTrades: x.trades.slice(-5) })),
+        recentMessages: b.events.slice(0,10).map(e => ({ bot:e.botName||e.bot||'main', kind:e.kind, title:e.title, body:e.body, at:new Date(e.at).toISOString() })) });
     }
     case 'exchange_rate': {
       const fx = await bnrRates();
@@ -4908,7 +4971,7 @@ const BOT_STALE_MS = 15*60*1000;              // no heartbeat for 15 min = not r
 // Bot events (buys, sells, stop-loss, halted…) no longer send notifications
 // or go in the bell: they're counted on the Trading bot widget instead
 // ("N new since you last opened it"). Set to true to bring the pushes back.
-const BOT_PUSH = false;
+const BOT_PUSH = true;    // 2026-11-02: notifications for everything again (the widget counter stays too)
 function botKeyOk(req){
   const want = (readData().settings||{}).botKey || '';
   const got = String(req.get('X-Bot-Key') || '');
@@ -4916,23 +4979,131 @@ function botKeyOk(req){
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
 }
 function botNum(v){ const n = +v; return isFinite(n) ? n : null; }
+// ── Contract v2: simulations and items ──
+// Big, so kept apart from the main record (which is rewritten on every
+// save): Redis key organizer:botx:<bot id>, or a file — like note pictures.
+// Replaced whenever a report brings them; a report without them keeps the old ones.
+const BOT_ORIGINS = ['live','cached','historical','hypothetical'];
+const BOT_ITEM_STATES = ['watching','bought','sold','target_hit','unsellable','worthless'];
+const BOTX_DIR = path.join(DATA_DIR, 'bot-extra');
+const _botx = new Map();                      // bot id -> { simulations, items, at }
+async function botxPut(id, obj){
+  _botx.set(id, obj);
+  const txt = JSON.stringify(obj);
+  if(USE_REDIS) return redisCmd(['SET', 'organizer:botx:'+id, txt]);
+  fs.mkdirSync(BOTX_DIR, { recursive:true }); fs.writeFileSync(path.join(BOTX_DIR, id+'.json'), txt);
+}
+async function botxGet(id){
+  if(_botx.has(id)) return _botx.get(id);
+  let v = null;
+  try{
+    if(USE_REDIS){ const r = await redisCmd(['GET', 'organizer:botx:'+id]); v = r ? JSON.parse(r) : null; }
+    else v = JSON.parse(fs.readFileSync(path.join(BOTX_DIR, id+'.json'), 'utf8'));
+  }catch(e){ v = null; }
+  v = v || { simulations:[], items:[], at:0 };
+  _botx.set(id, v); return v;
+}
+const bStr = (v, n) => v==null ? '' : String(v).slice(0, n||200);
+const bTime = v => v==null ? null : String(v).slice(0, 30);
+const bOrigin = v => BOT_ORIGINS.includes(v) ? v : null;
+function bParams(p){
+  const o = {}; if(!p || typeof p !== 'object' || Array.isArray(p)) return o;
+  for(const [k, v] of Object.entries(p).slice(0, 20)){
+    if(typeof v === 'number' && isFinite(v)) o[bStr(k,40)] = v;
+    else if(typeof v === 'boolean') o[bStr(k,40)] = v;
+    else if(v != null) o[bStr(k,40)] = typeof v === 'object' ? bStr(JSON.stringify(v), 100) : bStr(v, 100);
+  }
+  return o;
+}
+function botCleanSims(arr){
+  return arr.slice(0, 10).filter(s => s && typeof s === 'object').map((s, i) => ({
+    id: bStr(s.id || ('sim'+(i+1)), 64), kind: ['dca','timing','items'].includes(s.kind) ? s.kind : 'dca',
+    title: bStr(s.title, 120), generatedAt: bTime(s.generatedAt), dataOrigin: bOrigin(s.dataOrigin),
+    period: s.period && typeof s.period === 'object' ? { from: bTime(s.period.from), to: bTime(s.period.to) } : null,
+    params: bParams(s.params),
+    strategies: (Array.isArray(s.strategies) ? s.strategies : []).slice(0, 8).filter(x => x && typeof x === 'object').map(x => ({
+      name: bStr(x.name, 80), invested: botNum(x.invested), value: botNum(x.value), pnl: botNum(x.pnl), pnlPct: botNum(x.pnlPct),
+      best: !!x.best, worst: !!x.worst,
+      series: (Array.isArray(x.series) ? x.series : []).slice(-400).filter(p => p && typeof p === 'object').map(p => ({ t: bTime(p.t), invested: botNum(p.invested), value: botNum(p.value) })) })),
+    // Future values are always hypothetical, whatever the bot says.
+    projection: s.projection && typeof s.projection === 'object' ? { hypothetical: true, method: bStr(s.projection.method, 200),
+      points: (Array.isArray(s.projection.points) ? s.projection.points : []).slice(0, 400).filter(p => p && typeof p === 'object').map(p => ({ t: bTime(p.t), low: botNum(p.low), mid: botNum(p.mid), high: botNum(p.high) })) } : null,
+    notes: bStr(s.notes, 500) }));
+}
+function botCleanItems(arr){
+  const fill = (o, keys) => { if(!o || typeof o !== 'object') return null; const r = {}; for(const k of keys) r[k] = k==='time' ? bTime(o[k]) : k==='reason' ? bStr(o[k],80) : botNum(o[k]); return r; };
+  return arr.slice(0, 50).filter(x => x && typeof x === 'object').map((x, i) => ({
+    id: bStr(x.id || ('item'+(i+1)), 64), symbol: bStr(x.symbol, 30), name: bStr(x.name, 80), source: bStr(x.source, 80), firstSeen: bTime(x.firstSeen),
+    state: BOT_ITEM_STATES.includes(x.state) ? x.state : 'watching',
+    buy: fill(x.buy, ['time','price','qty','cost','fee']), sell: fill(x.sell, ['time','price','value','fee','reason']),
+    priceNow: botNum(x.priceNow), valueNow: botNum(x.valueNow), pnl: botNum(x.pnl), pnlPct: botNum(x.pnlPct), realized: !!x.realized,
+    targets: (Array.isArray(x.targets) ? x.targets : []).slice(0, 12).filter(t => t && typeof t === 'object').map(t => ({ label: bStr(t.label, 20), price: botNum(t.price), reached: !!t.reached })),
+    signals: x.signals && typeof x.signals === 'object' ? { volumeChange24h: botNum(x.signals.volumeChange24h), momentum7d: botNum(x.signals.momentum7d), liquidity: botNum(x.signals.liquidity), ageDays: botNum(x.signals.ageDays) } : null,
+    series: (Array.isArray(x.series) ? x.series : []).slice(-120).filter(p => p && typeof p === 'object').map(p => ({ t: bTime(p.t), price: botNum(p.price) })),
+    dataOrigin: bOrigin(x.dataOrigin) }));
+}
 function botClean(st){
   st = st || {};
   const o = {};
   for(const k of ['cash','btc','price','equity','budget','pnl','pnlPct','entry','stop','stopPct']) o[k] = botNum(st[k]);
+  // Contract v2 (all optional): money split, counts, where the numbers come from, active settings.
+  for(const k of ['pnlRealized','pnlUnrealized','invested','allocated','available','reserved','withdrawn']) if(st[k] !== undefined) o[k] = botNum(st[k]);
+  if(st.investCount !== undefined){ const n = parseInt(st.investCount); o.investCount = isFinite(n) && n >= 0 ? n : null; }
+  if(st.dataOrigin !== undefined) o.dataOrigin = BOT_ORIGINS.includes(st.dataOrigin) ? st.dataOrigin : null;
+  if(st.configSummary !== undefined) o.configSummary = String(st.configSummary||'').slice(0, 200);
   o.mode = st.mode === 'live' ? 'live' : 'paper';
-  o.position = st.position === 'btc' ? 'btc' : 'cash';
+  o.position = (st.position && st.position !== 'cash') ? 'btc' : 'cash';   // 'btc' = holding the coin (any coin)
   o.halted = !!st.halted;
   o.symbol = String(st.symbol || 'BTC/EUR').slice(0, 20);
   o.note = String(st.note || '').slice(0, 200);
   return o;
 }
+// Several bots report (main, practice-btc, practice-eth …): each has its own
+// slot in d.bot.bots. Reports without a "bot" field are the main bot. Data
+// from the time there was only one bot (d.bot.status …) is moved into "main".
+const BOT_ID_RE = /^[a-z0-9][a-z0-9_-]{0,31}$/i;
+function botMigrate(bot){
+  bot.bots = bot.bots || {};
+  if(bot.status || bot.trades || bot.equity){
+    const m = bot.bots.main = bot.bots.main || { name:'Main bot', role:'main' };
+    if(!m.status && bot.status) m.status = bot.status;
+    if(!m.trades && bot.trades) m.trades = bot.trades;
+    if(!m.equity && bot.equity) m.equity = bot.equity;
+    if(!m.lastSeen && bot.lastSeen) m.lastSeen = bot.lastSeen;
+    delete bot.status; delete bot.trades; delete bot.equity; delete bot.lastSeen;
+  }
+  return bot;
+}
+function botList(d){
+  const bot = botMigrate(JSON.parse(JSON.stringify(d.bot || {})));
+  const arr = Object.entries(bot.bots).map(([id, x]) => ({ id, name:x.name||id, role:x.role||'main', symbol:x.symbol||(x.status&&x.status.symbol)||'BTC/EUR',
+    timeframe:x.timeframe||'', contract:x.contract||1, simCount:x.sims||0, itemCount:x.items||0, status:x.status||null, perf:botPerf(x), hist:(x.hist||[]).slice(-840), trades:x.trades||[], equity:x.equity||[], lastSeen:x.lastSeen||0,
+    running: !!(x.lastSeen && Date.now()-x.lastSeen < BOT_STALE_MS) }));
+  // Main bot(s) first, then practice ones, then by name.
+  arr.sort((a,b) => (a.role==='main'?0:1)-(b.role==='main'?0:1) || (a.id==='main'?-1:b.id==='main'?1:0) || a.name.localeCompare(b.name));
+  return arr;
+}
+// Change in value over the last day / 7 days / 30 days: now vs. the newest
+// point that is at least that old (from both the Organizer's hourly record and
+// the bot's own equity list). null when the history is too short.
+function botPerf(x){
+  const st = x.status || {}; const now = x.lastSeen || Date.now(), v = st.equity;
+  if(v == null) return null;
+  const pts = [ ...(x.hist||[]).map(p => [p[0], p[1]]), ...(x.equity||[]).map(e => [Date.parse(e.time), e.equity]) ].filter(p => isFinite(p[0]) && p[1] != null);
+  const at = ms => { let best = null; for(const p of pts) if(p[0] <= now - ms && (!best || p[0] > best[0])) best = p; return best; };
+  const ch = ms => { const p = at(ms); return p && p[1] ? { abs: v - p[1], pct: (v - p[1]) / p[1], from: new Date(p[0]).toISOString() } : null; };
+  return { day: ch(24*3600e3 - 5*60e3), week: ch(7*24*3600e3 - 5*60e3), month: ch(30*24*3600e3 - 5*60e3),
+    overall: st.pnl != null ? { abs: st.pnl, pct: st.pnlPct } : null };
+}
+function botMain(d){ const l = botList(d); return l.find(x => x.id==='main') || l.find(x => x.role==='main') || l[0] || null; }
 function botPublic(d){
   const b = d.bot || {};
   const on = !!(d.settings && d.settings.botKey);
   const sum = b.summary || {};
-  return { connected:on, status:b.status||null, trades:b.trades||[], equity:b.equity||[], lastSeen:b.lastSeen||0,
-    running: !!(b.lastSeen && Date.now()-b.lastSeen < BOT_STALE_MS),
+  const bots = botList(d), m = botMain(d) || {};
+  return { connected:on, bots,
+    // The main bot's fields at the top level too, as before (launcher tile, older pages).
+    status:m.status||null, trades:m.trades||[], equity:m.equity||[], lastSeen:m.lastSeen||0, running:!!m.running,
     events: (b.log||[]).slice(-30).reverse(), openedAt: b.openedAt||0,
     unseen: (b.log||[]).filter(e => e.at > (b.openedAt||0)).length,
     summary:{ on: sum.on !== false, time: sum.time || '08:00' } };
@@ -4940,42 +5111,83 @@ function botPublic(d){
 function botMoney(v){ return v==null ? '–' : v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
 function botPct(v){ return v==null ? '' : (v>0?'+':'')+(v*100).toFixed(2)+'%'; }
 function botSummaryText(d){
-  const b = d.bot || {}, st = b.status;
-  if(!st) return null;
-  const pos = st.halted ? 'stopped' : (st.position==='btc' ? 'in BTC' : 'in cash');
-  const body = botMoney(st.equity)+' ('+(st.pnl>=0?'+':'')+botMoney(st.pnl)+', '+botPct(st.pnlPct)+') · '+pos+' · BTC '+botMoney(st.price);
-  const age = Date.now() - (b.lastSeen||0);
-  const note = age > BOT_STALE_MS ? ' · last report '+new Date(b.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-  return { title: '₿ Bot '+(st.mode==='live'?'(real money)':'(paper)')+': '+botPct(st.pnlPct), body: body+note };
+  const bots = botList(d).filter(x => x.status);
+  if(!bots.length) return null;
+  const line = x => { const st = x.status;
+    const pos = st.halted ? 'stopped' : (st.position==='btc' ? 'in '+String(x.symbol||'BTC').split('/')[0] : 'in cash');
+    const late = Date.now()-(x.lastSeen||0) > BOT_STALE_MS ? ' · not running' : '';
+    return x.name+': '+botMoney(st.equity)+' ('+botPct(st.pnlPct)+') · '+pos+late; };
+  const m = bots.find(x => x.id==='main') || bots[0];
+  const st = m.status;
+  const first = '₿ Bot '+(st.mode==='live'?'(real money)':'(paper)')+': '+botPct(st.pnlPct);
+  const body = bots.length===1
+    ? botMoney(st.equity)+' ('+(st.pnl>=0?'+':'')+botMoney(st.pnl)+', '+botPct(st.pnlPct)+') · '+(st.halted?'stopped':st.position==='btc'?'in '+String(m.symbol||'BTC').split('/')[0]:'in cash')+' · '+String(m.symbol||'BTC/EUR').split('/')[0]+' '+botMoney(st.price)+(Date.now()-(m.lastSeen||0) > BOT_STALE_MS ? ' · last report '+new Date(m.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '')
+    : bots.map(line).join('\n');
+  return { title:first, body };
 }
 
 app.post('/api/bot/report', async (req, res) => {
   if(!botKeyOk(req)) return res.status(401).json({ error:'Wrong or missing bot key — copy it again from Settings → Private → Trading bot.' });
-  const b = req.body || {};
+  const b = req.body;
+  if(!b || typeof b !== 'object' || Array.isArray(b)) return res.status(400).json({ error:'The report must be a JSON object.' });
+  if(JSON.stringify(b).length > BOT_REPORT_MAX) return res.status(413).json({ error:'Report too large. The limit is 1 MB — send fewer points in the series.' });
+  for(const k of ['status','bot']) if(b[k] != null && (typeof b[k] !== 'object' || Array.isArray(b[k]))) return res.status(400).json({ error:'"'+k+'" must be an object.' });
+  for(const k of ['trades','equity','events','simulations','items']) if(b[k] != null && !Array.isArray(b[k])) return res.status(400).json({ error:'"'+k+'" must be a list.' });
+  const contract = parseInt(b.contract) === 2 ? 2 : 1;           // missing = 1
   const d = readData();
-  const bot = d.bot = d.bot || {};
-  bot.lastSeen = Date.now();
-  if(b.status) bot.status = botClean(b.status);
-  if(Array.isArray(b.trades)) bot.trades = b.trades.slice(-30).map(t => ({
+  const bot = botMigrate(d.bot = d.bot || {});
+  // Which bot is this? No "bot" field = the main bot (contract v1).
+  const meta = (b.bot && typeof b.bot === 'object') ? b.bot : {};
+  const bid = BOT_ID_RE.test(String(meta.id||'')) ? String(meta.id) : 'main';
+  const one = bot.bots[bid] = bot.bots[bid] || {};
+  one.name = String(meta.name || one.name || (bid==='main'?'Main bot':bid)).slice(0,40);
+  one.role = meta.role === 'practice' ? 'practice' : (meta.role === 'main' ? 'main' : (one.role || (bid==='main'?'main':'practice')));
+  if(meta.symbol) one.symbol = String(meta.symbol).slice(0,20);
+  if(meta.timeframe) one.timeframe = String(meta.timeframe).slice(0,10);
+  one.lastSeen = Date.now();
+  one.contract = contract;
+  if(b.status) one.status = botClean(b.status);
+  // The Organizer's own record of the bot's value, at most one point an hour
+  // for ~35 days: the day / week / month changes come from it (and from the bot's equity list).
+  if(one.status && one.status.equity != null){
+    const h = one.hist = Array.isArray(one.hist) ? one.hist : [], now = Date.now();
+    if(!h.length || now - h[h.length-1][0] >= 55*60000) h.push([now, one.status.equity]); else h[h.length-1][1] = one.status.equity;
+    if(h.length > 840) one.hist = h.slice(-840);
+  }
+  if(Array.isArray(b.simulations) || Array.isArray(b.items)){
+    const x = { ...(await botxGet(bid)) };
+    if(Array.isArray(b.simulations)) x.simulations = botCleanSims(b.simulations);
+    if(Array.isArray(b.items)) x.items = botCleanItems(b.items);
+    x.at = Date.now();
+    try{ await botxPut(bid, x); }catch(e){ console.log('Bot extra save failed:', e.message); }
+    one.sims = x.simulations.length; one.items = x.items.length;      // counts in the main record, data apart
+  }
+  if(Array.isArray(b.trades)) one.trades = b.trades.slice(-30).map(t => ({
     time:String(t.time||'').slice(0,30), side:t.side==='sell'?'sell':'buy', price:botNum(t.price), qty:botNum(t.qty),
     quote:botNum(t.quote), reason:String(t.reason||'').slice(0,60), pnl:botNum(t.pnl) }));
-  if(Array.isArray(b.equity)) bot.equity = b.equity.slice(-400).map(e => ({ time:String(e.time||'').slice(0,30), price:botNum(e.price), equity:botNum(e.equity) }));
+  if(Array.isArray(b.equity)) one.equity = b.equity.slice(-400).map(e => ({ time:String(e.time||'').slice(0,30), price:botNum(e.price), equity:botNum(e.equity) }));
   const seen = new Set(bot.seen || []);
   const fresh = (Array.isArray(b.events) ? b.events : []).filter(e => e && e.id && !seen.has(String(e.id))).slice(0, 20);
-  const made = [];
+  const made = [], info = [];
   bot.log = bot.log || [];
   for(const e of fresh){
     const id = String(e.id).slice(0, 64);
     seen.add(id);
+    // Event kinds: trade · alert · target · sim. Anything else counts as an alert.
+    let kind = String(e.kind||'alert').toLowerCase().slice(0,20);
+    if(!['trade','alert','target','sim'].includes(kind)) kind = 'alert';
+    const title = String(e.title||'Trading bot').slice(0,120), body = String(e.body||'').slice(0,300);
     // Every event goes into the widget's own list; the widget shows how many
     // arrived since it was last opened (bot.openedAt).
-    bot.log.push({ id, kind:String(e.kind||'').slice(0,20), title:String(e.title||'Trading bot').slice(0,120), body:String(e.body||'').slice(0,300), at:Date.now() });
-    if(BOT_PUSH){
-      const evId = 'bot-'+id;
-      const a = recordAlert(d, { ev:{ id:evId, _type:'task' }, key:evId, ds:getToday(), mins:0 }, String(e.title||'Trading bot').slice(0,120), String(e.body||'').slice(0,300));
-      a.type = 'bot'; a.kind = String(e.kind||'').slice(0,20);
-      made.push(a);
-    }
+    bot.log.push({ id, bot:bid, botName:one.name, kind, title, body, at:Date.now() });
+    if(!BOT_PUSH) continue;
+    if(kind === 'trade' && one.role === 'practice') continue;          // practice bots trade quietly
+    if(kind === 'sim'){ info.push({ title, body }); continue; }       // information only: no bell, no badge
+    const evId = 'bot-'+id;
+    const shown = one.role === 'practice' ? one.name+': '+title : title;
+    const a = recordAlert(d, { ev:{ id:evId, _type:'task' }, key:evId, ds:getToday(), mins:0 }, shown.slice(0,120), body);
+    a.type = 'bot'; a.kind = kind; a.bot = bid;
+    made.push(a);
   }
   bot.log = bot.log.slice(-100);
   bot.seen = [...seen].slice(-300);
@@ -4984,10 +5196,200 @@ app.post('/api/bot/report', async (req, res) => {
     try{ await sendWebPush(a.title, a.body, { bot:1, date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 24*3600, urgency: a.kind==='trade' ? 'normal' : 'high' }); }
     catch(e){ console.log('Bot push failed:', e.message); }
   }
-  res.json({ ok:true, notified: made.length, logged: fresh.length });
+  for(const x of info){
+    try{ await sendWebPush(x.title, x.body, { bot:1, tag:'bot-sim-'+bid, noBadge:true }, { ttl: 12*3600 }); }catch(e){}
+  }
+  res.json({ ok:true, bot:bid, contract, notified: made.length + info.length, logged: fresh.length,
+    stored:{ simulations: one.sims||0, items: one.items||0 } });
 });
 // What the widget shows. Same visibility as the calendar itself; the key is never included.
-app.get('/api/bot', (req, res) => { res.json(botPublic(readData())); });
+app.get('/api/bot', async (req, res) => {
+  const pub = botPublic(readData());
+  for(const x of pub.bots){ const e = await botxGet(x.id); x.simulations = e.simulations || []; x.items = e.items || []; }
+  res.json(pub);
+});
+// ═══════════════════════════════════════════════════
+// DEV TRACKER — plans and tracks the Investment Bot's development (phases,
+// tasks, dependencies, implementation and test status). Server-owned
+// (d.dev, in KEEP_SERVER_SIDE, never in /api/data). Claude in the bot
+// project reads and updates it through the MCP tools dev_*; the user through
+// the Dev tracker widget. The rules are enforced here, for both:
+//   • a task can't start or be done while a task it depends on isn't done
+//   • done needs passing tests
+//   (the user may override both from the widget: "Start anyway" / "Done anyway")
+//   • when a task is done, tasks waiting only on it go from blocked back to to-do
+//   • every change is logged with who made it
+// ═══════════════════════════════════════════════════
+const DEV_STATUS = ['todo','in_progress','blocked','done'];
+const DEV_TEST = ['not_tested','failing','passing'];
+const DEV_BY = ['user','claude-bot','claude-organizer'];
+const DEV_SEED_PHASES = [
+  ['P1','Existing architecture analysis'],['P2','Investment simulation engine'],['P3','Monthly investment simulation (€100 per month)'],
+  ['P4','Strategic investment timing'],['P5','Item discovery and monitoring'],['P6','Multi-item portfolio simulation'],
+  ['P7','Selling strategies'],['P8','Overall status dashboard'],['P9','Testing and validation'],['P10','Final integration']
+];
+// [id, phase, title, owner, priority, dependsOn, description, acceptance[], testing[]]
+const DEV_SEED_TASKS = [
+ ['IB-01','P1','Map the current bot','bot','P0',[],'Document the current modules (runner, strategy, risk, broker paper/live, report Excel, organizer client, backtest), the data files (BTC daily since 2016, 4h, 1h since 2025-01), the fees model (0.09% taker + 0.05% slippage), and what can be extended rather than duplicated.',['A short architecture note is written into the task notes','Every later task names the module it extends'],[]],
+ ['IB-02','P1','Data source inventory','bot','P0',['IB-01'],'List what is really available: Revolut X public candles, the list of markets Revolut X offers, local historical CSVs, and candidate discovery sources (public DEX/aggregator APIs) with their rate limits and terms.',['Every data source is labelled live, cached or historical, with limits noted','Assets not tradable on Revolut X are marked "simulation only"'],[]],
+ ['IB-03','P2','Reusable simulation engine','bot','P0',['IB-01'],'One engine for all simulations: price series + a schedule of buys and sells; fees, slippage, a ledger of transactions, realized/unrealized P&L. Reproducible (seed, parameters and data version recorded with each result).',['Same inputs always give identical output','Fees and slippage on every fill','Realized + unrealized = total P&L to the cent'],['Unit tests with hand-calculated cases (one buy, buy and sell, several buys)','Regression test pinned to a CSV snapshot']],
+ ['IB-04','P2','Transaction ledger','bot','P0',['IB-03'],'Every simulated or paper fill is recorded once, and all P&L is derived from the ledger.',['The dashboard numbers can be recomputed from the ledger alone'],[]],
+ ['IB-05','P2','Organizer: contract v2 storage','organizer','P0',[],'Accept and store status v2 fields, simulations and items (contract v2). Backward compatible with v1.',['A v1 report still works unchanged','A v2 report is stored and returned by GET /api/bot','Oversized or bad bodies are rejected with a clear message'],['curl with v1, v2 and malformed bodies against a local server']],
+ ['IB-06','P3','Fixed monthly DCA','bot','P0',['IB-03','IB-04'],'€100 on a configurable day each month from a configurable start date for a configurable horizon, in EUR, with a configurable strategy. Outputs: invested, current value, unrealized and realized P&L, return %, and the series over time.',['With BTC history it matches a hand check for 3 sample months','Each result states its data origin'],[]],
+ ['IB-07','P3','Value on a chosen date','both','P1',['IB-06','IB-09'],'Bot: past dates = the actual simulated value; future dates = a hypothetical projection with a low/mid/high band and the method named. Organizer: a date picker that reads from the series and the projection, and labels any future value "hypothetical, not a forecast".',['Past dates return exact series values','Future dates always show the band and the label, never a single "expected" number alone'],[]],
+ ['IB-08','P4','Timing comparison','bot','P1',['IB-06'],'Compare (1) €100 every month, (2) €100 only when a "favourable" rule is true (unspent money kept as cash), (3) a configurable strategy. Same total money and period for all three.',['Comparison table: strategy, invested, value, P&L, return %, best and worst across several start dates','A plain-language note says why results differ and that favourable moments cannot be predicted reliably'],['Results for at least 3 different start years']],
+ ['IB-09','P4','Organizer: simulations view','organizer','P1',['IB-05'],'In the Trading bot widget, a "Simulations" tab: comparison table (best/worst highlighted), capital-growth chart (invested vs value per strategy), data-origin badge, notes.',['Renders correctly with 1 to 5 strategies','Hypothetical parts are visibly marked','Works on a phone (375 px)'],[]],
+ ['IB-10','P5','Discovery scanner (paper only)','bot','P1',['IB-02'],'Detect newly listed items, low initial prices, rising volume, positive momentum and growing demand, using the sources from IB-02. Score candidates and keep a watch list. Never trades real money.',['Every item carries its source and first-seen time','Respects rate limits; keeps working when a source is down'],[]],
+ ['IB-11','P5','Price monitoring for held items','bot','P1',['IB-10'],'Track the prices of watched and bought items; mark an item "unsellable" when there is no market or liquidity.',['Item state changes are logged','A missing price never silently becomes a zero price'],[]],
+ ['IB-12','P6','Portfolio simulation','bot','P1',['IB-03','IB-10','IB-11'],'Buy 10–15 items at €100 each when the entry rule holds. Total invested, number of items, market value, realized, unrealized and total P&L, return %, per-item performance.',['Scenarios include big risers, moderate risers, flat, losers, worthless and unsellable items','Historical results labelled historical, the rest hypothetical'],[]],
+ ['IB-13','P6','Organizer: items view','organizer','P1',['IB-05'],'A tab with the item list (state chips, buy price, price now, P&L, targets reached), filters (active, sold, waiting for target, positive, negative, target hit, unsellable), and a per-item mini chart.',['Counts by state match the list','Handles 50 items smoothly on a phone'],[]],
+ ['IB-14','P7','Target maths','bot','P1',['IB-03'],'Per item: purchase price, quantity, cost incl. fees, and the price needed for a multiple of the investment (buy and sell fees included). E.g. 50,000× on €100 = €5,000,000. Also the "price reaches €1" target: selling value, gross and net profit, return %.',['Worked examples in the tests: €0.0001 per unit → 1,000,000 units; at €1 ≈ €1,000,000 before fees (≈10,000×); 50,000× from that entry needs €5 per unit plus fees'],[]],
+ ['IB-15','P7','Configurable targets per item','bot','P1',['IB-14'],'2×, 5×, 10×, 100×, 50,000×, €1, custom, and an optional stop — independent per item.',['Each item can carry different targets','The first target reached triggers the simulated sale with the reason recorded'],[]],
+ ['IB-16','P7','Organizer: target alerts','organizer','P2',['IB-05'],'Bot events of kind "target" become a push plus a bell entry with an item-specific title.',['The same target never notifies twice'],[]],
+ ['IB-17','P8','Bot: dashboard metrics','bot','P1',['IB-04'],'Send the contract v2 status fields: realized, unrealized, invested, allocated, available, reserved, withdrawn, count, data origin, config summary.',['allocated + available + reserved = budget (within rounding)'],[]],
+ ['IB-18','P8','Organizer: dashboard v2','organizer','P1',['IB-05'],'Per bot: A. P&L (realized, unrealized, total, %, day/week/month/overall from the equity history) · B. Investments · C. Active budget · D. Items by state · E. Charts. Realized and unrealized always shown separately.',['Each section hides itself when its data is missing (v1 bots still look right)','Phone layout checked by screenshot'],[]],
+ ['IB-19','P9','Bot test suite','bot','P0',['IB-03','IB-04','IB-05','IB-06','IB-07','IB-08','IB-09','IB-10','IB-11','IB-12','IB-13','IB-14','IB-15','IB-16','IB-17'],'Unit tests for the engine, targets, DCA and timing. A reproducibility test (run twice, compare). A contract test validating a v2 report against the schema.',[],[]],
+ ['IB-20','P9','Organizer end-to-end','organizer','P0',['IB-05','IB-09','IB-13','IB-18'],'Local server + a fake bot posting v1 and v2 reports. Check widget screenshots, MCP bot_status, the dev_* tools, the dependency rules and notifications.',[],[]],
+ ['IB-21','P10','Live paper run','both','P0',['IB-19','IB-20'],'Run all bots on the PC for 7 days against the deployed Organizer. Check daily that reports are fresh and the numbers agree with the bot\'s Excel report.',['No "Not running" gaps except when the PC was off','The numbers match'],[]],
+ ['IB-22','P10','Documentation','both','P1',['IB-21'],'Update the bot README and the Organizer HANDOFF (contract v2, Dev tracker, new MCP tools).',[],[]]
+];
+function devSeed(){
+  const now = Date.now();
+  return {
+    projects:[{ id:'invest-bot', name:'Investment Bot', color:'#F7931A' }],
+    phases: DEV_SEED_PHASES.map(([id,name],i) => ({ id, project:'invest-bot', name, order:i+1 })),
+    tasks: DEV_SEED_TASKS.map(([id,phase,title,owner,priority,dependsOn,description,acceptance,testing]) => ({
+      id, project:'invest-bot', phase, title, owner, feature:'', priority, dependsOn,
+      status:'todo', testStatus:'not_tested', description, objective:'', expected:'', changes:'',
+      acceptance, testing, notes:[], updatedAt:now, doneAt:null })),
+    log:[{ at:now, task:'*', by:'claude-organizer', what:'Roadmap created from the coordination plan (22 tasks, 10 phases)' }]
+  };
+}
+// Organizer-side tasks finished and tested in this build (2026-11-02). Applied
+// once to the tracker (new or already created), as Claude in the Organizer project.
+const DEV_ORG_DONE = [
+  ['IB-05','Contract v2 storage: v1 report unchanged, v2 status fields, simulations (≤10) and items (≤50) stored per bot apart from the main record; >1 MB → 413, invalid JSON / wrong shapes → 400 with a clear message. Tested with curl on a local server (v1, v2, status-only, 1.6 MB, broken JSON, array body, wrong types, no key) and a restart (data kept).'],
+  ['IB-18','Dashboard v2 in the Trading bot widget: A. P&L (realized / unrealized / total, last 24 h, 7 days, 30 days, overall from an hourly value record + the bot\'s equity list), B. investments, C. budget bar (active / reserved / available, in use %), D. items by state, E. charts (value with buys/sells, profit/loss, vs holding). Sections hide without data. Tested with a fake bot (v1 practice + v2 main) at 375 px: no sideways scroll, v1 bot shows only P&L + charts.'],
+  ['IB-09','Simulations tab: one chip per simulation, table with best/worst highlighted, capital-growth chart (invested dashed, value solid per strategy), data-origin badge, params, notes; the projection band is labelled "hypothetical, not a forecast". Tested with 1 and 3 strategies at 375 px.'],
+  ['IB-13','Items tab: totals, filters with counts (all, active, sold, waiting for target, positive, negative, target hit, unsellable) checked against the list, share of items that reached each target, tap for a price chart with the buy price, details, signals, origin. 50 items render in ~5 ms.'],
+  ['IB-16','Bot events of kind "target" → push + bell entry with the bot\'s title; the same event id never notifies twice (re-sent report → notified 0). Tested with the fake bot.'],
+  ['IB-20','End-to-end: local server + fake bot posting v1 and v2 reports; widget screenshots at 375 px; MCP bot_status (all bots, contract, counts, day/week/month change); dev_* tools and dependency rules; notifications (trade, alert, target, sim info-only, practice trades quiet); notification taps survive the new-day reload.']
+];
+const DEV_ORG_NOTES = [
+  ['IB-07','Organizer side done (2026-11-02): "Value on a date" picker in Simulations — past dates show the exact simulated value per strategy (last point on or before the date); future dates show the low / middle / high band labelled "hypothetical, not a forecast", or say that no projection was sent. Waiting for the bot side (IB-06) before this task can be done.'],
+  ['IB-22','Organizer side done (2026-11-02): HANDOFF.md updated with contract v2, multi-bot storage, Dev tracker and its MCP tools, dashboard/simulations/items views.']
+];
+function devOrgMarks(dev){
+  if(dev.orgMarks === '2026-11-02') return false;
+  const now = Date.now();
+  for(const [id, note] of DEV_ORG_DONE){
+    const t = dev.tasks.find(x => x.id === id); if(!t || t.status === 'done') continue;
+    t.testStatus = 'passing'; t.status = 'done'; t.doneAt = now; t.updatedAt = now;
+    t.notes.push({ at:now, by:'claude-organizer', text:note });
+    devLog(dev, id, 'claude-organizer', 'tests: passing; status: done; note added');
+  }
+  for(const [id, note] of DEV_ORG_NOTES){
+    const t = dev.tasks.find(x => x.id === id); if(!t) continue;
+    t.notes.push({ at:now, by:'claude-organizer', text:note }); t.updatedAt = now;
+    devLog(dev, id, 'claude-organizer', 'note added');
+  }
+  dev.orgMarks = '2026-11-02';
+  return true;
+}
+let _devDirty = false;            // the marks above were just applied: the next read saves
+function devOf(d){ if(!d.dev || !Array.isArray(d.dev.tasks)) d.dev = devSeed(); if(devOrgMarks(d.dev)) _devDirty = true; return d.dev; }
+function devBlockers(dev, t){ return (t.dependsOn||[]).filter(id => { const x = dev.tasks.find(k => k.id===id); return !x || x.status !== 'done'; }); }
+function devLog(dev, task, by, what){ dev.log.push({ at:Date.now(), task, by, what }); dev.log = dev.log.slice(-300); }
+const devStr = (v, n) => String(v==null?'':v).slice(0, n||2000);
+const devList = v => (Array.isArray(v) ? v : (v ? String(v).split(/\n+/) : [])).map(x => devStr(x,500).trim()).filter(Boolean).slice(0,30);
+// Applies a change with the rules. Returns { ok, task, blockers?, error?, needsOverride? }.
+function devUpdate(dev, id, ch, by, force){
+  const t = dev.tasks.find(x => x.id === id);
+  if(!t) return { ok:false, error:'No task '+id+'.' };
+  by = DEV_BY.includes(by) ? by : 'user';
+  const changes = [];
+  if(ch.testStatus !== undefined){
+    if(!DEV_TEST.includes(ch.testStatus)) return { ok:false, error:'testStatus must be one of '+DEV_TEST.join(', ')+'.' };
+    if(ch.testStatus !== t.testStatus){ changes.push('tests: '+t.testStatus+' → '+ch.testStatus); t.testStatus = ch.testStatus; }
+  }
+  if(ch.status !== undefined && ch.status !== t.status){
+    if(!DEV_STATUS.includes(ch.status)) return { ok:false, error:'status must be one of '+DEV_STATUS.join(', ')+'.' };
+    if(ch.status === 'in_progress' || ch.status === 'done'){
+      const bl = devBlockers(dev, t);
+      if(bl.length && !force) return { ok:false, needsOverride:true, blockers:bl, error:'Waiting for '+bl.join(', ')+' — '+(bl.length===1?'it isn’t':'they aren’t')+' done yet.' };
+      if(bl.length) changes.push('started before '+bl.join(', ')+' (override)');
+    }
+    if(ch.status === 'done' && t.testStatus !== 'passing'){
+      if(!force) return { ok:false, needsOverride:true, error:'Tests aren’t passing yet ('+t.testStatus.replace('_',' ')+'). Mark the tests passing first.' };
+      changes.push('done without passing tests (override)');
+    }
+    changes.push('status: '+t.status+' → '+ch.status);
+    t.status = ch.status;
+    t.doneAt = ch.status === 'done' ? Date.now() : null;
+    if(ch.status === 'done'){
+      // Tasks that were blocked only by finished tasks can go ahead.
+      for(const x of dev.tasks) if(x.status==='blocked' && (x.dependsOn||[]).includes(t.id) && !devBlockers(dev, x).length){
+        x.status = 'todo'; x.updatedAt = Date.now(); devLog(dev, x.id, by, 'blocked → todo ('+t.id+' is done)');
+      }
+    }
+  }
+  for(const k of ['title','description','objective','expected','changes','feature']) if(ch[k] !== undefined){ t[k] = devStr(ch[k], k==='title'?160:4000); changes.push(k+' updated'); }
+  for(const k of ['acceptance','testing']) if(ch[k] !== undefined){ t[k] = devList(ch[k]); changes.push(k+' updated'); }
+  if(ch.priority !== undefined && ['P0','P1','P2'].includes(ch.priority)){ t.priority = ch.priority; changes.push('priority '+ch.priority); }
+  if(ch.note){ t.notes.push({ at:Date.now(), by, text:devStr(ch.note, 4000) }); t.notes = t.notes.slice(-100); changes.push('note added'); }
+  if(!changes.length) return { ok:true, task:t, unchanged:true };
+  t.updatedAt = Date.now();
+  devLog(dev, t.id, by, changes.join('; '));
+  return { ok:true, task:t, changes };
+}
+function devAdd(dev, b, by){
+  const title = devStr(b.title, 160).trim(); if(!title) return { ok:false, error:'A title is needed.' };
+  const project = dev.projects.some(p => p.id===b.project) ? b.project : dev.projects[0].id;
+  const phase = dev.phases.some(p => p.id===b.phase) ? b.phase : (dev.phases[0]||{}).id;
+  const pre = project==='invest-bot' ? 'IB-' : String(project).slice(0,3).toUpperCase()+'-';
+  const n = Math.max(0, ...dev.tasks.filter(t => t.id.startsWith(pre)).map(t => parseInt(t.id.slice(pre.length))||0)) + 1;
+  const t = { id: pre+String(n).padStart(2,'0'), project, phase, title, owner: ['bot','organizer','both'].includes(b.owner)?b.owner:'both',
+    feature:devStr(b.feature,200), priority:['P0','P1','P2'].includes(b.priority)?b.priority:'P1',
+    dependsOn:(Array.isArray(b.dependsOn)?b.dependsOn:[]).map(String).filter(id => dev.tasks.some(x => x.id===id)),
+    status:'todo', testStatus:'not_tested', description:devStr(b.description,4000), objective:devStr(b.objective,4000), expected:devStr(b.expected,4000), changes:devStr(b.changes,4000),
+    acceptance:devList(b.acceptance), testing:devList(b.testing), notes:[], updatedAt:Date.now(), doneAt:null };
+  dev.tasks.push(t);
+  devLog(dev, t.id, DEV_BY.includes(by)?by:'user', 'task added');
+  return { ok:true, task:t };
+}
+function devView(dev){
+  const tasks = dev.tasks.map(t => ({ ...t, blockers: devBlockers(dev, t), dependents: dev.tasks.filter(x => (x.dependsOn||[]).includes(t.id)).map(x => x.id) }));
+  const phases = dev.phases.slice().sort((a,b)=>a.order-b.order).map(p => {
+    const ts = tasks.filter(t => t.phase===p.id), c = { todo:0, in_progress:0, blocked:0, done:0 };
+    ts.forEach(t => c[t.status]++);
+    return { ...p, total:ts.length, counts:c };
+  });
+  const current = (phases.find(p => p.total && p.counts.done < p.total) || {}).id || null;
+  const next = tasks.filter(t => t.status==='todo' && !t.blockers.length).map(t => t.id);
+  return { projects:dev.projects, phases, tasks, current, next, log:dev.log.slice(-60).reverse() };
+}
+// Pushes to the phone when Claude in the bot project finishes a task or a test fails (info only, not in the bell).
+async function devNotify(res, by){
+  if(by !== 'claude-bot' || !res.ok || !res.changes) return;
+  const t = res.task;
+  const done = res.changes.some(c => /status: .* → done/.test(c)), failing = res.changes.some(c => /tests: .* → failing/.test(c));
+  if(!done && !failing) return;
+  try{ await sendWebPush(done ? '✅ '+t.id+' done: '+t.title : '⚠️ '+t.id+' tests failing', done ? 'Marked done by Claude in the bot project.' : t.title, { dev:t.id, tag:'dev-'+t.id, noBadge:true }, { ttl: 12*3600 }); }catch(e){}
+}
+app.get('/api/dev', (req, res) => { const d = readData(); const had = !!d.dev; const dev = devOf(d); if(!had || _devDirty){ _devDirty = false; writeData(d); } res.json(devView(dev)); });
+app.post('/api/dev/task', (req, res) => {
+  const b = req.body || {}; const d = readData(); const dev = devOf(d);
+  const r = devUpdate(dev, String(b.id||''), b, 'user', !!b.force);
+  if(!r.ok) return res.status(r.needsOverride ? 409 : 400).json(r);
+  writeData(d); res.json({ ...r, dev: devView(dev) });
+});
+app.post('/api/dev/task/add', (req, res) => {
+  const d = readData(); const dev = devOf(d);
+  const r = devAdd(dev, req.body || {}, 'user');
+  if(!r.ok) return res.status(400).json(r);
+  writeData(d); res.json({ ...r, dev: devView(dev) });
+});
+
 // ═══════════════════════════════════════════════════
 // GAMES — personal records only (games themselves aren't saved).
 // d.games = { tetris:{ best, lines, at }, sudoku:{ beginner:{best,at,solved}, advanced, expert } }
@@ -5042,7 +5444,7 @@ app.post('/api/bot/key/remove', requirePrivate, (req, res) => {
 // — it doesn't go to the bell or the badge.
 async function sendBotSummary(force){
   const d = readData(); const b = d.bot;
-  if(!b || !b.status || !(d.settings && d.settings.botKey)) return 0;
+  if(!b || !botList(d).some(x => x.status) || !(d.settings && d.settings.botKey)) return 0;
   const s = b.summary || {};
   if(!force){
     if(s.on === false) return 0;
@@ -5094,7 +5496,7 @@ function alertsList(d){
   for(const a of (d.alerts||[])){
     const s = alertState(d, a, now); if(s!=='active' && s!=='snoozed') continue;
     if(a.type==='bot'){
-      const row = { id:a.id, evId:a.evId, date:a.date, type:'bot', kind:a.kind||'', title:a.title, body:a.body, at:a.at, snooze:a.snooze||0, name:a.title, time:'' };
+      const row = { id:a.id, evId:a.evId, date:a.date, type:'bot', kind:a.kind||'', bot:a.bot||'', title:a.title, body:a.body, at:a.at, snooze:a.snooze||0, name:a.title, time:'' };
       (s==='active' ? active : snoozed).push(row);
       continue;
     }
