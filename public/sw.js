@@ -6,7 +6,7 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v19';
+const CACHE = 'organizer-shell-v20';
 const SHELL = [
   '/',
   '/manifest.json',
@@ -143,6 +143,7 @@ self.addEventListener('notificationclick', event => {
   // The bot's morning summary (no alert behind it) opens the Trading bot widget.
   // A Dev tracker notice (task done / tests failing) opens that task.
   const qs = d.dev ? '?dev=' + encodeURIComponent(d.dev) : d.concert ? '?concerts=1'
+    : (d.bot && d.tab) ? '?bot=1&tab=' + encodeURIComponent(d.tab)     // e.g. an entry bought / sold → the Entries tab
     : (d.bot && !d.alertId) ? '?bot=1'
     : d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '') + (d.alertId ? '&alert=1' : '')) : '';
   const target = new URL('/' + qs, self.location.origin).href;
@@ -164,7 +165,7 @@ self.addEventListener('notificationclick', event => {
           // An already-open window is told which day to show, rather than
           // being navigated — reloading would lose any unsaved state.
           try {
-            c.postMessage(d.dev ? { type:'OPEN_DEV', id: d.dev } : d.concert ? { type:'OPEN_CONCERTS' } : (d.bot && !d.alertId) ? { type:'OPEN_BOT' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null, alert: !!d.alertId });
+            c.postMessage(d.dev ? { type:'OPEN_DEV', id: d.dev } : d.concert ? { type:'OPEN_CONCERTS' } : (d.bot && d.tab) ? { type:'OPEN_BOT', tab: d.tab } : (d.bot && !d.alertId) ? { type:'OPEN_BOT' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null, alert: !!d.alertId });
           } catch (e) {}
           return c.focus();
         }
