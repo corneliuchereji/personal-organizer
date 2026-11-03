@@ -1064,7 +1064,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-11-02-widgets-games';
+const BUILD_VERSION = '2026-11-03-blocks-turn';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -5641,7 +5641,7 @@ function hebVerse(r, v){
 function transliterateHebrew(input){
   const H = String(input||'')
     .replace(/<[^>]+>/g,'')
-    .replace(/[֑-ֽֿ֯׀ׅׄ׆]/g,'')   // cantillation, meteg, rafe, paseq…
+    .replace(/[֑-ֽֿ֯׀ׅׄ׆]/g,'')   // cantillation, meteg, rafe, paseq…
     .replace(/־/g,'-').replace(/׃/g,'').replace(/[׳]/g,"'").replace(/[״]/g,'"')
     .replace(/ׇ/g,'ָ');                                       // qamats qatan → qamats
   const V = { 'ְ':'@', 'ֱ':'e', 'ֲ':'a', 'ֳ':'o', 'ִ':'i', 'ֵ':'e', 'ֶ':'e', 'ַ':'a', 'ָ':'a', 'ֹ':'o', 'ֺ':'o', 'ֻ':'u' };
