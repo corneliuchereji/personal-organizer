@@ -1244,7 +1244,8 @@ select option:checked{background:#2E3A78;color:#fff}
 .tb-pad{flex:none;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 6px 4px;max-width:520px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none;touch-action:none}
 .gm-wrap,.gm-wrap *{touch-action:manipulation}
 .gm-wrap .tb-pad,.gm-wrap .tb-pad *,.gm-wrap .tb-board canvas{touch-action:none}
-.tb-cross{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,52px);gap:2px;place-items:center}
+.tb-cross{display:grid;grid-template-columns:repeat(3,72px);grid-template-rows:repeat(2,64px);gap:2px;place-items:center}
+.tb-cross .tb-b{width:72px;height:72px;font-size:32px}
 .tb-cross .lf{grid-column:1;grid-row:1}.tb-cross .rt{grid-column:3;grid-row:1}.tb-cross .dn{grid-column:2;grid-row:2}
 .tb-act{display:grid;grid-template-columns:auto;gap:12px;justify-items:center;align-items:center}
 .tb-b{width:58px;height:58px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font-size:26px;display:grid;place-items:center;cursor:pointer;touch-action:none;transition:transform 90ms var(--ease-out),background-color 90ms ease}
@@ -1255,7 +1256,7 @@ select option:checked{background:#2E3A78;color:#fff}
 .tb-box.tap:active{background:rgba(255,255,255,.10)}
 .tb-b.pause{width:46px;height:46px;font-size:20px;background:rgba(255,255,255,.05)}
 .gm-newbest{color:#fde68a}
-@media (max-width:360px){ .tb-cross{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,48px)} .tb-b{width:52px;height:52px;font-size:23px} .tb-b.big{width:68px;height:68px} .tb-side{width:80px} }
+@media (max-width:360px){ .tb-cross{grid-template-columns:repeat(3,62px);grid-template-rows:repeat(2,56px)} .tb-b,.tb-cross .tb-b{width:62px;height:62px;font-size:27px} .tb-b.big{width:68px;height:68px} .tb-side{width:80px} }
 /* Sudoku */
 .sk-meta{margin-left:auto;font-size:13px;color:var(--txt2);font-variant-numeric:tabular-nums}
 .sk-play{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -1286,6 +1287,72 @@ select option:checked{background:#2E3A78;color:#fff}
 .sk-pad button small{font-size:10.5px;color:var(--txt3);min-height:12px}
 .sk-pad button.full{opacity:.35}
 .sk-pad button:active,.sk-tools button:active{transform:scale(.95)}
+/* Trading bot: groups (Crypto · Stocks · ETFs · Entries) and the user's entries (IB-28) */
+.bte-seg{display:flex;gap:3px;padding:3px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:10px}
+.bte-seg button{flex:1;min-width:0;padding:7px 4px;border:0;border-radius:9px;background:none;color:var(--txt2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.bte-seg button.on{background:rgba(247,147,26,.18);color:#fde4c4}
+.bte-seg button small{font-size:11px;color:var(--txt3);font-weight:500}
+.bte-closed{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:rgba(148,163,184,.14);color:#cbd5e1}
+.bte-src{font-size:11.5px;color:var(--txt3);margin:6px 0 0}
+.bte-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.bte-top .grow{flex:1}
+.bte-sum{font-size:12.5px;color:var(--txt2);line-height:1.6;margin:4px 0 8px}
+.bte-sum b{color:var(--txt)}
+.bte-sum .up{color:#4ade80}.bte-sum .down{color:#f87171}
+.bte-list{display:flex;flex-direction:column;gap:8px}
+.bte-card{display:block;width:100%;text-align:left;padding:11px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--txt);font:inherit;cursor:pointer}
+.bte-card:active{background:rgba(255,255,255,.07)}
+.bte-card.err{border-color:rgba(248,113,113,.45)}
+.bte-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bte-row .grow{flex:1;min-width:0}
+.bte-sym{font-size:15px;font-weight:700}
+.bte-name{font-size:12px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bte-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:650;padding:2px 8px;border-radius:99px;color:var(--c,#94a3b8);background:color-mix(in srgb,var(--c,#94a3b8) 14%,transparent);border:1px solid color-mix(in srgb,var(--c,#94a3b8) 40%,transparent);white-space:nowrap}
+.bte-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.bte-nums div{min-width:0}
+.bte-nums small{display:block;font-size:10.5px;color:var(--txt3)}
+.bte-nums b{font-size:13.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bte-nums b.up{color:#4ade80}.bte-nums b.down{color:#f87171}
+.bte-rules{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.bte-rules span{font-size:11.5px;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--txt2)}
+.bte-rules span.hit{background:rgba(74,222,128,.14);color:#bbf7d0}
+.bte-msg{font-size:12px;color:var(--txt2);margin-top:7px;line-height:1.45}
+.bte-msg.err{color:#fca5a5}
+.bte-msg i{font-size:13px;vertical-align:-2px}
+.bte-back{display:inline-flex;align-items:center;gap:5px;margin-bottom:8px}
+.bte-tl{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.bte-tl div{display:flex;gap:8px;font-size:12.5px;line-height:1.45;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04)}
+.bte-tl i{font-size:16px;color:var(--txt2)}
+.bte-tl small{display:block;color:var(--txt3)}
+.bte-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* the form */
+.bte-form{display:flex;flex-direction:column;gap:12px}
+.bte-sec{display:flex;flex-direction:column;gap:7px}
+.bte-sec > b{font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.05em}
+.bte-picks{display:flex;flex-wrap:wrap;gap:6px}
+.bte-picks button,.bte-tpl button{padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:12.5px;cursor:pointer}
+.bte-picks button.on{background:rgba(247,147,26,.16);border-color:rgba(247,147,26,.55)}
+.bte-picks button:disabled{opacity:.45}
+.bte-tpl{display:flex;flex-wrap:wrap;gap:6px}
+.bte-tpl button{background:rgba(140,168,255,.10);border-color:rgba(140,168,255,.35)}
+.bte-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:13px}
+.bte-line input[type=text],.bte-line input[type=number],.bte-line input[type=date],.bte-in{min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:14px}
+.bte-line input[type=number]{width:84px}
+.bte-line input.w2{width:64px}
+.bte-line input.grow,.bte-in.grow{flex:1}
+.bte-line label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.bte-line input:disabled{opacity:.5}
+.bte-chips{display:flex;flex-wrap:wrap;gap:6px}
+.bte-chips span{display:inline-flex;align-items:center;gap:4px;padding:4px 6px 4px 10px;border-radius:99px;background:rgba(247,147,26,.15);border:1px solid rgba(247,147,26,.45);font-size:12.5px}
+.bte-chips span button{border:0;background:none;color:var(--txt2);cursor:pointer;font-size:14px;padding:0 2px;display:inline-flex}
+.bte-cur{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.bte-cur button{padding:7px 10px;border:0;background:none;color:var(--txt2);font:inherit;font-size:13px;cursor:pointer}
+.bte-cur button.on{background:rgba(247,147,26,.2);color:var(--txt)}
+.bte-prev{padding:10px 12px;border-radius:12px;background:rgba(140,168,255,.08);border:1px solid rgba(140,168,255,.25);font-size:13px;line-height:1.55}
+.bte-honest{font-size:12px;color:#fcd34d;line-height:1.5}
+.bte-errs{padding:9px 11px;border-radius:10px;background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.4);color:#fecaca;font-size:12.5px;line-height:1.5}
+.bte-errs[hidden]{display:none}
+.bte-lock{font-size:12px;color:var(--txt3)}
 .bt-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
 .bt-tabs button{flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:13px;cursor:pointer}
 .bt-tabs button.on{background:rgba(247,147,26,.16);border-color:rgba(247,147,26,.6);color:#fde4c4}
@@ -5057,7 +5124,9 @@ async function loadBot(){
 }
 // Opening the widget shows what's new (marked "New") and resets the counter.
 let _btSince=0, _btTab=null, _btCur=null;
-async function openBot(){
+async function openBot(tab){
+  if(tab==='entries'){ _btGroup='entries'; _btEnOpen=null; _btEnForm=null; }
+  btEnLoad().then(()=>{ if(_btGroup==='entries') btRender(); });
   showModal('Trading bot', '<div id="btBody" class="bt-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   await loadBot();
@@ -5095,17 +5164,283 @@ function btRender(newN){
     el.innerHTML='<div class="bt-empty"><i class="ti ti-clock"></i><div><b>Waiting for the first report</b><p>The key is set. Start the bot on the PC (porneste-bot.bat) — it reports within a minute.</p></div></div>';
     return;
   }
-  const cur=bots.find(x=>x.id===_btTab)||bots[0]; _btTab=cur.id; _btCur=cur;
-  const tabs=bots.length>1?'<div class="bt-tabs" role="tablist">'+bots.map(x=>'<button role="tab" aria-selected="'+(x.id===cur.id)+'" class="'+(x.id===cur.id?'on':'')+'" onclick="_btTab=\''+escHtml(x.id)+'\';btRender()"><span class="bt-dot '+(x.running?'on':'off')+'"></span>'+escHtml(x.name)+(x.role==='practice'?' <small>practice</small>':'')+'</button>').join('')+'</div>':'';
+  // Crypto · Stocks · ETFs (only the groups that have bots) and Entries.
+  const groups=BT_GROUPS.filter(g=>bots.some(x=>btGroupOf(x)===g[0]));
+  if(_btGroup!=='entries' && !groups.some(g=>g[0]===_btGroup)){ const t=bots.find(x=>x.id===_btTab); _btGroup=t?btGroupOf(t):groups[0][0]; }
+  const enN=_btEn&&_btEn.entries?_btEn.entries.filter(x=>BT_EN_ACTIVE.includes(btEnState(x))).length:0;
+  const seg='<div class="bte-seg" role="tablist">'+groups.map(g=>'<button role="tab" class="'+(_btGroup===g[0]?'on':'')+'" onclick="_btGroup=\''+g[0]+'\';btRender()"><i class="ti '+g[2]+'"></i>'+g[1]+' <small>'+bots.filter(x=>btGroupOf(x)===g[0]).length+'</small></button>').join('')+
+    '<button role="tab" class="'+(_btGroup==='entries'?'on':'')+'" onclick="_btGroup=\'entries\';_btEnOpen=null;btRender()"><i class="ti ti-list-check"></i>Entries'+(enN?' <small>'+enN+'</small>':'')+'</button></div>';
+  if(_btGroup==='entries'){ el.innerHTML=seg+btEntriesHtml(); return; }
+  const gb=bots.filter(x=>btGroupOf(x)===_btGroup);
+  const cur=gb.find(x=>x.id===_btTab)||gb[0]; _btTab=cur.id; _btCur=cur;
+  const tabs=gb.length>1?'<div class="bt-tabs" role="tablist">'+gb.map(x=>'<button role="tab" aria-selected="'+(x.id===cur.id)+'" class="'+(x.id===cur.id?'on':'')+'" onclick="_btTab=\''+escHtml(x.id)+'\';btRender()"><span class="bt-dot '+(x.running?'on':'off')+'"></span>'+escHtml(x.name)+(x.role==='practice'?' <small>practice</small>':'')+'</button>').join('')+'</div>':'';
   // Inside a bot: Overview · Simulations · Items (the last two only when the bot sends them).
   const sims=cur.simulations||[], items=cur.items||[];
   if(_btView==='sims'&&!sims.length || _btView==='items'&&!items.length) _btView='overview';
   const views=(sims.length||items.length)?'<div class="bt-views">'+[['overview','Overview','ti-layout-dashboard'],sims.length&&['sims','Simulations ('+sims.length+')','ti-chart-line'],items.length&&['items','Items ('+items.length+')','ti-coins']].filter(Boolean)
     .map(v=>'<button class="'+(_btView===v[0]?'on':'')+'" onclick="_btView=\''+v[0]+'\';btRender()"><i class="ti '+v[2]+'"></i> '+v[1]+'</button>').join('')+'</div>':'';
   const main=_btView==='sims'?btSimsHtml(cur):_btView==='items'?btItemsHtml(cur):btOverviewHtml(b,cur,newN);
-  el.innerHTML=tabs+views+main+'<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
+  el.innerHTML=seg+tabs+views+main+'<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
   if(_btView==='overview') btChart();
   if(_btView==='sims') btSimChart();
+}
+// ── Groups and entries (IB-28) ──
+// Bots are grouped Crypto · Stocks · ETFs; "Entries" holds the user's own
+// paper plans ("buy when / sell at / sell when"), which the bot follows.
+let _btGroup=null, _btEn=null, _btEnF='active', _btEnOpen=null, _btEnForm=null, _btEnBusy=false;
+function btGroupOf(x){
+  const st=x.status||{}, sym=String(st.asset||x.symbol||'');
+  if(sym.includes('.')) return 'etf';
+  if(x.market==='stock' || st.market==='stock') return 'stock';
+  return 'crypto';
+}
+const BT_GROUPS=[['crypto','Crypto','ti-currency-bitcoin'],['stock','Stocks','ti-building-bank'],['etf','ETFs','ti-chart-pie']];
+async function btEnLoad(){
+  try{ const r=await fetch('/api/entries',{cache:'no-store'}); _btEn=await r.json(); }catch(e){ if(!_btEn) _btEn={ error:'Couldn’t load the entries.' }; }
+  return _btEn;
+}
+function btEnState(x){ return x.rep ? x.rep.state : (x.status==='cancelled' ? 'cancelled' : 'pending'); }
+const BT_EN_ST={ pending:['not reported yet','#94a3b8'], waiting:['waiting','#fbbf24'], open:['open','#60a5fa'], partial:['partly sold','#2dd4bf'],
+  closed:['closed','#c084fc'], expired:['expired','#94a3b8'], cancelled:['cancelled','#64748b'], error:['error','#f87171'] };
+const BT_EN_ACTIVE=['pending','waiting','open','partial','error'], BT_EN_DONE=['closed','expired','cancelled'];
+function btEnChip(s){ const m=BT_EN_ST[s]||[s,'#94a3b8']; return '<span class="bte-chip" style="--c:'+m[1]+'">'+escHtml(m[0])+'</span>'; }
+function btEnGroupChip(g){ const m={crypto:['Crypto','#F7931A'],stock:['Stock','#60a5fa'],etf:['ETF','#2dd4bf']}[g]||['?','#94a3b8']; return '<span class="bte-chip" style="--c:'+m[1]+'">'+m[0]+'</span>'; }
+function btTgt(t){ return String(t||'').replace(/x$/,'×'); }
+function btEnDate(v){ const t=Date.parse(v); return isNaN(t)?escHtml(v||''):new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+// The plan in plain words (also the live preview in the form).
+function btEnPlain(sp){
+  if(!sp) return '';
+  const sym=sp.symbol||'…', amt=sp.amount?btMoney(sp.amount):'… €';
+  const b=sp.buy;
+  let buy='Buy '+amt+' of '+escHtml(sym);
+  if(!b || b==='now') buy+=' now';
+  else {
+    if(b.price_below!=null) buy+=' when it is at '+(typeof b.price_below==='number'?btPrice(b.price_below):escHtml(b.price_below))+' or less'; else buy+=' at the next check';
+    const w=[]; if(b.from_date) w.push('not before '+btEnDate(b.from_date)); if(b.expires) w.push('until '+btEnDate(b.expires));
+    if(w.length) buy+=' ('+w.join(', ')+')';
+  }
+  const s=sp.sell||{}, parts=[], conds=[];
+  (s.steps||[]).forEach(x=>parts.push(escHtml(x.sell)+' at '+escHtml(btTgt(x.at))));
+  if((s.targets||[]).length) parts.push((parts.length?'the rest':'everything')+' at '+s.targets.map(t=>escHtml(btTgt(t))).join(' or '));
+  if(s.stop) conds.push('if it falls '+escHtml(s.stop.replace('-',''))+' below the buy price');
+  if(s.trailing) conds.push((s.stop?'':'if it falls ')+escHtml(s.trailing.replace('-',''))+' below its best price since buying');
+  if(s.after_days) conds.push('after '+s.after_days+' day'+(s.after_days===1?'':'s'));
+  if(s.on_date) conds.push('on '+btEnDate(s.on_date));
+  let sell='';
+  if(parts.length||conds.length) sell=' Sell '+(parts.length?parts.join(', '):'everything')+(conds.length?(parts.length?', or ':' ')+conds.join(', or '):'')+'.';
+  else sell=' <i>Add at least one sell rule.</i>';
+  return buy+'.'+sell;
+}
+function btEnRuleChips(x){
+  const r=x.rep, out=[];
+  if(r && r.rules){ if(r.rules.buy) out.push('<span>Buy: '+escHtml(r.rules.buy)+'</span>'); (r.rules.sell||[]).forEach(t=>out.push('<span>'+escHtml(t)+'</span>')); }
+  else if(x.sell){ const s=x.sell;
+    (s.targets||[]).forEach(t=>out.push('<span>target '+escHtml(btTgt(t))+'</span>'));
+    (s.steps||[]).forEach(t=>out.push('<span>'+escHtml(t.sell)+' at '+escHtml(btTgt(t.at))+'</span>'));
+    if(s.stop) out.push('<span>stop '+escHtml(s.stop)+'</span>'); if(s.trailing) out.push('<span>trailing '+escHtml(s.trailing)+'</span>');
+    if(s.after_days) out.push('<span>after '+s.after_days+' days</span>'); if(s.on_date) out.push('<span>on '+btEnDate(s.on_date)+'</span>'); }
+  if(r && (r.targets||[]).length) r.targets.forEach(t=>out.push('<span class="'+(t.reached?'hit':'')+'">'+(t.reached?'<i class="ti ti-check"></i> ':'')+escHtml(btTgt(t.label))+(t.price!=null?' at '+btPrice(t.price):'')+'</span>'));
+  return out.length?'<div class="bte-rules">'+out.join('')+'</div>':'';
+}
+function btEnCardHtml(x, inDetail){
+  const r=x.rep||{}, s=btEnState(x), bought=!!r.buy;
+  const sellingCancelled = x.status==='cancelled' && ['open','partial'].includes(s);
+  const head='<div class="bte-row"><span class="bte-sym">'+escHtml(x.symbol||'?')+'</span>'+btEnGroupChip(x.group)+btEnChip(s)+
+    (sellingCancelled?'<span class="bte-chip" style="--c:#fb923c">cancelled · selling</span>':'')+
+    (x.source==='file'?'<span class="bte-chip" style="--c:#a78bfa">from entries.yaml</span>':'')+
+    (r.marketOpen===false?'<span class="bte-closed"><i class="ti ti-moon"></i> market closed</span>':'')+'</div>'+
+    (x.name||r.name?'<div class="bte-name">'+escHtml(x.name||r.name)+'</div>':'');
+  const nums='<div class="bte-nums">'+
+    '<div><small>Amount</small><b>'+btMoney(x.amount!=null?x.amount:r.amount)+'</b></div>'+
+    '<div><small>'+(bought?'Bought at → now':'Price now')+'</small><b>'+(bought&&r.buy.price!=null?btPrice(r.buy.price)+' → ':'')+btPrice(r.priceNow)+(r.priceStale?' <i class="ti ti-clock" title="Old price"></i>':'')+'</b></div>'+
+    (bought?'<div><small>Value now · P&amp;L</small><b class="'+btCls(r.pnl)+'">'+btMoney(r.valueNow)+'<br>'+btSigned(r.pnl)+(r.pnlPct!=null?' · '+btPct(r.pnlPct):'')+'</b></div>'
+      :'<div><small>Multiple</small><b>–</b></div>')+
+    '</div>'+
+    (bought&&r.multipleNow!=null?'<div class="bte-nums"><div><small>Multiple</small><b>'+(+r.multipleNow).toFixed(2)+'×</b></div>'+
+      '<div><small>Stop at</small><b>'+(r.stopPrice!=null?btPrice(r.stopPrice):'–')+'</b></div><div><small>Trailing stop at</small><b>'+(r.trailingStop!=null?btPrice(r.trailingStop):'–')+'</b></div></div>':'');
+  const msg = !x.rep ? (x.status==='cancelled'?'':'<div class="bte-msg"><i class="ti ti-clock"></i> Waiting for the bot — it checks every 5 minutes.</div>')
+    : (r.message?'<div class="bte-msg'+(s==='error'?' err':'')+'"><i class="ti '+(s==='error'?'ti-alert-triangle':'ti-info-circle')+'"></i> '+escHtml(r.message)+'</div>':'');
+  const fired=(r.firedRule||r.closedReason)?'<div class="bte-msg"><i class="ti ti-flag"></i> '+escHtml([r.firedRule&&('Rule: '+r.firedRule), r.closedReason].filter(Boolean).join(' · '))+'</div>':'';
+  return head+nums+btEnRuleChips(x)+msg+fired;
+}
+function btEntriesHtml(){
+  if(_btEnForm) return btEnFormHtml();
+  const E=_btEn;
+  if(!E) return '<div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div>';
+  if(E.error) return '<div class="cc-msg" style="color:var(--red)">'+escHtml(E.error)+'</div>';
+  const list=E.entries||[];
+  if(_btEnOpen){ const x=list.find(e=>e.id===_btEnOpen); if(x) return btEnDetailHtml(x); _btEnOpen=null; }
+  const c=E.counts||{}, T=E.totals||{};
+  const cnt=Object.keys(BT_EN_ST).filter(k=>c[k]).map(k=>'<b>'+c[k]+'</b> '+BT_EN_ST[k][0]).join(' · ');
+  const f=_btEnF, ok=x=>f==='all'||(f==='active'?BT_EN_ACTIVE.includes(btEnState(x)):BT_EN_DONE.includes(btEnState(x)));
+  const shown=list.filter(ok).sort((a,b)=>String(b.created||'').localeCompare(String(a.created||'')));
+  const chips='<div class="bt-chips">'+[['active','Active'],['closed','Closed'],['all','All']].map(v=>'<button class="'+(f===v[0]?'on':'')+'" onclick="_btEnF=\''+v[0]+'\';btRender()">'+v[1]+' <b>'+list.filter(x=>v[0]==='all'||(v[0]==='active'?BT_EN_ACTIVE.includes(btEnState(x)):BT_EN_DONE.includes(btEnState(x)))).length+'</b></button>').join('')+'</div>';
+  return '<div class="bte-top"><span class="grow"></span><button class="btn acc sm" onclick="btEnNew()"><i class="ti ti-plus"></i> New entry</button></div>'+
+    (list.length?'<div class="bte-sum">'+(cnt||'')+'<br>Invested in bought entries <b>'+btMoney(T.invested||0)+'</b> · P&amp;L realized <b class="'+btCls(T.realized)+'">'+btSigned(T.realized||0)+'</b> · unrealized <b class="'+btCls(T.unrealized)+'">'+btSigned(T.unrealized||0)+'</b>'+
+      (E.reportedAt?'<br><small>Bot’s last word on entries: '+btAgo(E.reportedAt)+'</small>':'')+'</div>'+chips:'')+
+    '<div class="bte-list">'+(shown.length?shown.map(x=>'<button class="bte-card'+(btEnState(x)==='error'?' err':'')+'" onclick="_btEnOpen=\''+escHtml(x.id)+'\';btRender()">'+btEnCardHtml(x)+'</button>').join('')
+      :'<div class="bt-empty"><i class="ti ti-list-check"></i><div><b>'+(list.length?'Nothing here':'No entries yet')+'</b><p>An entry is your own plan for the bot: what to buy, how much, when to buy, and when to sell. Paper money only.</p></div></div>')+'</div>'+
+    '<div class="bt-hypnote"><i class="ti ti-info-circle"></i> Paper money only — nothing real is bought. Very cheap assets rarely reach 10× — most lose value.</div>';
+}
+function btEnDetailHtml(x){
+  const r=x.rep||{}, s=btEnState(x);
+  const tl=[];
+  if(x.created) tl.push(['ti-pencil-plus','Created',btEnDate(x.created)]);
+  if(r.buy) tl.push(['ti-shopping-cart','Bought '+(r.buy.qty!=null?(+r.buy.qty).toLocaleString('en-GB',{maximumFractionDigits:6})+' units ':'')+'at '+btPrice(r.buy.price),
+    btEnDate(r.buy.time)+' · cost '+btMoney(r.buy.cost)+(r.buy.fee!=null?' (fee '+btMoney(r.buy.fee)+')':'')+(r.buy.marketPrice!=null?' · market price '+btPrice(r.buy.marketPrice):'')]);
+  (r.sells||[]).forEach(y=>tl.push(['ti-cash','Sold '+(y.qty!=null?(+y.qty).toLocaleString('en-GB',{maximumFractionDigits:6})+' units ':'')+'at '+btPrice(y.price)+' → '+btMoney(y.value),
+    btEnDate(y.time)+(y.reason?' · '+escHtml(y.reason):'')+(y.realized!=null?' · realized '+btSigned(y.realized):'')+(y.fee!=null?' · fee '+btMoney(y.fee):'')]));
+  if(r.closedReason) tl.push(['ti-flag','Closed',escHtml(r.closedReason)]);
+  const ro=x.readonly||x.source==='file';
+  const canEdit=!ro && x.status!=='cancelled' && ['pending','waiting','error','open','partial'].includes(s);
+  const canCancel=!ro && x.status!=='cancelled' && !['closed','expired'].includes(s);
+  const canDelete=!ro && ['pending','closed','expired','cancelled','error'].includes(s) && !(s==='pending' && x.status!=='cancelled' && false);
+  return '<button class="sh-chip bte-back" onclick="_btEnOpen=null;btRender()"><i class="ti ti-arrow-left"></i> All entries</button>'+
+    '<div class="bte-card" style="cursor:default">'+btEnCardHtml(x,true)+'</div>'+
+    (x.buy||x.sell?'<div class="slabel bt-sl"><i class="ti ti-list-details"></i> The plan</div><div class="bte-prev">'+btEnPlain(x)+(x.note?'<br><small>Note: '+escHtml(x.note)+'</small>':'')+'</div>':'')+
+    (tl.length?'<div class="slabel bt-sl"><i class="ti ti-timeline"></i> What happened</div><div class="bte-tl">'+tl.map(t=>'<div><i class="ti '+t[0]+'"></i><span><b>'+t[1]+'</b><small>'+t[2]+'</small></span></div>').join('')+'</div>':'')+
+    (ro?'<div class="bte-lock">This entry comes from entries.yaml on your PC — change it there.</div>':'')+
+    '<div class="bte-acts">'+
+      (canEdit?'<button class="btn sm" onclick="btEnEdit(\''+escHtml(x.id)+'\')"><i class="ti ti-pencil"></i> Edit</button>':'')+
+      (canCancel?'<button class="btn sm" onclick="btEnCancel(\''+escHtml(x.id)+'\')"><i class="ti ti-ban"></i> Cancel entry</button>':'')+
+      (canDelete?'<button class="btn sm" onclick="btEnDelete(\''+escHtml(x.id)+'\')"><i class="ti ti-trash"></i> Delete</button>':'')+
+    '</div>'+
+    '<div class="bte-src">Id '+escHtml(x.id)+(r.priceTime?' · price from '+btAgo(Date.parse(r.priceTime)):'')+' · paper money</div>';
+}
+async function btEnApi(method, url, body){
+  try{
+    const r=await fetch(url,{ method, headers: body?{'Content-Type':'application/json'}:{}, body: body?JSON.stringify(body):undefined });
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) return { error: j.error||('Error '+r.status), errors: j.errors };
+    return j;
+  }catch(e){ return { error:'Couldn’t reach the server.' }; }
+}
+async function btEnCancel(id){
+  const x=((_btEn&&_btEn.entries)||[]).find(e=>e.id===id); if(!x) return;
+  const bought=['open','partial'].includes(btEnState(x));
+  const msg=bought ? 'Cancel this entry? The bot sells it (paper) at its next check'+(x.group==='crypto'?'.':' — for stocks and ETFs, once the market is open.')
+                   : 'Cancel this entry? The bot won’t buy it.';
+  if(!confirm(msg)) return;
+  const r=await btEnApi('POST','/api/entries/'+encodeURIComponent(id)+'/cancel');
+  if(r.error){ showToast(escHtml(r.error)); return; }
+  await btEnLoad(); btRender();
+}
+async function btEnDelete(id){
+  if(!confirm('Delete this entry for good?')) return;
+  const r=await btEnApi('DELETE','/api/entries/'+encodeURIComponent(id));
+  if(r.error){ showToast(escHtml(r.error)); return; }
+  _btEnOpen=null; await btEnLoad(); btRender();
+}
+// ── The form ──
+const BT_EN_PICKS={ crypto:[['BTC/EUR','Bitcoin'],['ETH/EUR','Ether']], stock:[['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['AMZN','Amazon'],['GOOGL','Alphabet']],
+  etf:[['VWCE.DE','Vanguard FTSE All-World'],['SXR8.DE','iShares Core S&P 500'],['EUNL.DE','iShares Core MSCI World']] };
+const BT_EN_QUICK=['+10%','+25%','+50%','2x','5x','10x','100x'];
+function btEnBlank(){ return { id:null, locked:false, group:'stock', symbol:'', name:'', autoName:'', amount:100, buyMode:'now', price:'', cur:'€', from:'', expires:'',
+  targets:[], steps:[], stopOn:false, stop:10, trailOn:false, trail:8, daysOn:false, days:90, dateOn:false, date:'', note:'', custom:'', errs:null }; }
+function btEnNew(){ _btEnForm=btEnBlank(); btRender(); }
+function btEnEdit(id){
+  const x=((_btEn&&_btEn.entries)||[]).find(e=>e.id===id); if(!x) return;
+  const f=btEnBlank(), b=x.buy, s=x.sell||{};
+  Object.assign(f,{ id:x.id, locked:['open','partial'].includes(btEnState(x)), group:x.group||'stock', symbol:x.symbol, name:x.name||'', amount:x.amount, note:x.note||'' });
+  if(b && b!=='now'){ f.buyMode=b.price_below!=null?'price':'later'; if(typeof b.price_below==='string'){ f.cur='$'; f.price=b.price_below.replace('$',''); } else if(b.price_below!=null) f.price=String(b.price_below); f.from=b.from_date||''; f.expires=b.expires||''; }
+  f.targets=(s.targets||[]).slice(); f.steps=(s.steps||[]).map(y=>({ pct:parseFloat(y.sell), at:y.at }));
+  if(s.stop){ f.stopOn=true; f.stop=parseFloat(s.stop.replace('-','')); } if(s.trailing){ f.trailOn=true; f.trail=parseFloat(s.trailing.replace('-','')); }
+  if(s.after_days){ f.daysOn=true; f.days=s.after_days; } if(s.on_date){ f.dateOn=true; f.date=s.on_date; }
+  _btEnForm=f; btRender();
+}
+function btEnSpec(f){
+  const sp={ symbol:String(f.symbol||'').trim().toUpperCase(), name:f.name.trim()||undefined, amount:+String(f.amount).replace(',','.'), note:f.note.trim()||undefined };
+  if(f.buyMode==='now') sp.buy='now';
+  else { const b={}; if(f.buyMode==='price' && String(f.price).trim()!==''){ const p=String(f.price).trim().replace(',','.'); b.price_below = f.cur==='$' ? '$'+p : +p; }
+    if(f.from) b.from_date=f.from; if(f.expires) b.expires=f.expires; sp.buy=Object.keys(b).length?b:'now'; }
+  const s={};
+  if(f.targets.length) s.targets=f.targets.slice();
+  if(f.steps.length) s.steps=f.steps.map(x=>({ at:x.at, sell:(+x.pct||0)+'%' }));
+  if(f.stopOn) s.stop='-'+f.stop+'%'; if(f.trailOn) s.trailing='-'+f.trail+'%';
+  if(f.daysOn) s.after_days=+f.days; if(f.dateOn && f.date) s.on_date=f.date;
+  sp.sell=s; return sp;
+}
+function btEnBig(f){ return [...f.targets, ...f.steps.map(x=>x.at)].some(t=>/x$/.test(t) && parseFloat(t)>=10); }
+function btEnPrev(){ const f=_btEnForm; if(!f) return;
+  const p=document.getElementById('bteprev'); if(p) p.innerHTML=btEnPlain(btEnSpec(f));
+  const h=document.getElementById('btebig'); if(h) h.hidden=!btEnBig(f); }
+function btEnSet(k,v){ const f=_btEnForm; if(!f) return; f[k]=v; if(k==='symbol' && f.name===f.autoName){ const pk=Object.values(BT_EN_PICKS).flat().find(p=>p[0]===String(v).trim().toUpperCase()); f.name=f.autoName=pk?pk[1]:''; const n=document.getElementById('btename'); if(n) n.value=f.name; } btEnPrev(); }
+function btEnRe(){ const sc=document.querySelector('.bt-body'); const y=sc?sc.scrollTop:0; btRender(); const s2=document.querySelector('.bt-body'); if(s2) s2.scrollTop=y; }
+function btEnPick(sym,name){ const f=_btEnForm; if(!f||f.locked) return; f.symbol=sym; if(!f.name||f.name===f.autoName){ f.name=f.autoName=name; } btEnRe(); }
+function btEnTpl(t){
+  const f=_btEnForm; if(!f) return;
+  const keep={ id:f.id, locked:f.locked, group:f.group, symbol:f.symbol, name:f.name, autoName:f.autoName, amount:f.amount, note:f.note };
+  const n=btEnBlank(); Object.assign(n, keep);
+  if(t==='dip'){ if(!f.locked){ n.buyMode='price'; } n.targets=['+25%']; n.stopOn=true; n.stop=10; }
+  if(t==='spec'){ if(!f.locked) n.buyMode='now'; n.steps=[{ pct:50, at:'3x' }]; n.targets=['10x']; n.daysOn=true; n.days=365; }
+  if(t==='hold'){ const d=new Date(); d.setFullYear(d.getFullYear()+1); n.dateOn=true; n.date=d.toISOString().slice(0,10); n.stopOn=true; n.stop=20; }
+  if(f.locked){ n.buyMode=f.buyMode; n.price=f.price; n.cur=f.cur; n.from=f.from; n.expires=f.expires; }
+  _btEnForm=n; btEnRe();
+}
+function btEnTgt(v){ const f=_btEnForm; if(!f) return; let t=String(v||'').trim().replace(/\s+/g,'').replace(/[×X]$/,'x').replace(',','.'); if(/^\d+(\.\d+)?%$/.test(t)) t='+'+t;
+  if(!/^(\d+(\.\d+)?x|\+\d+(\.\d+)?%|€\d+(\.\d+)?|\$\d+(\.\d+)?)$/.test(t)){ showToast('Use 3x, +40%, €300 or $350.'); return; }
+  if(!f.targets.includes(t)) f.targets.push(t); f.custom=''; btEnRe(); }
+function btEnTgtDel(i){ _btEnForm.targets.splice(i,1); btEnRe(); }
+function btEnStepAdd(){ _btEnForm.steps.push({ pct:50, at:'2x' }); btEnRe(); }
+function btEnStepDel(i){ _btEnForm.steps.splice(i,1); btEnRe(); }
+function btEnFormHtml(){
+  const f=_btEnForm, L=f.locked?' disabled':'';
+  const val=v=>escHtml(v==null?'':String(v));
+  const chk=(k,label,inner)=>'<div class="bte-line"><label><input type="checkbox" '+(f[k]?'checked':'')+' onchange="_btEnForm.'+k+'=this.checked;btEnRe()"> '+label+'</label>'+inner+'</div>';
+  return '<button class="sh-chip bte-back" onclick="_btEnForm=null;btRender()"><i class="ti ti-arrow-left"></i> Back</button>'+
+  '<div class="bte-form">'+
+    '<div class="bte-sec"><b>'+(f.id?'Edit entry':'New entry')+' · templates</b><div class="bte-tpl">'+
+      '<button onclick="btEnTpl(\'dip\')">Buy the dip</button><button onclick="btEnTpl(\'spec\')">Speculate 10×</button><button onclick="btEnTpl(\'hold\')">Hold until a date</button></div></div>'+
+    '<div class="bte-sec"><b>1 · What</b>'+
+      (f.locked?'<div class="bte-lock"><i class="ti ti-lock"></i> Already bought — what, how much and the buy rule can’t change now.</div>':'')+
+      '<div class="bte-seg" style="margin:0">'+BT_GROUPS.map(g=>'<button class="'+(f.group===g[0]?'on':'')+'"'+L+' onclick="_btEnForm.group=\''+g[0]+'\';btEnRe()">'+(g[0]==='stock'?'Stock':g[0]==='etf'?'ETF':'Crypto')+'</button>').join('')+'</div>'+
+      '<div class="bte-picks">'+(BT_EN_PICKS[f.group]||[]).map(p=>'<button class="'+(f.symbol===p[0]?'on':'')+'"'+L+' onclick="btEnPick(\''+p[0]+'\',\''+escHtml(p[1]).replace(/'/g,'\\\'')+'\')">'+p[0]+'</button>').join('')+'</div>'+
+      '<div class="bte-line"><input type="text" class="grow" placeholder="Yahoo symbol, e.g. ASML.AS" value="'+val(f.symbol)+'"'+L+' oninput="btEnSet(\'symbol\',this.value)" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Symbol"></div>'+
+      '<div class="bte-line"><input type="text" id="btename" class="grow" placeholder="Name (optional), e.g. Nvidia" maxlength="80" value="'+val(f.name)+'" oninput="btEnSet(\'name\',this.value)" aria-label="Name"></div>'+
+    '</div>'+
+    '<div class="bte-sec"><b>2 · How much</b><div class="bte-line"><input type="number" min="1" max="1000000" step="1" value="'+val(f.amount)+'"'+L+' oninput="btEnSet(\'amount\',this.value)" aria-label="Amount in euro"> €</div></div>'+
+    '<div class="bte-sec"><b>3 · Buy</b>'+
+      '<div class="bte-line"><label><input type="radio" name="btebuy" '+(f.buyMode==='now'?'checked':'')+L+' onchange="_btEnForm.buyMode=\'now\';btEnRe()"> Now</label></div>'+
+      '<div class="bte-line"><label><input type="radio" name="btebuy" '+(f.buyMode==='price'?'checked':'')+L+' onchange="_btEnForm.buyMode=\'price\';btEnRe()"> When the price is at or below</label>'+
+        '<input type="number" step="any" min="0" value="'+val(f.price)+'"'+(f.buyMode!=='price'||f.locked?' disabled':'')+' oninput="btEnSet(\'price\',this.value)" aria-label="Buy price">'+
+        '<span class="bte-cur">'+['€','$'].map(c=>'<button class="'+(f.cur===c?'on':'')+'"'+(f.buyMode!=='price'||f.locked?' disabled':'')+' onclick="_btEnForm.cur=\''+c+'\';btEnRe()">'+c+'</button>').join('')+'</span></div>'+
+      (f.buyMode!=='now'?'<div class="bte-line">Not before <input type="date" value="'+val(f.from)+'"'+L+' onchange="btEnSet(\'from\',this.value)" aria-label="Not before"></div><div class="bte-line">Give up after <input type="date" value="'+val(f.expires)+'"'+L+' onchange="btEnSet(\'expires\',this.value)" aria-label="Give up after"></div>'
+        :'<div class="bte-line"><label><input type="radio" name="btebuy"'+L+' onchange="_btEnForm.buyMode=\'later\';btEnRe()"> From a date, or with a give-up date</label></div>')+
+    '</div>'+
+    '<div class="bte-sec"><b>4 · Sell at</b>'+
+      '<div class="bte-picks">'+BT_EN_QUICK.map(t=>'<button class="'+(f.targets.includes(t)?'on':'')+'" onclick="'+(f.targets.includes(t)?'btEnTgtDel('+f.targets.indexOf(t)+')':'btEnTgt(\''+t+'\')')+'">'+btTgt(t)+'</button>').join('')+'</div>'+
+      (f.targets.length?'<div class="bte-chips">'+f.targets.map((t,i)=>'<span>'+escHtml(btTgt(t))+'<button onclick="btEnTgtDel('+i+')" aria-label="Remove"><i class="ti ti-x"></i></button></span>').join('')+'</div>':'')+
+      '<div class="bte-line"><input type="text" class="grow" placeholder="Custom: 3x, +40%, €300, $350" value="'+val(f.custom)+'" oninput="_btEnForm.custom=this.value" onkeydown="if(event.key===\'Enter\'){event.preventDefault();btEnTgt(this.value)}" aria-label="Custom target">'+
+        '<button class="sh-chip" onclick="btEnTgt(_btEnForm.custom)"><i class="ti ti-plus"></i> Add</button></div>'+
+      f.steps.map((x,i)=>'<div class="bte-line">Sell <input type="number" class="w2" min="1" max="100" value="'+val(x.pct)+'" oninput="_btEnForm.steps['+i+'].pct=+this.value;btEnPrev()" aria-label="Percent">% at '+
+        '<input type="text" class="w2" style="width:90px" value="'+val(x.at)+'" oninput="_btEnForm.steps['+i+'].at=this.value.trim().replace(/[×X]$/,\'x\');btEnPrev()" aria-label="Step target">'+
+        '<button class="sh-chip" onclick="btEnStepDel('+i+')" aria-label="Remove step"><i class="ti ti-x"></i></button></div>').join('')+
+      '<div class="bte-line"><button class="sh-chip" onclick="btEnStepAdd()"><i class="ti ti-stairs-up"></i> Sell in steps</button></div>'+
+    '</div>'+
+    '<div class="bte-sec"><b>5 · Sell when</b>'+
+      chk('stopOn','Stop-loss −','<input type="number" class="w2" min="1" max="99" value="'+val(f.stop)+'"'+(f.stopOn?'':' disabled')+' oninput="btEnSet(\'stop\',+this.value)" aria-label="Stop-loss percent">% below the buy price')+
+      chk('trailOn','Trailing −','<input type="number" class="w2" min="1" max="99" value="'+val(f.trail)+'"'+(f.trailOn?'':' disabled')+' oninput="btEnSet(\'trail\',+this.value)" aria-label="Trailing percent">% below its best price')+
+      chk('daysOn','After','<input type="number" class="w2" min="1" max="3650" value="'+val(f.days)+'"'+(f.daysOn?'':' disabled')+' oninput="btEnSet(\'days\',+this.value)" aria-label="Days"> days')+
+      chk('dateOn','On','<input type="date" value="'+val(f.date)+'"'+(f.dateOn?'':' disabled')+' onchange="btEnSet(\'date\',this.value)" aria-label="Sell date">')+
+    '</div>'+
+    '<div class="bte-sec"><b>6 · Note</b><textarea class="bte-in" rows="2" maxlength="300" placeholder="Why this entry (optional)" oninput="btEnSet(\'note\',this.value)">'+escHtml(f.note)+'</textarea></div>'+
+    '<div class="bte-sec"><b>Preview</b><div class="bte-prev" id="bteprev">'+btEnPlain(btEnSpec(f))+'</div></div>'+
+    '<div class="bte-honest"><i class="ti ti-alert-triangle"></i> Paper money only. Very cheap assets rarely reach 10× — most lose value.<span id="btebig"'+(btEnBig(f)?'':' hidden')+'> Targets this big are very rare.</span></div>'+
+    '<div class="bte-errs" id="bteerrs"'+(f.errs?'':' hidden')+'>'+(f.errs||[]).map(e=>'<div>• '+escHtml(e)+'</div>').join('')+'</div>'+
+    '<div class="bte-acts"><button class="btn acc" id="btesave" onclick="btEnSave()"><i class="ti ti-device-floppy"></i> '+(f.id?'Save changes':'Create entry')+'</button>'+
+      '<button class="btn" onclick="_btEnForm=null;btRender()">Cancel</button></div>'+
+  '</div>';
+}
+async function btEnSave(){
+  const f=_btEnForm; if(!f||_btEnBusy) return;
+  const sp=btEnSpec(f);
+  if(f.locked){ delete sp.symbol; delete sp.amount; delete sp.buy; }
+  _btEnBusy=true; const b=document.getElementById('btesave'); if(b) b.disabled=true;
+  const r=await btEnApi(f.id?'PATCH':'POST', f.id?'/api/entries/'+encodeURIComponent(f.id):'/api/entries', sp);
+  _btEnBusy=false; if(b) b.disabled=false;
+  if(r.error){ f.errs=r.errors&&r.errors.length?r.errors:[r.error]; const E=document.getElementById('bteerrs'); if(E){ E.hidden=false; E.innerHTML=f.errs.map(e=>'<div>• '+escHtml(e)+'</div>').join(''); E.scrollIntoView({block:'center',behavior:'smooth'}); } return; }
+  _btEnForm=null; _btEnOpen=r.id||null; await btEnLoad(); btRender();
+  showToast(f.id?'Entry saved.':'Entry created — the bot picks it up within 5 minutes.');
 }
 let _btView='overview', _btChartKind='value', _btSim=null, _btItemsF='all', _btItemOpen=null;
 // Where a number comes from: live, cached, historical or hypothetical.
@@ -5115,11 +5450,11 @@ function btOrigin(o){
   return m?'<span class="bt-orig" style="--c:'+m[1]+'">'+m[0]+'</span>':'';
 }
 // Tiny coin prices (0.0001 €) keep their digits.
-function btPrice(v){ if(v==null||!isFinite(v)) return '–'; const a=Math.abs(v); return a>=1||a===0 ? btMoney(v) : (+v).toPrecision(3).replace(/\.?0+$/,'')+' €'; }
+function btPrice(v){ if(v==null||!isFinite(v)) return '–'; const a=Math.abs(v); return a>=1||a===0 ? btMoney(v) : (+v).toPrecision(6).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'')+' €'; }
 function btSigned(v){ return v==null||!isFinite(v) ? '–' : (v>0?'+':'')+btMoney(v); }
 function btCls(v){ return v==null ? '' : v>0.004 ? 'up' : v<-0.004 ? 'down' : ''; }
 function btOverviewHtml(b,cur,newN){
-  const st=cur.status, coin=String(cur.symbol||'BTC/EUR').split('/')[0], up=(st.pnl||0)>0.004, down=(st.pnl||0)<-0.004;
+  const st=cur.status, coin=String(st.asset||cur.symbol||'BTC/EUR').split('/')[0], up=(st.pnl||0)>0.004, down=(st.pnl||0)<-0.004;
   const pos = st.halted ? '<span style="color:var(--red)">Stopped</span>' : (st.position==='btc' ? 'In '+escHtml(coin) : 'In cash');
   const run = cur.running
     ? '<span class="bt-run on"><i></i>Running · last report '+btAgo(cur.lastSeen)+'</span>'
@@ -5150,7 +5485,8 @@ function btOverviewHtml(b,cur,newN){
   // D. Items by state
   const items=cur.items||[];
   const secD=items.length?'<div class="slabel bt-sl"><i class="ti ti-coins"></i> Items</div><div class="bt-states">'+BT_STATES.map(s=>{ const n=items.filter(i=>i.state===s[0]).length; return n?'<button class="bt-stc" style="--c:'+s[2]+'" onclick="_btView=\'items\';_btItemsF=\''+s[3]+'\';btRender()"><b>'+n+'</b> '+s[1]+'</button>':''; }).join('')+'</div>':'';
-  return '<div class="bt-head">'+run+'<span class="bt-modes">'+btOrigin(st.dataOrigin)+'<span class="bt-mode '+(st.mode==='live'?'live':'')+'">'+(st.mode==='live'?'Real money':'Paper money')+'</span></span></div>'+
+  const closed=st.marketOpen===false?'<span class="bte-closed"><i class="ti ti-moon"></i> Market closed — waiting for the open</span>':'';
+  return '<div class="bt-head">'+run+'<span class="bt-modes">'+closed+btOrigin(st.dataOrigin)+'<span class="bt-mode '+(st.mode==='live'?'live':'')+'">'+(st.mode==='live'?'Real money':'Paper money')+'</span></span></div>'+
     '<div class="bt-hero"><small>Value now</small><b>'+btMoney(st.equity)+'</b>'+
       '<span class="bt-pnl '+(up?'up':down?'down':'')+'">'+(up?'▲':down?'▼':'●')+' '+(st.pnl>0?'+':'')+btMoney(st.pnl)+' · '+btPct(st.pnlPct)+' <em>since the start ('+btMoney(st.budget)+')</em></span></div>'+
     (st.halted && st.note ? '<div class="bt-warn"><i class="ti ti-alert-triangle"></i> '+escHtml(st.note)+'</div>' : '')+
@@ -5172,7 +5508,9 @@ function btOverviewHtml(b,cur,newN){
     '<div class="bt-sum"><label class="bt-sw"><input type="checkbox" id="btSumOn" '+(b.summary.on?'checked':'')+' onchange="btSaveSummary()"><span>One notification a day at</span></label>'+
       '<input type="time" id="btSumTime" value="'+escHtml(b.summary.time||'08:00')+'" onchange="btSaveSummary()" aria-label="Summary time">'+
       '<button class="sh-chip bt-chip" onclick="btTestSummary(this)"><i class="ti ti-send"></i> Send now</button></div>'+
-    '<div class="cc-foot">'+(st.mode==='live'?'Real money on Revolut X.':'Paper trading: virtual money at real Revolut X prices.')+' Updates every 5 minutes while the bot runs on the PC.</div>';
+    '<div class="cc-foot">'+(st.mode==='live'?'Real money on Revolut X.':'Paper trading: virtual money at real '+escHtml(st.priceSource||'Revolut X')+' prices.')+
+      (st.currency&&st.currency!=='EUR'?' Prices: '+escHtml(st.priceSource||'Yahoo Finance')+', '+escHtml(st.currency)+' → EUR.':'')+
+      (st.qty!=null&&st.position==='btc'?' Holding '+(+st.qty).toLocaleString('en-GB',{maximumFractionDigits:6})+' '+escHtml(coin)+'.':'')+' Updates every 5 minutes while the bot runs on the PC.</div>';
 }
 // [state, label, colour, items filter]
 const BT_STATES=[['watching','watching','#94a3b8','active'],['bought','bought','#60a5fa','active'],['target_hit','target hit','#4ade80','target'],['sold','sold','#c084fc','sold'],['unsellable','unsellable','#fb923c','unsellable'],['worthless','worthless','#f87171','unsellable']];
@@ -7393,7 +7731,7 @@ function tbSetup(){
   o.innerHTML=gmTop('Blocks','',true)+
     '<div class="gm-setup">'+
       '<div class="gm-q">Rows of blocks at the start</div><div class="gm-steps">'+Array.from({length:10},(_,i)=>i+1).map(n=>'<button class="'+(n===p.rows?'on':'')+'" onclick="tbPick(\'rows\','+n+')">'+n+'</button>').join('')+'</div>'+
-      '<div class="gm-q">Starting speed <small>(it rises every 10 lines, up to 5)</small></div><div class="gm-steps five">'+[1,2,3,4,5].map(n=>'<button class="'+(n===p.speed?'on':'')+'" onclick="tbPick(\'speed\','+n+')">'+n+'</button>').join('')+'</div>'+
+      '<div class="gm-q">Starting speed <small>(it goes up every 10 lines; after 5 it starts again at 1)</small></div><div class="gm-steps five">'+[1,2,3,4,5].map(n=>'<button class="'+(n===p.speed?'on':'')+'" onclick="tbPick(\'speed\','+n+')">'+n+'</button>').join('')+'</div>'+
       '<button class="btn acc gm-go" onclick="tbStart()"><i class="ti ti-player-play"></i> Start</button>'+
       '<div class="gm-recs"><span>Best score <b>'+(t.best||0).toLocaleString('en-GB')+'</b></span><span>Most lines <b>'+(t.lines||0)+'</b></span></div>'+
       '<div class="gm-help">On the phone: the buttons under the board. On a keyboard: ← → move, ↑ or X turns, ↓ faster, P pauses. Tap Speed while playing to change it (1 → 5, then back to 1).</div>'+
@@ -7492,7 +7830,8 @@ function tbLock(){
   for(let r=TB_H-1;r>=0;r--){ if(_tb.grid[r].every(Boolean)){ _tb.grid.splice(r,1); _tb.grid.unshift(Array(TB_W).fill(null)); cleared++; r++; } }
   if(cleared){
     _tb.lines+=cleared; _tb.score+=[0,100,300,500,800][cleared]*_tb.speed;
-    _tb.speed=Math.min(5, _tb.startSpeed+Math.floor((_tb.lines-_tb.speedLines)/10));
+    // Every 10 lines one step faster; after 5 it starts again at 1.
+    _tb.speed=((_tb.startSpeed-1+Math.floor((_tb.lines-_tb.speedLines)/10))%5)+1;
     if(navigator.vibrate) navigator.vibrate(cleared>=4?[20,30,20]:12);
   }
   _tb.cur=tbPiece(_tb.next); _tb.next=tbNextType(); _tb.acc=0;
@@ -8637,7 +8976,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-03-blocks-turn';
+const APP_BUILD='2026-11-03-entries';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -8670,7 +9009,7 @@ function openFromQs(qs){
     const q=new URLSearchParams(qs||'');
     if(q.get('dev')){ setTimeout(()=>openDev().then(()=>dvOpen(q.get('dev'),false)), 400); return true; }
     if(q.get('concerts')){ setTimeout(()=>openConcerts(), 400); return true; }
-    if(q.get('bot')){ setTimeout(()=>openBot(), 400); return true; }
+    if(q.get('bot')){ setTimeout(()=>openBot(q.get('tab')||undefined), 400); return true; }
     const d=q.get('d');
     if(d){ openOnDate(d, q.get('ev')); if(q.get('alert') && q.get('ev')) setTimeout(()=>openAlerts(q.get('ev'), d), 500); return true; }
   }catch(e){}
@@ -8698,7 +9037,7 @@ function handleOpenParams(){
     }
     if(q.get('bot')){
       history.replaceState({}, '', location.pathname);
-      setTimeout(()=>openBot(), 400);
+      setTimeout(()=>openBot(q.get('tab')||undefined), 400);
       return;
     }
     const d=q.get('d');
@@ -8718,7 +9057,7 @@ if('serviceWorker' in navigator){
     if(e.data && e.data.type==='OPEN_DATE' && e.data.date){ openOnDate(e.data.date, e.data.id); if(e.data.alert && e.data.id) setTimeout(()=>openAlerts(e.data.id, e.data.date), 250); }
     if(e.data && e.data.type==='ALERTS_CHANGED') loadAlerts();
     if(e.data && e.data.type==='OPEN_CONCERTS') openConcerts();
-    if(e.data && e.data.type==='OPEN_BOT') openBot();
+    if(e.data && e.data.type==='OPEN_BOT') openBot(e.data.tab);
     if(e.data && e.data.type==='OPEN_DEV' && e.data.id) openDev().then(()=>dvOpen(e.data.id,false));
   });
 }
@@ -8974,7 +9313,8 @@ function alBotCard(g, focus){
     '<div class="ec-actions">'+
       '<button class="ea grn" onclick="alClear(\''+k+'\')"><i class="ti ti-checks"></i>Clear</button>'+
       '<button class="ea ylw" onclick="alSnoozeMenu(this)"><i class="ti ti-alarm-snooze"></i>Snooze</button>'+
-      '<button class="ea" onclick="closeModal();'+(a.bot?'_btTab=\''+escHtml(a.bot)+'\';':'')+'openBot()"><i class="ti ti-currency-bitcoin"></i>Open bot</button>'+
+      (a.tab==='entries' ? '<button class="ea" onclick="closeModal();openBot(\'entries\')"><i class="ti ti-list-check"></i>Open entries</button>'
+        : '<button class="ea" onclick="closeModal();'+(a.bot?'_btTab=\''+escHtml(a.bot)+'\';':'')+'openBot()"><i class="ti ti-currency-bitcoin"></i>Open bot</button>')+
     '</div>'+
     '<div class="al-snooze" hidden>'+[[10,'10 min'],[30,'30 min'],[60,'1 hour'],[180,'3 hours'],['tm','Tomorrow 9:00']].map(s=>'<button class="sh-chip" onclick="alSnooze(\''+k+'\',\''+s[0]+'\')">'+s[1]+'</button>').join('')+'</div>'+
   '</div>';
