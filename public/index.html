@@ -1244,16 +1244,18 @@ select option:checked{background:#2E3A78;color:#fff}
 .tb-pad{flex:none;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 6px 4px;max-width:520px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none;touch-action:none}
 .gm-wrap,.gm-wrap *{touch-action:manipulation}
 .gm-wrap .tb-pad,.gm-wrap .tb-pad *,.gm-wrap .tb-board canvas{touch-action:none}
-.tb-cross{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,52px);gap:2px;place-items:center}
-.tb-cross .up{grid-column:2;grid-row:1}.tb-cross .lf{grid-column:1;grid-row:2}.tb-cross .rt{grid-column:3;grid-row:2}.tb-cross .dn{grid-column:2;grid-row:3}
+.tb-cross{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,52px);gap:2px;place-items:center}
+.tb-cross .lf{grid-column:1;grid-row:1}.tb-cross .rt{grid-column:3;grid-row:1}.tb-cross .dn{grid-column:2;grid-row:2}
 .tb-act{display:grid;grid-template-columns:auto;gap:12px;justify-items:center;align-items:center}
 .tb-b{width:58px;height:58px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font-size:26px;display:grid;place-items:center;cursor:pointer;touch-action:none;transition:transform 90ms var(--ease-out),background-color 90ms ease}
 .tb-b.on{transform:scale(.92);background:rgba(140,160,190,.28)}
-.tb-b.rot{background:rgba(140,160,190,.18)}
-.tb-b.drop{width:78px;height:78px;font-size:32px;background:rgba(140,160,190,.22);border-color:rgba(160,175,200,.45)}
+.tb-b.big{width:78px;height:78px;font-size:32px;background:rgba(140,160,190,.22);border-color:rgba(160,175,200,.45);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.tb-box.tap{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.tb-box.tap small i{font-size:11px;opacity:.7}
+.tb-box.tap:active{background:rgba(255,255,255,.10)}
 .tb-b.pause{width:46px;height:46px;font-size:20px;background:rgba(255,255,255,.05)}
 .gm-newbest{color:#fde68a}
-@media (max-width:360px){ .tb-cross{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,48px)} .tb-b{width:52px;height:52px;font-size:23px} .tb-b.drop{width:68px;height:68px} .tb-side{width:80px} }
+@media (max-width:360px){ .tb-cross{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,48px)} .tb-b{width:52px;height:52px;font-size:23px} .tb-b.big{width:68px;height:68px} .tb-side{width:80px} }
 /* Sudoku */
 .sk-meta{margin-left:auto;font-size:13px;color:var(--txt2);font-variant-numeric:tabular-nums}
 .sk-play{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -7394,7 +7396,7 @@ function tbSetup(){
       '<div class="gm-q">Starting speed <small>(it rises every 10 lines, up to 5)</small></div><div class="gm-steps five">'+[1,2,3,4,5].map(n=>'<button class="'+(n===p.speed?'on':'')+'" onclick="tbPick(\'speed\','+n+')">'+n+'</button>').join('')+'</div>'+
       '<button class="btn acc gm-go" onclick="tbStart()"><i class="ti ti-player-play"></i> Start</button>'+
       '<div class="gm-recs"><span>Best score <b>'+(t.best||0).toLocaleString('en-GB')+'</b></span><span>Most lines <b>'+(t.lines||0)+'</b></span></div>'+
-      '<div class="gm-help">On the phone: the buttons under the board. On a keyboard: ← → move, ↑ turn, ↓ faster, space drops, P pauses.</div>'+
+      '<div class="gm-help">On the phone: the buttons under the board. On a keyboard: ← → move, ↑ or X turns, ↓ faster, P pauses. Tap Speed while playing to change it (1 → 5, then back to 1).</div>'+
     '</div>';
 }
 function tbPick(k,v){ const p=gmPrefs(); p[k]=v; gmSavePrefs(p); tbSetup(); }
@@ -7410,7 +7412,7 @@ function tbStart(){
     for(let c=0;c<TB_W;c++) row[c] = c!==hole && Math.random()<0.75 ? 'G' : null;
     if(row.every(Boolean)) row[(hole+1)%TB_W]=null;
   }
-  _tb={ grid, bag:[], score:0, lines:0, startSpeed:p.speed, speed:p.speed, rows:p.rows, over:false, paused:false, t:0, raf:0, last:0, acc:0, rep:null, lockT:0 };
+  _tb={ grid, bag:[], score:0, lines:0, startSpeed:p.speed, speedLines:0, speed:p.speed, rows:p.rows, over:false, paused:false, t:0, raf:0, last:0, acc:0, rep:null, lockT:0 };
   _tb.cur=tbPiece(tbNextType()); _tb.next=tbNextType();
   _gm.view='tb';
   tbLayout();
@@ -7426,15 +7428,15 @@ function tbLayout(){
         '<div class="tb-box"><small>Next</small><canvas id="tbNext" width="88" height="66"></canvas></div>'+
         '<div class="tb-box"><small>Score</small><b id="tbScore">0</b></div>'+
         '<div class="tb-box"><small>Lines</small><b id="tbLines">0</b></div>'+
-        '<div class="tb-box"><small>Speed</small><b id="tbSpeed">'+_tb.speed+'</b></div>'+
+        '<div class="tb-box tap" id="tbSpeedBox" role="button" aria-label="Change speed"><small>Speed <i class="ti ti-refresh"></i></small><b id="tbSpeed">'+_tb.speed+'</b></div>'+
         '<div class="tb-box"><small>Best</small><b id="tbBest">'+(((_gm.rec||{}).tetris||{}).best||0).toLocaleString('en-GB')+'</b></div>'+
       '</div>'+
     '</div>'+
-    // Game-pad layout: a cross on the left (turn on top, left / right, down
-    // below), drop and pause grouped on the right.
+    // Game-pad layout: left / right with down below on the left; a big
+    // turn button and pause on the right.
     '<div class="tb-pad">'+
-      '<div class="tb-cross">'+btn('rot','ti-rotate-clockwise','Turn','up rot')+btn('left','ti-chevron-left','Move left','lf')+btn('right','ti-chevron-right','Move right','rt')+btn('down','ti-chevron-down','Faster down','dn')+'</div>'+
-      '<div class="tb-act">'+btn('drop','ti-arrow-bar-to-down','Drop','drop')+'<button class="tb-b pause" data-k="pause" aria-label="Pause"><i class="ti ti-player-pause"></i></button></div>'+
+      '<div class="tb-cross">'+btn('left','ti-chevron-left','Move left','lf')+btn('right','ti-chevron-right','Move right','rt')+btn('down','ti-chevron-down','Faster down','dn')+'</div>'+
+      '<div class="tb-act">'+btn('rot','ti-rotate-clockwise','Turn','big')+'<button class="tb-b pause" data-k="pause" aria-label="Pause"><i class="ti ti-player-pause"></i></button></div>'+
     '</div>';
   // Size the board to the space left on this screen.
   const play=o.querySelector('.tb-play'), side=o.querySelector('.tb-side');
@@ -7452,6 +7454,9 @@ function tbLayout(){
     b.addEventListener('pointerdown', start); ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,end));
     b.addEventListener('contextmenu', e=>e.preventDefault());
   });
+  // Speed box: pointerdown, so quick taps aren't eaten by the double-tap zoom guard.
+  const sb=document.getElementById('tbSpeedBox');
+  if(sb) sb.addEventListener('pointerdown', e=>{ e.preventDefault(); tbSpeedNext(); });
   tbDraw();
 }
 // Turning the phone / resizing the window: the board is sized again (the game carries on).
@@ -7477,7 +7482,6 @@ function tbKey(k){
   else if(k==='right' && tbFits(p.cells,p.x+1,p.y)) p.x++;
   else if(k==='rot') tbRotate();
   else if(k==='down'){ if(tbFits(p.cells,p.x,p.y+1)){ p.y++; _tb.score+=1; _tb.acc=0; } else tbLock(); }
-  else if(k==='drop'){ let n=0; while(tbFits(p.cells,p.x,p.y+1)){ p.y++; n++; } _tb.score+=2*n; tbLock(); }
   tbDraw();
 }
 function tbLock(){
@@ -7488,7 +7492,7 @@ function tbLock(){
   for(let r=TB_H-1;r>=0;r--){ if(_tb.grid[r].every(Boolean)){ _tb.grid.splice(r,1); _tb.grid.unshift(Array(TB_W).fill(null)); cleared++; r++; } }
   if(cleared){
     _tb.lines+=cleared; _tb.score+=[0,100,300,500,800][cleared]*_tb.speed;
-    _tb.speed=Math.min(5, _tb.startSpeed+Math.floor(_tb.lines/10));
+    _tb.speed=Math.min(5, _tb.startSpeed+Math.floor((_tb.lines-_tb.speedLines)/10));
     if(navigator.vibrate) navigator.vibrate(cleared>=4?[20,30,20]:12);
   }
   _tb.cur=tbPiece(_tb.next); _tb.next=tbNextType(); _tb.acc=0;
@@ -7531,6 +7535,13 @@ function tbDraw(){
   const best=((_gm.rec||{}).tetris||{}).best||0;
   if(_tb.score>best){ set('tbBest',_tb.score.toLocaleString('en-GB')); const e=document.getElementById('tbBest'); if(e) e.classList.add('gm-newbest'); }
 }
+// Tapping the Speed box: 1 → 2 → 3 → 4 → 5 → 1 … (the fall times per speed stay the same).
+function tbSpeedNext(){
+  if(!_tb || _tb.over) return;
+  _tb.speed = _tb.speed>=5 ? 1 : _tb.speed+1;
+  _tb.startSpeed=_tb.speed; _tb.speedLines=_tb.lines; _tb.acc=0;
+  const e=document.getElementById('tbSpeed'); if(e) e.textContent=_tb.speed;
+}
 function tbPause(force){
   if(!_tb||_tb.over) return;
   _tb.paused = force!==undefined ? force : !_tb.paused;
@@ -7556,7 +7567,7 @@ function tbStop(){
 }
 document.addEventListener('keydown', e=>{
   if(_gm.view!=='tb' || !_tb || !document.getElementById('gmWrap')) return;
-  const m={ ArrowLeft:'left', ArrowRight:'right', ArrowDown:'down', ArrowUp:'rot', ' ':'drop', x:'rot', X:'rot', p:'pause', P:'pause', Escape:'pause' }[e.key];
+  const m={ ArrowLeft:'left', ArrowRight:'right', ArrowDown:'down', ArrowUp:'rot', x:'rot', X:'rot', p:'pause', P:'pause', Escape:'pause' }[e.key];
   if(m){ e.preventDefault(); tbKey(m); }
 });
 // Leaving the app pauses the game.
@@ -8626,7 +8637,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-02-widgets-games';
+const APP_BUILD='2026-11-03-blocks-turn';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
