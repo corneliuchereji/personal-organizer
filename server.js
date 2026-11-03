@@ -1064,7 +1064,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-11-03-blocks-turn';
+const BUILD_VERSION = '2026-11-03-entries';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2884,6 +2884,12 @@ const MCP_TOOLS = [
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string', description:'Artist or band name'} } } },
   { name:'bot_status', description:'Status of every trading bot that reports to the Organizer (main and practice bots): value now, profit/loss, position, last report, recent trades and recent bot messages.',
     inputSchema:{ type:'object', properties:{} } },
+  { name:'entries_list', description:'The user\'s trading-bot entries (their own buy/sell plans, PAPER MONEY ONLY — nothing real is bought): rules, state reported by the bot, value and profit/loss. Optional filter by state (waiting, open, partial, closed, expired, cancelled, error, pending = not reported yet).',
+    inputSchema:{ type:'object', properties:{ state:{type:'string'} } } },
+  { name:'entry_add', description:'Create a trading-bot entry — a PAPER MONEY plan the bot follows (never real money). symbol: BTC/EUR, ETH/EUR or a Yahoo symbol (AAPL, VWCE.DE). amount in €. buy: "now" or {price_below: number € or "$160", from_date, expires (YYYY-MM-DD)}. sell (at least one rule): {targets:["2x","+25%","€300","$350"], steps:[{at:"3x",sell:"50%"}], stop:"-10%", trailing:"-8%", after_days:90, on_date:"YYYY-MM-DD"}. Returns the stored entry or what is wrong.',
+    inputSchema:{ type:'object', required:['symbol','amount','sell'], properties:{ symbol:{type:'string'}, name:{type:'string'}, amount:{type:'number'}, buy:{}, sell:{type:'object'}, note:{type:'string'} } } },
+  { name:'entry_cancel', description:'Cancel a trading-bot entry (paper money). If it was already bought, the bot sells it at its next check (for stocks: when the market is open).',
+    inputSchema:{ type:'object', required:['id'], properties:{ id:{type:'string'} } } },
   { name:'dev_roadmap', description:'Dev tracker (Investment Bot development plan kept in the Organizer): every phase with its task counts by status, the current phase, and what can be worked on next (tasks whose dependencies are all done). Used by Claude in the Investment Bot project — a different project — to see the plan.',
     inputSchema:{ type:'object', properties:{ project:{type:'string', description:'Defaults to invest-bot'} } } },
   { name:'dev_tasks_list', description:'List Dev tracker tasks (id, title, phase, owner, priority, status, test status, what blocks them). Filter by project, phase (P1…P10), status (todo, in_progress, blocked, done) or owner (bot, organizer, both).',
@@ -3056,11 +3062,30 @@ async function mcpCall(name, args){
       writeData(d);
       return mcpText({ ok:true, id:r.task.id, task:r.task });
     }
+    case 'entries_list': {
+      const v = await entriesView(d); const want = String(args.state||'').toLowerCase();
+      const list = v.entries.filter(x => !want || (x.rep ? x.rep.state : (x.status==='cancelled'?'cancelled':'pending')) === want);
+      return mcpText({ paperMoneyOnly:true, summary: entryOneLine(v), totals:v.totals, entries: list.map(x => ({ id:x.id, symbol:x.symbol, name:x.name, amount:x.amount, buy:x.buy, sell:x.sell, note:x.note, status:x.status, source:x.source||'organizer',
+        state: x.rep ? x.rep.state : (x.status==='cancelled'?'cancelled':'pending (bot not reported yet)'), message: x.rep && x.rep.message, priceNow: x.rep && x.rep.priceNow, valueNow: x.rep && x.rep.valueNow, pnl: x.rep && x.rep.pnl, pnlPct: x.rep && x.rep.pnlPct, multipleNow: x.rep && x.rep.multipleNow, firedRule: x.rep && x.rep.firedRule })) });
+    }
+    case 'entry_add': {
+      const r = entryCreate(d, args);
+      if(r.error) return mcpText({ refused:true, reason:r.error });
+      writeData(d);
+      return mcpText({ ok:true, paperMoneyOnly:true, entry:r.spec, note:'The bot picks it up within 5 minutes.' });
+    }
+    case 'entry_cancel': {
+      const r = await entryCancel(d, String(args.id||''));
+      if(r.error) return mcpText({ refused:true, reason:r.error });
+      writeData(d);
+      return mcpText({ ok:true, entry:r.spec, note:'If it was bought, the bot sells it (paper) at its next check.' });
+    }
     case 'bot_status': {
       const b = botPublic(d);
       if(!b.connected) return mcpText('The trading bot is not connected yet (Settings → Private → Trading bot).');
       if(!b.bots.length) return mcpText('The bot is connected but has not reported yet.');
-      return mcpText({ bots: b.bots.map(x => ({ id:x.id, name:x.name, role:x.role, symbol:x.symbol, timeframe:x.timeframe, contract:x.contract, simulations:x.simCount, items:x.itemCount,
+      const ev = await entriesView(d);
+      return mcpText({ entries: entryOneLine(ev), bots: b.bots.map(x => ({ id:x.id, name:x.name, role:x.role, symbol:x.symbol, timeframe:x.timeframe, market:x.market, marketOpen: x.status && x.status.marketOpen !== undefined ? x.status.marketOpen : true, currency: x.status && x.status.currency || null, contract:x.contract, simulations:x.simCount, items:x.itemCount,
         running:x.running, lastReport: x.lastSeen ? new Date(x.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest'}) : null,
         ...(x.status||{}), change:x.perf, recentTrades: x.trades.slice(-5) })),
         recentMessages: b.events.slice(0,10).map(e => ({ bot:e.botName||e.bot||'main', kind:e.kind, title:e.title, body:e.body, at:new Date(e.at).toISOString() })) });
@@ -5016,7 +5041,7 @@ function bParams(p){
   return o;
 }
 function botCleanSims(arr){
-  return arr.slice(0, 10).filter(s => s && typeof s === 'object').map((s, i) => ({
+  return arr.slice(0, 20).filter(s => s && typeof s === 'object').map((s, i) => ({
     id: bStr(s.id || ('sim'+(i+1)), 64), kind: ['dca','timing','items'].includes(s.kind) ? s.kind : 'dca',
     title: bStr(s.title, 120), generatedAt: bTime(s.generatedAt), dataOrigin: bOrigin(s.dataOrigin),
     period: s.period && typeof s.period === 'object' ? { from: bTime(s.period.from), to: bTime(s.period.to) } : null,
@@ -5051,6 +5076,13 @@ function botClean(st){
   if(st.investCount !== undefined){ const n = parseInt(st.investCount); o.investCount = isFinite(n) && n >= 0 ? n : null; }
   if(st.dataOrigin !== undefined) o.dataOrigin = BOT_ORIGINS.includes(st.dataOrigin) ? st.dataOrigin : null;
   if(st.configSummary !== undefined) o.configSummary = String(st.configSummary||'').slice(0, 200);
+  // Stocks and ETFs (IB-28): market, asset, units, trading currency, exchange open?, price source.
+  if(st.market !== undefined) o.market = st.market === 'stock' ? 'stock' : 'crypto';
+  if(st.asset !== undefined) o.asset = String(st.asset||'').slice(0, 20);
+  if(st.qty !== undefined) o.qty = botNum(st.qty);
+  if(st.currency !== undefined) o.currency = String(st.currency||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0, 5);
+  if(st.marketOpen !== undefined) o.marketOpen = st.marketOpen !== false;
+  if(st.priceSource !== undefined) o.priceSource = String(st.priceSource||'').slice(0, 40);
   o.mode = st.mode === 'live' ? 'live' : 'paper';
   o.position = (st.position && st.position !== 'cash') ? 'btc' : 'cash';   // 'btc' = holding the coin (any coin)
   o.halted = !!st.halted;
@@ -5077,7 +5109,7 @@ function botMigrate(bot){
 function botList(d){
   const bot = botMigrate(JSON.parse(JSON.stringify(d.bot || {})));
   const arr = Object.entries(bot.bots).map(([id, x]) => ({ id, name:x.name||id, role:x.role||'main', symbol:x.symbol||(x.status&&x.status.symbol)||'BTC/EUR',
-    timeframe:x.timeframe||'', contract:x.contract||1, simCount:x.sims||0, itemCount:x.items||0, status:x.status||null, perf:botPerf(x), hist:(x.hist||[]).slice(-840), trades:x.trades||[], equity:x.equity||[], lastSeen:x.lastSeen||0,
+    timeframe:x.timeframe||'', market:x.market||(x.status&&x.status.market)||'crypto', contract:x.contract||1, simCount:x.sims||0, itemCount:x.items||0, status:x.status||null, perf:botPerf(x), hist:(x.hist||[]).slice(-840), trades:x.trades||[], equity:x.equity||[], lastSeen:x.lastSeen||0,
     running: !!(x.lastSeen && Date.now()-x.lastSeen < BOT_STALE_MS) }));
   // Main bot(s) first, then practice ones, then by name.
   arr.sort((a,b) => (a.role==='main'?0:1)-(b.role==='main'?0:1) || (a.id==='main'?-1:b.id==='main'?1:0) || a.name.localeCompare(b.name));
@@ -5126,13 +5158,182 @@ function botSummaryText(d){
   return { title:first, body };
 }
 
+// ── Entries (IB-28): the user's own paper plans — "buy when / sell at / sell when" ──
+// The specs live here (d.bot.entries, server-side). The bot fetches them every
+// 5 minutes (GET /api/bot/entries with its key, cancelled ones included so it
+// can sell), acts on them with paper money, and sends their state back in the
+// main bot's report (entries[]), kept apart like simulations (botx 'main').
+// The app merges the two by id (GET /api/entries).
+const ENTRY_MAX = 100, ENTRY_ACTIVE_MAX = 50;
+const ENTRY_SYM_RE = /^[A-Z0-9.\-^=]{1,20}(\/[A-Z]{3,5})?$/;
+const ENTRY_ID_RE = /^[A-Za-z0-9_.-]{1,64}$/;
+const ENTRY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ENTRY_TARGET_RES = [/^\d+(\.\d+)?x$/, /^\+\d+(\.\d+)?%$/, /^€\d+(\.\d+)?$/, /^\$\d+(\.\d+)?$/];
+const ENTRY_STATES = ['waiting','open','partial','closed','expired','cancelled','error'];
+const ENTRY_BOUGHT = ['open','partial'];
+const ENTRY_DELETABLE = ['closed','expired','cancelled','error'];
+function entryDateOk(s){ if(!ENTRY_DATE_RE.test(s)) return false; const t = new Date(s+'T00:00:00Z'); return !isNaN(t) && t.toISOString().slice(0,10) === s; }
+// "2×" / "2X" / " 2 x " → "2x"; "€ 300" → "€300". Returns null when it isn't a valid target.
+function entryTarget(v){
+  let s = String(v==null?'':v).trim().replace(/\s+/g,'').replace(/[×X]$/,'x').replace(/^EUR/i,'€').replace(/^USD/i,'$').replace(',', '.');
+  if(/^\d+(\.\d+)?%$/.test(s)) s = '+'+s;              // "25%" means +25%
+  if(!ENTRY_TARGET_RES.some(r => r.test(s))) return null;
+  const n = parseFloat(s.replace(/[^\d.]/g,''));
+  if(!(n > 0)) return null;
+  if(/x$/.test(s) && n <= 1) return null;               // 1× or less isn't a gain
+  return s;
+}
+// 5, "5%", "-5%" → "-5%" (between 0 and 100 %).
+function entryPctDown(v){
+  const s = String(v==null?'':v).trim().replace(/\s+/g,'').replace(',', '.');
+  const m = s.match(/^-?(\d+(\.\d+)?)%?$/); if(!m) return null;
+  const n = +m[1]; if(!(n > 0 && n < 100)) return null;
+  return '-'+n+'%';
+}
+function entryMarket(sym){ return String(sym||'').includes('/') ? 'crypto' : 'stock'; }
+function entryGroup(sym){ sym = String(sym||''); return sym.includes('/') ? 'crypto' : sym.includes('.') ? 'etf' : 'stock'; }
+// Checks a spec from the app (or the MCP tool). prev = the stored spec when editing.
+// Returns { spec } or { errors:[…] } — every problem, in plain words.
+function entryValidate(inp, prev){
+  const e = [], o = {};
+  inp = inp && typeof inp === 'object' ? inp : {};
+  const sym = String(inp.symbol==null ? (prev?prev.symbol:'') : inp.symbol).trim().toUpperCase();
+  if(!ENTRY_SYM_RE.test(sym)) e.push('Symbol: use letters and digits, like AAPL, VWCE.DE or BTC/EUR.');
+  o.symbol = sym;
+  const name = inp.name==null ? (prev&&prev.name||'') : String(inp.name).trim();
+  if(name.length > 80) e.push('Name: at most 80 characters.');
+  if(name) o.name = name.slice(0,80);
+  const amount = inp.amount==null ? (prev?prev.amount:NaN) : +String(inp.amount).replace(',', '.');
+  if(!(amount >= 1 && amount <= 1000000)) e.push('Amount: between 1 € and 1,000,000 €.');
+  o.amount = Math.round(amount*100)/100;
+  // Buy
+  const b = inp.buy===undefined ? (prev?prev.buy:'now') : inp.buy;
+  if(b === 'now' || b == null || b === '') o.buy = 'now';
+  else if(typeof b !== 'object' || Array.isArray(b)) e.push('Buy: "now" or a rule.');
+  else {
+    const bb = {};
+    if(b.price_below != null && b.price_below !== ''){
+      const pb = b.price_below;
+      if(typeof pb === 'number'){ if(pb > 0) bb.price_below = pb; else e.push('Buy price: must be more than 0.'); }
+      else { const s = String(pb).trim().replace(/\s+/g,'').replace(',', '.');
+        if(/^\$\d+(\.\d+)?$/.test(s) && parseFloat(s.slice(1)) > 0) bb.price_below = s;
+        else if(/^€?\d+(\.\d+)?$/.test(s) && parseFloat(s.replace('€','')) > 0) bb.price_below = parseFloat(s.replace('€',''));
+        else e.push('Buy price: a number in €, or like $160 in the exchange currency.'); }
+    }
+    for(const k of ['from_date','expires']) if(b[k]){ if(entryDateOk(String(b[k]))) bb[k] = String(b[k]); else e.push((k==='from_date'?'"Not before"':'"Give up after"')+' date: use YYYY-MM-DD.'); }
+    if(bb.from_date && bb.expires && bb.expires < bb.from_date) e.push('"Give up after" must be after "not before".');
+    o.buy = Object.keys(bb).length ? bb : 'now';
+  }
+  // Sell
+  const s = inp.sell===undefined ? (prev?prev.sell:null) : inp.sell;
+  const so = {};
+  if(!s || typeof s !== 'object' || Array.isArray(s)) e.push('Sell: add at least one rule (a target, a stop, a date …).');
+  else {
+    if(s.targets != null){
+      if(!Array.isArray(s.targets)) e.push('Sell targets must be a list.');
+      else { const t = [];
+        for(const x of s.targets.slice(0, 12)){ const n = entryTarget(x); if(n) { if(!t.includes(n)) t.push(n); } else e.push('Target "'+String(x).slice(0,20)+'": use 3x, +40%, €300 or $350.'); }
+        if(t.length) so.targets = t; }
+    }
+    if(s.steps != null){
+      if(!Array.isArray(s.steps)) e.push('Sell steps must be a list.');
+      else { let tot = 0; const st = [];
+        for(const x of s.steps.slice(0, 10)){
+          const at = entryTarget(x && x.at), pc = parseFloat(String(x && x.sell || '').replace('%',''));
+          if(!at) e.push('Step "'+String(x && x.at || '').slice(0,20)+'": the target must look like 3x, +40%, €300 or $350.');
+          else if(!(pc > 0 && pc <= 100)) e.push('Step at '+at+': sell between 1% and 100%.');
+          else { tot += pc; st.push({ at, sell: pc+'%' }); }
+        }
+        if(tot > 100.0001) e.push('Steps sell '+tot+'% in total — at most 100%.');
+        if(st.length) so.steps = st; }
+    }
+    for(const k of ['stop','trailing']) if(s[k] != null && s[k] !== ''){ const v = entryPctDown(s[k]); if(v) so[k] = v; else e.push((k==='stop'?'Stop-loss':'Trailing stop')+': a percentage between 0 and 100, like 10%.'); }
+    if(s.after_days != null && s.after_days !== ''){ const n = +s.after_days; if(Number.isInteger(n) && n > 0 && n <= 3650) so.after_days = n; else e.push('"After N days": a whole number from 1 to 3650.'); }
+    if(s.on_date){ if(entryDateOk(String(s.on_date))) so.on_date = String(s.on_date); else e.push('"Sell on" date: use YYYY-MM-DD.'); }
+    if(!Object.keys(so).length && !e.some(x => /^(Target|Step|Stop|Trailing|"After|"Sell on)/.test(x))) e.push('Sell: add at least one rule (a target, a stop, a date …).');
+  }
+  o.sell = so;
+  const note = inp.note==null ? (prev&&prev.note||'') : String(inp.note).trim();
+  if(note.length > 300) e.push('Note: at most 300 characters.');
+  if(note) o.note = note.slice(0,300);
+  return e.length ? { errors:e } : { spec:o };
+}
+// What the bot sent back for its entries (in the main bot's report).
+function botCleanEntries(arr){
+  const n = botNum, s = bStr, t = bTime;
+  const fill = (x, keys) => { if(!x || typeof x !== 'object') return null; const r = {}; for(const k of keys) r[k] = k==='time' ? t(x[k]) : k==='reason' ? s(x[k],80) : n(x[k]); return r; };
+  return arr.slice(0, ENTRY_MAX).filter(x => x && typeof x === 'object' && ENTRY_ID_RE.test(String(x.id||''))).map(x => ({
+    id: String(x.id), symbol: s(x.symbol,24), name: s(x.name,80), market: x.market==='stock' ? 'stock' : x.market==='crypto' ? 'crypto' : entryMarket(x.symbol),
+    currency: s(x.currency,6), source: x.source==='file' ? 'file' : 'organizer',
+    state: ENTRY_STATES.includes(x.state) ? x.state : 'error',
+    amount: n(x.amount), created: t(x.created), note: s(x.note,300), message: s(x.message,300),
+    rules: x.rules && typeof x.rules === 'object' ? { buy: s(x.rules.buy,160), sell: (Array.isArray(x.rules.sell)?x.rules.sell:[]).slice(0,16).map(r => s(r,80)) } : null,
+    buy: fill(x.buy, ['time','price','qty','cost','fee','marketPrice']),
+    sells: (Array.isArray(x.sells)?x.sells:[]).slice(0,20).map(y => fill(y, ['time','marketPrice','price','qty','value','fee','realized','reason'])).filter(Boolean),
+    qtyLeft: n(x.qtyLeft), priceNow: n(x.priceNow), priceOriginal: n(x.priceOriginal), priceTime: t(x.priceTime),
+    marketOpen: x.marketOpen === false ? false : x.marketOpen === true ? true : null, priceStale: !!x.priceStale,
+    valueNow: n(x.valueNow), realized: n(x.realized), pnl: n(x.pnl), pnlPct: n(x.pnlPct), multipleNow: n(x.multipleNow),
+    peak: n(x.peak), stopPrice: n(x.stopPrice), trailingStop: n(x.trailingStop),
+    targets: (Array.isArray(x.targets)?x.targets:[]).slice(0,16).filter(y => y && typeof y === 'object').map(y => ({ label: s(y.label,24), price: n(y.price), reached: !!y.reached })),
+    firedRule: s(x.firedRule,80), closedReason: s(x.closedReason,120), dataOrigin: bOrigin(x.dataOrigin) || 'live', paper: true }));
+}
+function entrySpecs(d){ return (d.bot && Array.isArray(d.bot.entries)) ? d.bot.entries : []; }
+async function entryReported(){ const x = await botxGet('main'); return { list: Array.isArray(x.entries) ? x.entries : [], at: x.entriesAt || 0 }; }
+function entryNewId(d){
+  const used = new Set([...(d.bot.entryUsed||[]), ...entrySpecs(d).map(x => x.id)]);
+  let id; do { id = 'e-'+crypto.randomBytes(10).toString('base64').replace(/[^a-z0-9]/gi,'').toLowerCase().padEnd(10,'0').slice(0,10); } while(used.has(id));
+  d.bot.entryUsed = [...(d.bot.entryUsed||[]), id].slice(-1000);
+  return id;
+}
+// Specs + what the bot last said about each, and the bot's own file entries.
+async function entriesView(d){
+  const rep = await entryReported(), byId = new Map(rep.list.map(r => [r.id, r]));
+  const out = entrySpecs(d).map(sp => ({ ...sp, group: entryGroup(sp.symbol), rep: byId.get(sp.id) || null }));
+  // The bot's own entries from entries.yaml on the PC (read-only here). An entry deleted here
+  // but still in the bot's last report is not shown again.
+  for(const r of rep.list) if(r.source === 'file')
+    if(!out.some(x => x.id === r.id)) out.push({ id:r.id, symbol:r.symbol, name:r.name, amount:r.amount, note:r.note, status: r.state==='cancelled'?'cancelled':'active',
+      created:r.created, source:r.source, readonly:true, group: entryGroup(r.symbol), rep:r });
+  const state = x => x.rep ? x.rep.state : (x.status === 'cancelled' ? 'cancelled' : 'pending');
+  const counts = {}; for(const x of out){ const k = state(x); counts[k] = (counts[k]||0) + 1; }
+  let invested = 0, realized = 0, unrealized = 0;
+  for(const x of out){ const r = x.rep; if(!r || !r.buy) continue;
+    invested += r.buy.cost != null ? r.buy.cost : (r.amount||0);
+    realized += r.realized || 0;
+    if(r.pnl != null) unrealized += r.pnl - (r.realized || 0); }
+  return { entries: out, reportedAt: rep.at || null, counts, totals: { invested, realized, unrealized, pnl: realized + unrealized } };
+}
+function entryOneLine(v){
+  const c = v.counts, parts = Object.entries(c).map(([k, n]) => n+' '+k);
+  return parts.length ? parts.join(', ')+' · P&L '+botSigned(v.totals.pnl)+' ('+botSigned(v.totals.realized)+' realized, '+botSigned(v.totals.unrealized)+' unrealized)' : 'No entries.';
+}
+function botSigned(v){ return (v>0?'+':v<0?'−':'')+botMoney(Math.abs(v||0)); }
+function entryCreate(d, body){
+  d.bot = botMigrate(d.bot || {});
+  const list = d.bot.entries = entrySpecs(d);
+  if(list.length >= ENTRY_MAX) return { status:409, error:'There are already '+ENTRY_MAX+' entries. Delete some closed ones first.' };
+  if(list.filter(x => x.status !== 'cancelled').length >= ENTRY_ACTIVE_MAX) return { status:409, error:'At most '+ENTRY_ACTIVE_MAX+' active entries. Cancel or delete one first.' };
+  const v = entryValidate(body, null);
+  if(v.errors) return { status:400, error:v.errors.join(' '), errors:v.errors };
+  const now = new Date().toISOString();
+  const sp = { id: entryNewId(d), ...v.spec, status:'active', created:now, updated:now };
+  list.push(sp);
+  return { spec: sp };
+}
+async function entryCancel(d, id){
+  const sp = entrySpecs(d).find(x => x.id === id);
+  if(!sp) return { status:404, error:'No entry with that id.' };
+  if(sp.status !== 'cancelled'){ sp.status = 'cancelled'; sp.updated = new Date().toISOString(); }
+  return { spec: sp };
+}
+
 app.post('/api/bot/report', async (req, res) => {
   if(!botKeyOk(req)) return res.status(401).json({ error:'Wrong or missing bot key — copy it again from Settings → Private → Trading bot.' });
   const b = req.body;
   if(!b || typeof b !== 'object' || Array.isArray(b)) return res.status(400).json({ error:'The report must be a JSON object.' });
   if(JSON.stringify(b).length > BOT_REPORT_MAX) return res.status(413).json({ error:'Report too large. The limit is 1 MB — send fewer points in the series.' });
   for(const k of ['status','bot']) if(b[k] != null && (typeof b[k] !== 'object' || Array.isArray(b[k]))) return res.status(400).json({ error:'"'+k+'" must be an object.' });
-  for(const k of ['trades','equity','events','simulations','items']) if(b[k] != null && !Array.isArray(b[k])) return res.status(400).json({ error:'"'+k+'" must be a list.' });
+  for(const k of ['trades','equity','events','simulations','items','entries']) if(b[k] != null && !Array.isArray(b[k])) return res.status(400).json({ error:'"'+k+'" must be a list.' });
   const contract = parseInt(b.contract) === 2 ? 2 : 1;           // missing = 1
   const d = readData();
   const bot = botMigrate(d.bot = d.bot || {});
@@ -5144,6 +5345,7 @@ app.post('/api/bot/report', async (req, res) => {
   one.role = meta.role === 'practice' ? 'practice' : (meta.role === 'main' ? 'main' : (one.role || (bid==='main'?'main':'practice')));
   if(meta.symbol) one.symbol = String(meta.symbol).slice(0,20);
   if(meta.timeframe) one.timeframe = String(meta.timeframe).slice(0,10);
+  if(meta.market) one.market = meta.market === 'stock' ? 'stock' : 'crypto';
   one.lastSeen = Date.now();
   one.contract = contract;
   if(b.status) one.status = botClean(b.status);
@@ -5154,10 +5356,13 @@ app.post('/api/bot/report', async (req, res) => {
     if(!h.length || now - h[h.length-1][0] >= 55*60000) h.push([now, one.status.equity]); else h[h.length-1][1] = one.status.equity;
     if(h.length > 840) one.hist = h.slice(-840);
   }
-  if(Array.isArray(b.simulations) || Array.isArray(b.items)){
+  if(Array.isArray(b.simulations) || Array.isArray(b.items) || Array.isArray(b.entries)){
     const x = { ...(await botxGet(bid)) };
     if(Array.isArray(b.simulations)) x.simulations = botCleanSims(b.simulations);
     if(Array.isArray(b.items)) x.items = botCleanItems(b.items);
+    // Entries (IB-28): replaced on every report that brings them.
+    if(Array.isArray(b.entries)){ x.entries = botCleanEntries(b.entries); x.entriesAt = Date.now(); one.entries = x.entries.length; }
+    x.simulations = x.simulations || []; x.items = x.items || [];
     x.at = Date.now();
     try{ await botxPut(bid, x); }catch(e){ console.log('Bot extra save failed:', e.message); }
     one.sims = x.simulations.length; one.items = x.items.length;      // counts in the main record, data apart
@@ -5181,26 +5386,28 @@ app.post('/api/bot/report', async (req, res) => {
     // arrived since it was last opened (bot.openedAt).
     bot.log.push({ id, bot:bid, botName:one.name, kind, title, body, at:Date.now() });
     if(!BOT_PUSH) continue;
-    if(kind === 'trade' && one.role === 'practice') continue;          // practice bots trade quietly
+    // The user's own entries always notify (they were made on purpose) and open the Entries tab.
+    const isEntry = !!e.entry || /\bEntry\b/.test(title);
+    if(kind === 'trade' && one.role === 'practice' && !isEntry) continue;          // practice bots trade quietly
     if(kind === 'sim'){ info.push({ title, body }); continue; }       // information only: no bell, no badge
     const evId = 'bot-'+id;
     const shown = one.role === 'practice' ? one.name+': '+title : title;
     const a = recordAlert(d, { ev:{ id:evId, _type:'task' }, key:evId, ds:getToday(), mins:0 }, shown.slice(0,120), body);
-    a.type = 'bot'; a.kind = kind; a.bot = bid;
+    a.type = 'bot'; a.kind = kind; a.bot = bid; if(isEntry) a.tab = 'entries';
     made.push(a);
   }
   bot.log = bot.log.slice(-100);
   bot.seen = [...seen].slice(-300);
   writeData(d);
   for(const a of made){
-    try{ await sendWebPush(a.title, a.body, { bot:1, date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 24*3600, urgency: a.kind==='trade' ? 'normal' : 'high' }); }
+    try{ await sendWebPush(a.title, a.body, { bot:1, ...(a.tab ? { tab:a.tab } : {}), date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 24*3600, urgency: a.kind==='trade' ? 'normal' : 'high' }); }
     catch(e){ console.log('Bot push failed:', e.message); }
   }
   for(const x of info){
     try{ await sendWebPush(x.title, x.body, { bot:1, tag:'bot-sim-'+bid, noBadge:true }, { ttl: 12*3600 }); }catch(e){}
   }
   res.json({ ok:true, bot:bid, contract, notified: made.length + info.length, logged: fresh.length,
-    stored:{ simulations: one.sims||0, items: one.items||0 } });
+    stored:{ simulations: one.sims||0, items: one.items||0, entries: one.entries||0 } });
 });
 // What the widget shows. Same visibility as the calendar itself; the key is never included.
 app.get('/api/bot', async (req, res) => {
@@ -5208,6 +5415,54 @@ app.get('/api/bot', async (req, res) => {
   for(const x of pub.bots){ const e = await botxGet(x.id); x.simulations = e.simulations || []; x.items = e.items || []; }
   res.json(pub);
 });
+// For the bot (its key): every spec, cancelled ones too — a cancelled bought entry means "sell it".
+app.get('/api/bot/entries', (req, res) => {
+  if(!botKeyOk(req)) return res.status(401).json({ error:'Wrong or missing bot key.' });
+  res.json({ entries: entrySpecs(readData()) });
+});
+// For the app (same visibility as the Trading bot widget).
+app.get('/api/entries', async (req, res) => { res.json(await entriesView(readData())); });
+app.post('/api/entries', (req, res) => {
+  const d = readData(); const r = entryCreate(d, req.body);
+  if(r.error) return res.status(r.status).json({ error:r.error, errors:r.errors });
+  writeData(d); res.json(r.spec);
+});
+app.patch('/api/entries/:id', async (req, res) => {
+  const d = readData(); const sp = entrySpecs(d).find(x => x.id === req.params.id);
+  if(!sp) return res.status(404).json({ error:'No entry with that id.' });
+  if(sp.status === 'cancelled') return res.status(409).json({ error:'This entry is cancelled — make a new one instead.' });
+  const rep = (await entryReported()).list.find(x => x.id === sp.id);
+  const st = rep ? rep.state : null;
+  if(st && !ENTRY_BOUGHT.includes(st) && st !== 'waiting' && st !== 'error') return res.status(409).json({ error:'This entry is '+st+' — it can’t be changed any more.' });
+  const body = req.body && typeof req.body === 'object' ? { ...req.body } : {};
+  // Once bought, only the sell rules, the name and the note can change.
+  if(st && ENTRY_BOUGHT.includes(st)){
+    const locked = [];
+    if(body.symbol != null && String(body.symbol).trim().toUpperCase() !== sp.symbol) locked.push('symbol');
+    if(body.amount != null && +body.amount !== sp.amount) locked.push('amount');
+    if(body.buy !== undefined && JSON.stringify(body.buy === 'now' || body.buy == null ? 'now' : body.buy) !== JSON.stringify(sp.buy)) locked.push('buy rule');
+    if(locked.length) return res.status(409).json({ error:'Already bought — the '+locked.join(', ')+' can’t change now. Only the sell rules, name and note can.' });
+    delete body.symbol; delete body.amount; delete body.buy;
+  }
+  const v = entryValidate(body, sp);
+  if(v.errors) return res.status(400).json({ error:v.errors.join(' '), errors:v.errors });
+  Object.assign(sp, v.spec, { updated: new Date().toISOString() });
+  if(!v.spec.name) delete sp.name; if(!v.spec.note) delete sp.note;
+  writeData(d); res.json(sp);
+});
+app.post('/api/entries/:id/cancel', async (req, res) => {
+  const d = readData(); const r = await entryCancel(d, req.params.id);
+  if(r.error) return res.status(r.status).json({ error:r.error });
+  writeData(d); res.json(r.spec);
+});
+app.delete('/api/entries/:id', async (req, res) => {
+  const d = readData(); const list = entrySpecs(d), i = list.findIndex(x => x.id === req.params.id);
+  if(i < 0) return res.status(404).json({ error:'No entry with that id.' });
+  const rep = (await entryReported()).list.find(x => x.id === list[i].id);
+  if(rep && !ENTRY_DELETABLE.includes(rep.state)) return res.status(409).json({ error:'The bot still holds or watches this entry ('+rep.state+'). Cancel it first; delete it once it shows as closed or cancelled.' });
+  list.splice(i, 1); writeData(d); res.json({ ok:true });
+});
+
 // ═══════════════════════════════════════════════════
 // DEV TRACKER — plans and tracks the Investment Bot's development (phases,
 // tasks, dependencies, implementation and test status). Server-owned
@@ -5496,7 +5751,7 @@ function alertsList(d){
   for(const a of (d.alerts||[])){
     const s = alertState(d, a, now); if(s!=='active' && s!=='snoozed') continue;
     if(a.type==='bot'){
-      const row = { id:a.id, evId:a.evId, date:a.date, type:'bot', kind:a.kind||'', bot:a.bot||'', title:a.title, body:a.body, at:a.at, snooze:a.snooze||0, name:a.title, time:'' };
+      const row = { id:a.id, evId:a.evId, date:a.date, type:'bot', kind:a.kind||'', bot:a.bot||'', ...(a.tab ? { tab:a.tab } : {}), title:a.title, body:a.body, at:a.at, snooze:a.snooze||0, name:a.title, time:'' };
       (s==='active' ? active : snoozed).push(row);
       continue;
     }
@@ -5556,7 +5811,7 @@ async function sendSnoozedAlerts(){
     if(a.type==='bot'){
       if(alertState(d, a, now) !== 'active') continue;
       a.at = now;
-      try{ await sendWebPush('🔔 '+a.title, a.body||'', { bot:1, date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 6*3600, urgency:'high' }); }
+      try{ await sendWebPush('🔔 '+a.title, a.body||'', { bot:1, ...(a.tab ? { tab:a.tab } : {}), date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 6*3600, urgency:'high' }); }
       catch(e){ console.log('Snoozed bot alert failed:', e.message); }
       continue;
     }
