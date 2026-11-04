@@ -1064,7 +1064,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-11-03-entries';
+const BUILD_VERSION = '2026-11-04-games';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -5647,16 +5647,31 @@ app.post('/api/dev/task/add', (req, res) => {
 
 // ═══════════════════════════════════════════════════
 // GAMES — personal records only (games themselves aren't saved).
-// d.games = { tetris:{ best, lines, at }, sudoku:{ beginner:{best,at,solved}, advanced, expert } }
+// d.games = { tetris:{ best, lines, at, scoreV, oldBest }, sudoku:{ beginner:{best,at,solved}, advanced, expert },
+//            hangman:{ wins, played, en:{ easy:{best,bestStreak,wins,at}, medium, hard }, ro:{…} } }
 // ═══════════════════════════════════════════════════
-app.get('/api/games/records', (req, res) => { res.json(readData().games || {}); });
+// Blocks scoring version 2 (2026-11-04): drop points were removed, so the best
+// score starts again (the old one is kept as oldBest). Most lines stays.
+const TB_SCORE_V = 2;
+function gamesMigrate(g){
+  const t = g.tetris;
+  if(t && t.scoreV !== TB_SCORE_V){ if(t.best) t.oldBest = t.best; t.best = 0; delete t.at; t.scoreV = TB_SCORE_V; return true; }
+  return false;
+}
+app.get('/api/games/records', (req, res) => {
+  const d = readData(); const g = d.games || {};
+  if(gamesMigrate(g)){ d.games = g; writeData(d); }
+  res.json(g);
+});
 app.post('/api/games/records', (req, res) => {
   const b = req.body || {}; const d = readData(); const g = d.games = d.games || {}; const now = new Date().toISOString();
   let newRecord = false;
   if(b.game === 'tetris'){
-    const t = g.tetris = g.tetris || { best:0, lines:0 };
+    const t = g.tetris = g.tetris || { best:0, lines:0, scoreV:TB_SCORE_V };
+    gamesMigrate(g);
     const sc = Math.max(0, Math.min(1e8, parseInt(b.score)||0)), ln = Math.max(0, Math.min(1e5, parseInt(b.lines)||0));
-    if(sc > (t.best||0)){ t.best = sc; t.at = now; newRecord = true; }
+    // A score from an old copy of the app (still counting drop points) isn't used for the best score.
+    if(+b.v === TB_SCORE_V && sc > (t.best||0)){ t.best = sc; t.at = now; newRecord = true; }
     if(ln > (t.lines||0)){ t.lines = ln; newRecord = true; }
     t.played = (t.played||0) + 1;
   } else if(b.game === 'sudoku' && ['beginner','advanced','expert'].includes(b.level)){
@@ -5664,6 +5679,15 @@ app.post('/api/games/records', (req, res) => {
     const secs = Math.max(1, Math.min(86400*3, parseInt(b.secs)||0));
     r.solved = (r.solved||0) + 1;
     if(!r.best || secs < r.best){ r.best = secs; r.at = now; newRecord = true; }
+  } else if(b.game === 'hangman' && ['en','ro'].includes(b.lang) && ['easy','medium','hard'].includes(b.level)){
+    // Hangman: total wins, and per language + level the best round score and best streak.
+    const h = g.hangman = g.hangman || { wins:0, played:0 };
+    const r = (h[b.lang] = h[b.lang] || {})[b.level] = (h[b.lang][b.level] || {});
+    const sc = Math.max(0, Math.min(1e6, parseInt(b.score)||0)), st = Math.max(0, Math.min(1e5, parseInt(b.streak)||0));
+    h.played = (h.played||0) + 1;
+    if(b.won === true){ h.wins = (h.wins||0) + 1; r.wins = (r.wins||0) + 1; }
+    if(sc > (r.best||0)){ r.best = sc; r.at = now; newRecord = true; }
+    if(st > (r.bestStreak||0)){ r.bestStreak = st; newRecord = true; }
   } else return res.status(400).json({ error:'Unknown game.' });
   writeData(d);
   res.json({ ok:true, newRecord, records: g });
