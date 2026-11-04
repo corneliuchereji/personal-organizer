@@ -1228,6 +1228,76 @@ select option:checked{background:#2E3A78;color:#fff}
 .gm-recs{display:flex;gap:16px;font-size:13px;color:var(--txt2)}.gm-recs b{color:var(--txt)}
 .gm-help{font-size:12.5px;color:var(--txt3);line-height:1.5}
 .gm-new{color:#fde68a;font-weight:650}
+/* ════ Hangman (hg-*) ════ */
+.gm-tile.hg{background:linear-gradient(150deg,rgba(143,185,150,.16),rgba(255,255,255,.03))}
+.gm-tile.hg .gm-ic{background:rgba(143,185,150,.2);color:#cfe6d3}
+.hg-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hg-seg button,.hg-cats button{height:44px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.hg-seg button.on,.hg-cats button.on{background:rgba(143,185,150,.24);border-color:rgba(143,185,150,.7);color:#fff}
+.hg-cats{display:flex;flex-wrap:wrap;gap:6px}
+.hg-cats button{height:38px;padding:0 12px;font-size:13.5px;border-radius:12px}
+.hg-timed{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:15px;border:1px solid var(--border);background:rgba(255,255,255,.05);cursor:pointer}
+.hg-timed input{width:20px;height:20px;margin-top:2px;accent-color:#8fb996;flex:none}
+.hg-timed span{display:flex;flex-direction:column;gap:2px}.hg-timed small{color:var(--txt2);font-size:12.5px;line-height:1.4}
+.hg-recs{flex-wrap:wrap;gap:6px 16px}
+.hg-play{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;max-width:560px;width:100%;margin:0 auto;-webkit-user-select:none;user-select:none}
+.hg-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;flex:none}
+.hg-cat{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;padding:4px 10px;border-radius:99px;background:rgba(143,185,150,.14);color:#cfe6d3}
+.hg-cat i{font-size:14px}
+.hg-lives{display:inline-flex;align-items:center;gap:4px}
+.hg-lives i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);transition:background-color 300ms ease}
+.hg-lives i.on{background:#d4bf82}
+.hg-lives small{font-size:12px;color:var(--txt2);margin-left:4px;font-variant-numeric:tabular-nums}
+.hg-timer{display:inline-flex;align-items:center;gap:4px;font-size:15px;font-variant-numeric:tabular-nums;color:var(--txt2);margin-left:auto}
+.hg-timer[hidden]{display:none}
+.hg-timer.low{color:#f2b8a8}
+.hg-fig{position:relative;flex:1 1 auto;min-height:110px;max-height:240px;display:flex;justify-content:center;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);overflow:hidden}
+.hg-fig svg{height:100%;width:auto;max-width:100%;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.hg-ghost{stroke:rgba(200,210,228,.05);stroke-width:2}
+.hg-lines{stroke:#b9c4d8;stroke-width:3}
+.hg-lines .hg-new{stroke-dasharray:1;stroke-dashoffset:1;animation:hgDraw 520ms var(--ease-out) forwards}
+@keyframes hgDraw{to{stroke-dashoffset:0}}
+.hg-word{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;flex:none;padding:4px 0;min-height:48px}
+.hg-wd{display:inline-flex;gap:4px;flex-wrap:nowrap}
+.hg-s{width:clamp(20px,7.2vw,34px);height:clamp(32px,10vw,44px);display:grid;place-items:center;border-bottom:2px solid rgba(200,210,228,.45);font-size:clamp(18px,5.8vw,26px);font-weight:650;color:var(--txt)}
+.hg-s.fix{border-bottom-color:transparent;width:auto;min-width:8px;color:var(--txt2)}
+.hg-s.in{animation:hgIn 380ms var(--ease-out)}
+@keyframes hgIn{from{transform:rotateX(90deg);opacity:0}to{transform:none;opacity:1}}
+.hg-s.miss{color:#f2b8a8;border-bottom-color:rgba(242,184,168,.6)}
+.hg-word.won .hg-s{color:#fde68a;border-bottom-color:rgba(253,230,138,.7);text-shadow:0 0 14px rgba(253,230,138,.55);animation:hgGlow 1.2s ease-in-out 2}
+@keyframes hgGlow{50%{text-shadow:0 0 22px rgba(253,230,138,.9)}}
+.hg-shake{animation:hgShake 380ms ease}
+@keyframes hgShake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+.hg-msg{flex:none;min-height:18px;font-size:13px;color:var(--txt2);text-align:center}
+.hg-end{display:flex;flex-direction:column;gap:4px;align-items:center;padding:10px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid var(--border)}
+.hg-end.win{border-color:rgba(253,230,138,.4)}
+.hg-end.lose{border-color:rgba(242,184,168,.35)}
+.hg-end b{font-size:15px;color:var(--txt)}
+.hg-end small{font-size:12.5px;color:var(--txt2)}
+.hg-acts{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;justify-content:center}
+.hg-kb{flex:none;display:flex;flex-direction:column;gap:6px;touch-action:manipulation}
+.hg-row{display:flex;justify-content:center;gap:4px}
+.hg-k{flex:0 1 38px;min-width:0;height:46px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font:inherit;font-size:17px;font-weight:600;cursor:pointer;touch-action:manipulation;-webkit-touch-callout:none;transition:transform 90ms var(--ease-out),background-color 150ms ease,opacity 150ms ease;padding:0}
+.hg-row.extra .hg-k{flex-basis:46px;background:rgba(143,185,150,.12)}
+.hg-k:active{transform:scale(.94)}
+.hg-k.ok{background:rgba(143,185,150,.35);border-color:rgba(143,185,150,.8);color:#fff;opacity:1}
+.hg-k.no{opacity:.35;text-decoration:line-through;background:rgba(255,255,255,.03)}
+.hg-k:disabled{cursor:default}
+.hg-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--txt2);padding-bottom:2px}
+.hg-bar b{color:var(--txt)}
+.hg-hint{display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 12px;border-radius:12px;border:1px solid rgba(212,191,130,.5);background:rgba(212,191,130,.12);color:#ecdcae;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.hg-hint[hidden]{display:none}
+.hg-hint:disabled{opacity:.45;cursor:default}
+.hg-hint.used{border-color:var(--border);background:none;color:var(--txt3)}
+.hg-party{position:absolute;inset:0;pointer-events:none}
+.hg-party i{position:absolute;top:-8px;width:7px;height:11px;border-radius:2px;animation:hgFall 1.6s ease-in forwards}
+@keyframes hgFall{to{transform:translate(var(--dx),240px) rotate(260deg);opacity:0}}
+@media (max-width:360px){ .hg-k{height:42px;font-size:15px} .hg-row{gap:3px} .hg-kb{gap:5px} }
+@media (prefers-reduced-motion:reduce){
+  .hg-lines .hg-new{animation:none;stroke-dashoffset:0}
+  .hg-s.in,.hg-shake,.hg-word.won .hg-s,.hg-party i,#tbSpeedBox.tb-up{animation:none}
+  .hg-party{display:none}
+}
 /* Blocks */
 .tb-play{flex:1;min-height:0;display:flex;gap:10px;justify-content:center;align-items:flex-start}
 .tb-board{position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(160,170,190,.28)}
@@ -1251,9 +1321,14 @@ select option:checked{background:#2E3A78;color:#fff}
 .tb-b{width:58px;height:58px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.08);color:var(--txt);font-size:26px;display:grid;place-items:center;cursor:pointer;touch-action:none;transition:transform 90ms var(--ease-out),background-color 90ms ease}
 .tb-b.on{transform:scale(.92);background:rgba(140,160,190,.28)}
 .tb-b.big{width:78px;height:78px;font-size:32px;background:rgba(140,160,190,.22);border-color:rgba(160,175,200,.45);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.tb-box.tap{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
-.tb-box.tap small i{font-size:11px;opacity:.7}
-.tb-box.tap:active{background:rgba(255,255,255,.10)}
+.tb-sp{display:block;height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:3px}
+.tb-sp i{display:block;height:100%;width:0;background:#a99cc6;border-radius:2px;transition:width 300ms linear}
+.tb-sp.time i{background:#7fb0c4}
+#tbSpTxt{font-size:10.5px;color:var(--txt3);margin-top:2px;line-height:1.25}
+#tbSpeedBox.max b{color:#d4bf82}
+#tbSpeedBox.tb-up{animation:tbUp 700ms var(--ease-out)}
+@keyframes tbUp{0%{background:rgba(212,191,130,.35)}100%{background:rgba(255,255,255,.05)}}
+.gm-note{font-size:13px;color:#fde68a;background:rgba(253,230,138,.08);border:1px solid rgba(253,230,138,.3);border-radius:12px;padding:9px 11px;line-height:1.45}
 .tb-b.pause{width:46px;height:46px;font-size:20px;background:rgba(255,255,255,.05)}
 .gm-newbest{color:#fde68a}
 @media (max-width:360px){ .tb-cross{grid-template-columns:repeat(3,62px);grid-template-rows:repeat(2,56px)} .tb-b,.tb-cross .tb-b{width:62px;height:62px;font-size:27px} .tb-b.big{width:68px;height:68px} .tb-side{width:80px} }
@@ -7663,7 +7738,7 @@ async function bwSave(){
 }
 function bwAlert(t){ const m=document.getElementById('bwMsg'); if(m) m.innerHTML='<span style="color:#fca5a5">'+escHtml(t)+'</span>'; }
 // ─── GAMES ───────────────────────────────────────────────
-// Blocks (Tetris-style) and Sudoku, full screen. No sound. Closing a game
+// Blocks (Tetris-style), Sudoku and Hangman, full screen. No sound. Closing a game
 // throws it away (nothing is saved but your records, which the server keeps
 // so they're the same on every device).
 let _gm={ rec:null, view:'home' };
@@ -7695,11 +7770,11 @@ function openGames(){
 let _gmLastTouch=0;
 document.addEventListener('touchend', e=>{ if(!document.getElementById('gmWrap')) return; const now=Date.now(); if(now-_gmLastTouch<350 && !e.target.closest('input,select,textarea')) e.preventDefault(); _gmLastTouch=now; }, { passive:false });
 document.addEventListener('dblclick', e=>{ if(document.getElementById('gmWrap')) e.preventDefault(); });
-function gmClose(){ tbStop(); sdSave(); sdStop(); const o=document.getElementById('gmWrap'); if(o) o.remove(); unlockPageScroll(); _gm.view='home'; }
+function gmClose(){ tbStop(); sdSave(); sdStop(); hgStop(); const o=document.getElementById('gmWrap'); if(o) o.remove(); unlockPageScroll(); _gm.view='home'; }
 function gmTop(title, right, back){
   return '<div class="nt-top"><button class="pad-x" onclick="'+(back?'gmBack()':'gmClose()')+'" aria-label="'+(back?'Back to games':'Close')+'"><i class="ti '+(back?'ti-arrow-left':'ti-x')+'"></i></button><b>'+title+'</b>'+(right||'')+'</div>';
 }
-function gmBack(){ tbStop(); sdSave(); sdStop(); gmHome(); }
+function gmBack(){ tbStop(); sdSave(); sdStop(); hgStop(); gmHome(); }
 function gmHome(){
   const o=document.getElementById('gmWrap'); if(!o) return;
   _gm.view='home';
@@ -7711,6 +7786,8 @@ function gmHome(){
         '<span class="gm-rec">Best score <b>'+(t.best||0).toLocaleString('en-GB')+'</b> · most lines <b>'+(t.lines||0)+'</b></span></button>'+
       '<button class="gm-tile sd" onclick="sdSetup()"><span class="gm-ic"><i class="ti ti-grid-dots"></i></span><b>Sudoku</b><small>Beginner, advanced or expert</small>'+
         '<span class="gm-rec">Best times · '+sdRec+'</span></button>'+
+      '<button class="gm-tile hg" onclick="hgSetup()"><span class="gm-ic"><i class="ti ti-abc"></i></span><b>Hangman</b><small>Guess the word · English or Romanian</small>'+
+        '<span class="gm-rec">Wins <b>'+((r.hangman||{}).wins||0)+'</b>'+(hgSaved()?' · <b>a game to continue</b>':'')+'</span></button>'+
     '</div>';
 }
 
@@ -7723,6 +7800,13 @@ const TB_SHAPES={
 // Soft, muted colours that are easy on the eyes (no bright neon on black).
 const TB_COL={ I:'#7fb0c4', O:'#d4bf82', T:'#a99cc6', S:'#8fb996', Z:'#cc9a90', J:'#8fa3c4', L:'#d2aa82', G:'#4b5568' };
 const TB_GRAV=[0,800,640,500,370,250];          // ms per row for speed 1…5
+// Points per move: only cleared lines count (1, 2, 3, 4 lines at once), times the speed.
+const TB_LINE_PTS=[0,100,300,500,800];
+// When the speed goes up (it never goes past 5 and never wraps): the score has
+// reached the threshold for the next speed AND the player has been at this
+// speed for at least minMs — or, whatever the score, after maxMs at this speed.
+const TB_SPEED_RULES={ next:{ 2:1000, 3:3000, 4:6000, 5:10000 }, minMs:45000, maxMs:180000 };
+const TB_SCORE_V=2;          // scoring version: the best score restarted when drop points were removed (11-04)
 let _tb=null;
 function tbSetup(){
   const o=document.getElementById('gmWrap'); if(!o) return;
@@ -7731,10 +7815,11 @@ function tbSetup(){
   o.innerHTML=gmTop('Blocks','',true)+
     '<div class="gm-setup">'+
       '<div class="gm-q">Rows of blocks at the start</div><div class="gm-steps">'+Array.from({length:10},(_,i)=>i+1).map(n=>'<button class="'+(n===p.rows?'on':'')+'" onclick="tbPick(\'rows\','+n+')">'+n+'</button>').join('')+'</div>'+
-      '<div class="gm-q">Starting speed <small>(it goes up every 10 lines; after 5 it starts again at 1)</small></div><div class="gm-steps five">'+[1,2,3,4,5].map(n=>'<button class="'+(n===p.speed?'on':'')+'" onclick="tbPick(\'speed\','+n+')">'+n+'</button>').join('')+'</div>'+
+      '<div class="gm-q">Starting speed <small>(it goes up as your score grows, up to 5)</small></div><div class="gm-steps five">'+[1,2,3,4,5].map(n=>'<button class="'+(n===p.speed?'on':'')+'" onclick="tbPick(\'speed\','+n+')">'+n+'</button>').join('')+'</div>'+
       '<button class="btn acc gm-go" onclick="tbStart()"><i class="ti ti-player-play"></i> Start</button>'+
       '<div class="gm-recs"><span>Best score <b>'+(t.best||0).toLocaleString('en-GB')+'</b></span><span>Most lines <b>'+(t.lines||0)+'</b></span></div>'+
-      '<div class="gm-help">On the phone: the buttons under the board. On a keyboard: ← → move, ↑ or X turns, ↓ faster, P pauses. Tap Speed while playing to change it (1 → 5, then back to 1).</div>'+
+      '<div class="gm-help">On the phone: the buttons under the board. On a keyboard: ← → move, ↑ or X turns, ↓ faster, P pauses.<br>Points only for cleared lines: 1 line 100, 2 lines 300, 3 lines 500, 4 lines 800, times the speed. The speed goes up one step once you reach '+tbSpeedRulesTxt()+'.</div>'+
+      tbScoreNote()+
     '</div>';
 }
 function tbPick(k,v){ const p=gmPrefs(); p[k]=v; gmSavePrefs(p); tbSetup(); }
@@ -7750,7 +7835,7 @@ function tbStart(){
     for(let c=0;c<TB_W;c++) row[c] = c!==hole && Math.random()<0.75 ? 'G' : null;
     if(row.every(Boolean)) row[(hole+1)%TB_W]=null;
   }
-  _tb={ grid, bag:[], score:0, lines:0, startSpeed:p.speed, speedLines:0, speed:p.speed, rows:p.rows, over:false, paused:false, t:0, raf:0, last:0, acc:0, rep:null, lockT:0 };
+  _tb={ grid, bag:[], score:0, lines:0, startSpeed:p.speed, speedMs:0, speed:p.speed, rows:p.rows, over:false, paused:false, t:0, raf:0, last:0, acc:0, rep:null, lockT:0 };
   _tb.cur=tbPiece(tbNextType()); _tb.next=tbNextType();
   _gm.view='tb';
   tbLayout();
@@ -7766,7 +7851,8 @@ function tbLayout(){
         '<div class="tb-box"><small>Next</small><canvas id="tbNext" width="88" height="66"></canvas></div>'+
         '<div class="tb-box"><small>Score</small><b id="tbScore">0</b></div>'+
         '<div class="tb-box"><small>Lines</small><b id="tbLines">0</b></div>'+
-        '<div class="tb-box tap" id="tbSpeedBox" role="button" aria-label="Change speed"><small>Speed <i class="ti ti-refresh"></i></small><b id="tbSpeed">'+_tb.speed+'</b></div>'+
+        '<div class="tb-box" id="tbSpeedBox"><small>Speed</small><b id="tbSpeed">'+_tb.speed+'</b>'+
+          '<span class="tb-sp" id="tbSpPts" title="Points toward the next speed"><i></i></span><span class="tb-sp time" id="tbSpTime" title="Time at this speed"><i></i></span><small id="tbSpTxt"></small></div>'+
         '<div class="tb-box"><small>Best</small><b id="tbBest">'+(((_gm.rec||{}).tetris||{}).best||0).toLocaleString('en-GB')+'</b></div>'+
       '</div>'+
     '</div>'+
@@ -7792,9 +7878,6 @@ function tbLayout(){
     b.addEventListener('pointerdown', start); ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,end));
     b.addEventListener('contextmenu', e=>e.preventDefault());
   });
-  // Speed box: pointerdown, so quick taps aren't eaten by the double-tap zoom guard.
-  const sb=document.getElementById('tbSpeedBox');
-  if(sb) sb.addEventListener('pointerdown', e=>{ e.preventDefault(); tbSpeedNext(); });
   tbDraw();
 }
 // Turning the phone / resizing the window: the board is sized again (the game carries on).
@@ -7819,7 +7902,7 @@ function tbKey(k){
   if(k==='left' && tbFits(p.cells,p.x-1,p.y)) p.x--;
   else if(k==='right' && tbFits(p.cells,p.x+1,p.y)) p.x++;
   else if(k==='rot') tbRotate();
-  else if(k==='down'){ if(tbFits(p.cells,p.x,p.y+1)){ p.y++; _tb.score+=1; _tb.acc=0; } else tbLock(); }
+  else if(k==='down'){ if(tbFits(p.cells,p.x,p.y+1)){ p.y++; _tb.acc=0; } else tbLock(); }     // faster down: no points
   tbDraw();
 }
 function tbLock(){
@@ -7829,9 +7912,8 @@ function tbLock(){
   let cleared=0;
   for(let r=TB_H-1;r>=0;r--){ if(_tb.grid[r].every(Boolean)){ _tb.grid.splice(r,1); _tb.grid.unshift(Array(TB_W).fill(null)); cleared++; r++; } }
   if(cleared){
-    _tb.lines+=cleared; _tb.score+=[0,100,300,500,800][cleared]*_tb.speed;
-    // Every 10 lines one step faster; after 5 it starts again at 1.
-    _tb.speed=((_tb.startSpeed-1+Math.floor((_tb.lines-_tb.speedLines)/10))%5)+1;
+    _tb.lines+=cleared; _tb.score+=TB_LINE_PTS[Math.min(4,cleared)]*_tb.speed;      // the only place points are added
+    tbSpeedCheck();
     if(navigator.vibrate) navigator.vibrate(cleared>=4?[20,30,20]:12);
   }
   _tb.cur=tbPiece(_tb.next); _tb.next=tbNextType(); _tb.acc=0;
@@ -7840,7 +7922,9 @@ function tbLock(){
 function tbLoop(now){
   if(!_tb || _gm.view!=='tb') return;
   const dt=now-_tb.last; _tb.last=now;
-  if(!_tb.paused && !_tb.over){
+  if(!_tb.paused && !_tb.over && !document.hidden){
+    // Time at this speed (a long gap, e.g. the phone asleep, doesn't count).
+    _tb.speedMs+=Math.min(dt, 250); tbSpeedCheck();
     _tb.acc+=dt;
     if(_tb.acc>=TB_GRAV[_tb.speed]){ _tb.acc=0; const p=_tb.cur; if(tbFits(p.cells,p.x,p.y+1)) p.y++; else tbLock(); tbDraw(); }
   }
@@ -7870,16 +7954,45 @@ function tbDraw(){
     const ox=(88-(maxX-minX+1)*q)/2-minX*q, oy=(66-(maxY-minY+1)*q)/2-minY*q;
     x.fillStyle=TB_COL[_tb.next]; sh.forEach(([a,b])=>{ x.beginPath(); x.roundRect?x.roundRect(ox+a*q+1,oy+b*q+1,q-2,q-2,3):x.rect(ox+a*q+1,oy+b*q+1,q-2,q-2); x.fill(); }); }
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
-  set('tbScore',_tb.score.toLocaleString('en-GB')); set('tbLines',_tb.lines); set('tbSpeed',_tb.speed);
+  set('tbScore',_tb.score.toLocaleString('en-GB')); set('tbLines',_tb.lines); tbSpeedShow();
   const best=((_gm.rec||{}).tetris||{}).best||0;
   if(_tb.score>best){ set('tbBest',_tb.score.toLocaleString('en-GB')); const e=document.getElementById('tbBest'); if(e) e.classList.add('gm-newbest'); }
 }
-// Tapping the Speed box: 1 → 2 → 3 → 4 → 5 → 1 … (the fall times per speed stay the same).
-function tbSpeedNext(){
-  if(!_tb || _tb.over) return;
-  _tb.speed = _tb.speed>=5 ? 1 : _tb.speed+1;
-  _tb.startSpeed=_tb.speed; _tb.speedLines=_tb.lines; _tb.acc=0;
-  const e=document.getElementById('tbSpeed'); if(e) e.textContent=_tb.speed;
+// Speed: up one step when the score has reached the next threshold and at
+// least minMs have passed at this speed, or anyway after maxMs. Stops at 5.
+function tbSpeedCheck(){
+  if(!_tb || _tb.speed>=5) return;
+  const R=TB_SPEED_RULES, need=R.next[_tb.speed+1];
+  if((_tb.score>=need && _tb.speedMs>=R.minMs) || _tb.speedMs>=R.maxMs){
+    _tb.speed=Math.min(5, _tb.speed+1); _tb.speedMs=0;
+    const b=document.getElementById('tbSpeedBox'); if(b){ b.classList.remove('tb-up'); void b.offsetWidth; b.classList.add('tb-up'); }
+  }
+  tbSpeedShow();
+}
+function tbSpeedShow(){
+  const e=document.getElementById('tbSpeed'); if(!e || !_tb) return;
+  e.textContent=_tb.speed;
+  const pts=document.querySelector('#tbSpPts i'), tm=document.querySelector('#tbSpTime i'), tx=document.getElementById('tbSpTxt');
+  const box=document.getElementById('tbSpeedBox'); if(box) box.classList.toggle('max', _tb.speed>=5);
+  if(_tb.speed>=5){ if(pts) pts.style.width='100%'; if(tm) tm.style.width='100%'; if(tx) tx.textContent='Max'; return; }
+  const R=TB_SPEED_RULES, need=R.next[_tb.speed+1];
+  if(pts) pts.style.width=Math.min(100, _tb.score/need*100)+'%';
+  if(tm) tm.style.width=Math.min(100, _tb.speedMs/R.maxMs*100)+'%';
+  if(tx){
+    const sec=ms=>gmTime(Math.max(0, Math.ceil(ms/1000)));
+    const t = _tb.score>=need ? 'up in '+sec(R.minMs-_tb.speedMs)            // points reached: waits for the minimum time
+                              : need.toLocaleString('en-GB')+' or '+sec(R.maxMs-_tb.speedMs);
+    if(tx.textContent!==t) tx.textContent=t; }
+}
+function tbSpeedRulesTxt(){ const R=TB_SPEED_RULES.next;
+  return 'the next score ('+[2,3,4,5].map(n=>n+': '+R[n].toLocaleString('en-GB')).join(', ')+') after at least '+Math.round(TB_SPEED_RULES.minMs/1000)+' s at a speed — or after '+Math.round(TB_SPEED_RULES.maxMs/60000)+' minutes anyway'; }
+// Shown once, after the scoring change restarted the best score.
+function tbScoreNote(){
+  const t=(_gm.rec||{}).tetris||{};
+  let seen=false; try{ seen=localStorage.getItem('org:tbScoreNote')==='2'; }catch(e){}
+  if(seen || !t.oldBest) return '';
+  try{ localStorage.setItem('org:tbScoreNote','2'); }catch(e){}
+  return '<div class="gm-note"><i class="ti ti-info-circle"></i> Scoring changed — best score restarted. (Moving pieces down no longer gives points.)</div>';
 }
 function tbPause(force){
   if(!_tb||_tb.over) return;
@@ -7896,12 +8009,12 @@ async function tbGameOver(){
   const newBest=_tb.score>(old.best||0), newLines=_tb.lines>(old.lines||0);
   if(ov){ ov.hidden=false; ov.innerHTML='<b>Game over</b><span>'+_tb.score.toLocaleString('en-GB')+' points · '+_tb.lines+' lines</span>'+(newBest?'<span class="gm-new"><i class="ti ti-trophy"></i> New best score!</span>':newLines?'<span class="gm-new"><i class="ti ti-trophy"></i> Most lines ever!</span>':'')+
     '<button class="btn acc" onclick="tbStart()"><i class="ti ti-refresh"></i> Play again</button><button class="btn" onclick="tbSetup()">Change level</button>'; }
-  if(_tb.score>0 || _tb.lines>0) await gmPostRec('tetris', { score:_tb.score, lines:_tb.lines });
+  if(_tb.score>0 || _tb.lines>0) await gmPostRec('tetris', { score:_tb.score, lines:_tb.lines, v:TB_SCORE_V });
 }
 // Leaving a game (back, close, another game) still counts its score for the records.
 function tbStop(){
   if(_tb){ cancelAnimationFrame(_tb.raf); clearTimeout(_tb.rep); clearInterval(_tb.rep2);
-    if(!_tb.over && (_tb.score>0 || _tb.lines>0)) gmPostRec('tetris', { score:_tb.score, lines:_tb.lines }); }
+    if(!_tb.over && (_tb.score>0 || _tb.lines>0)) gmPostRec('tetris', { score:_tb.score, lines:_tb.lines, v:TB_SCORE_V }); }
   _tb=null;
 }
 document.addEventListener('keydown', e=>{
@@ -7911,6 +8024,298 @@ document.addEventListener('keydown', e=>{
 });
 // Leaving the app pauses the game.
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden && _tb && !_tb.over) tbPause(true); });
+
+// Hangman word lists, built in so the game works offline. Words separated by "|".
+// Spaces and hyphens in a phrase are shown from the start and never guessed.
+// The level of a word is worked out from its length (see HG_LEVELS).
+const HG_WORDS={
+ en:{
+  animals:['Animals','bear|wolf|lion|tiger|horse|sheep|goat|mouse|rabbit|zebra|camel|eagle|otter|panda|koala|whale|shark|snake|frog|duck|goose|deer|moose|llama|monkey|donkey|turtle|parrot|falcon|beaver|badger|giraffe|dolphin|penguin|hamster|leopard|cheetah|buffalo|squirrel|kangaroo|elephant|flamingo|hedgehog|crocodile|butterfly|chimpanzee|rhinoceros|hippopotamus|polar bear|sea lion|guinea pig|killer whale|ladybird|woodpecker|octopus|jellyfish'],
+  food:['Food','bread|rice|pasta|pizza|soup|salad|apple|pear|plum|lemon|mango|grape|cheese|butter|honey|onion|garlic|carrot|potato|tomato|pepper|banana|cherry|orange|yogurt|cookie|muffin|pancake|noodles|sausage|chicken|omelette|sandwich|broccoli|cucumber|pineapple|chocolate|spaghetti|strawberry|watermelon|cauliflower|apple pie|ice cream|french fries|hot dog|olive oil|peanut butter|blueberry|mushroom|porridge'],
+  countries:['Countries','peru|cuba|chad|iran|iraq|mali|oman|laos|fiji|togo|chile|china|egypt|ghana|india|italy|japan|kenya|nepal|spain|france|greece|israel|mexico|norway|poland|sweden|brazil|canada|cyprus|latvia|malta|iceland|ireland|austria|germany|hungary|romania|moldova|ukraine|belgium|denmark|finland|portugal|bulgaria|argentina|australia|indonesia|switzerland|netherlands|new zealand|south africa|south korea|saudi arabia|costa rica|sri lanka|united kingdom|croatia|morocco|vietnam|thailand'],
+  cities:['Cities','rome|oslo|lima|riga|bern|cairo|delhi|dubai|milan|tokyo|seoul|sofia|paris|berlin|vienna|prague|madrid|lisbon|london|dublin|athens|warsaw|munich|zurich|geneva|venice|naples|sydney|boston|chicago|toronto|beijing|istanbul|budapest|helsinki|brussels|florence|barcelona|amsterdam|edinburgh|bucharest|stockholm|copenhagen|melbourne|vancouver|new york|los angeles|san francisco|rio de janeiro|hong kong|buenos aires|cape town|tel aviv|mexico city'],
+  nature:['Nature','tree|leaf|rose|lake|rain|snow|wind|hill|cloud|river|ocean|beach|storm|grass|stone|flower|forest|desert|valley|island|meadow|canyon|glacier|volcano|rainbow|thunder|sunrise|sunset|mountain|waterfall|lightning|hurricane|avalanche|earthquake|blossom|pebble|breeze|frost|moss|swamp|rainforest|coral reef|north pole|full moon|shooting star|sand dune'],
+  sport:['Sport','golf|polo|judo|yoga|chess|rugby|karate|boxing|hockey|tennis|soccer|skiing|rowing|diving|cycling|archery|fencing|sailing|surfing|bowling|cricket|running|baseball|football|handball|swimming|climbing|marathon|snowboarding|triathlon|volleyball|basketball|badminton|gymnastics|wrestling|skating|canoeing|javelin|high jump|long jump|table tennis|water polo|figure skating|horse riding|weightlifting|pole vault'],
+  household:['Household','lamp|sofa|sink|oven|bowl|fork|spoon|knife|plate|chair|table|clock|broom|towel|pillow|carpet|mirror|kettle|toaster|blanket|curtain|cushion|bucket|drawer|ladder|hammer|candle|shower|bathtub|freezer|cupboard|doormat|bookshelf|wardrobe|armchair|dishwasher|microwave|refrigerator|vacuum cleaner|washing machine|frying pan|alarm clock|coffee table|light bulb|teapot|scissors'],
+  jobs:['Jobs','chef|cook|judge|pilot|nurse|baker|actor|farmer|doctor|lawyer|dentist|teacher|painter|plumber|butcher|barber|waiter|singer|writer|editor|tailor|sailor|soldier|cashier|banker|engineer|electrician|mechanic|carpenter|scientist|architect|librarian|pharmacist|firefighter|accountant|journalist|photographer|veterinarian|police officer|bus driver|flight attendant|web designer|gardener|postman|surgeon'],
+  instruments:['Music instruments','drum|harp|lute|oboe|tuba|flute|piano|organ|banjo|cello|guitar|violin|viola|cymbal|bugle|ukulele|trumpet|bassoon|clarinet|trombone|mandolin|xylophone|accordion|harmonica|saxophone|tambourine|harpsichord|double bass|bagpipes|french horn|electric guitar|grand piano|triangle|castanets|sitar|maracas|synthesizer|keyboard|recorder|bongo|kazoo|glockenspiel|vibraphone|timpani']
+ },
+ ro:{
+  animals:['Animale','lebădă|câine|pisică|iepure|vulpe|oaie|capră|vacă|porc|cerb|șoarece|veveriță|arici|bufniță|vultur|rață|gâscă|găină|cocoș|păun|pinguin|delfin|balenă|rechin|broască|șarpe|șopârlă|țestoasă|crocodil|elefant|girafă|zebră|leopard|tigru|cămilă|maimuță|cangur|hipopotam|rinocer|fluture|albină|furnică|gărgăriță|libelulă|hamster|castor|căprioară|papagal|liliac|pescăruș|privighetoare|cimpanzeu|urs polar|porc mistreț|cal de mare'],
+  food:['Mâncare','pâine|orez|supă|ciorbă|salată|pară|prună|lămâie|strugure|brânză|miere|ceapă|usturoi|morcov|cartof|roșie|ardei|banană|cireașă|portocală|iaurt|biscuit|clătită|cârnat|omletă|sandviș|castravete|ananas|ciocolată|căpșună|pepene|conopidă|mămăligă|sarmale|cozonac|papanași|plăcintă|friptură|varză|fasole|mazăre|spanac|ciuperci|nucă|migdale|gogoși|înghețată|piure de cartofi|supă de pui|pâine prăjită|ulei de măsline'],
+  countries:['Țări','peru|cuba|ciad|iran|irak|mali|oman|laos|fiji|chile|china|egipt|ghana|india|italia|japonia|kenya|nepal|spania|franța|grecia|israel|mexic|norvegia|polonia|suedia|turcia|brazilia|canada|cipru|letonia|malta|islanda|irlanda|austria|germania|ungaria|românia|moldova|ucraina|belgia|danemarca|finlanda|portugalia|bulgaria|argentina|australia|indonezia|elveția|olanda|noua zeelandă|africa de sud|coreea de sud|arabia saudită|costa rica|sri lanka|marea britanie|croația|serbia|albania|estonia|lituania|slovacia|slovenia|vietnam|thailanda|maroc|tunisia|columbia|venezuela'],
+  cities:['Orașe','roma|oslo|lima|riga|berna|cairo|delhi|dubai|milano|tokio|seul|sofia|paris|berlin|viena|praga|madrid|lisabona|londra|dublin|atena|varșovia|geneva|veneția|napoli|sydney|boston|chicago|toronto|istanbul|budapesta|helsinki|bruxelles|florența|barcelona|amsterdam|stockholm|copenhaga|iași|lugoj|brașov|sibiu|arad|oradea|constanța|craiova|suceava|bacău|ploiești|galați|brăila|pitești|timișoara|bucurești|cluj-napoca|târgu mureș|baia mare|satu mare|râmnicu vâlcea|piatra neamț|new york|los angeles'],
+  nature:['Natură','copac|frunză|ploaie|zăpadă|vânt|deal|ocean|plajă|furtună|iarbă|piatră|floare|pădure|deșert|vale|insulă|pajiște|canion|ghețar|vulcan|curcubeu|tunet|răsărit|apus|munte|cascadă|fulger|uragan|avalanșă|cutremur|mușchi|mlaștină|brumă|ceață|izvor|peșteră|stâncă|nisip|trandafir|lumină|lună plină|stea căzătoare|recif de corali|polul nord|pădure tropicală|dună de nisip'],
+  sport:['Sport','golf|polo|judo|yoga|rugby|karate|hochei|tenis|fotbal|schi|canotaj|ciclism|scrimă|surfing|bowling|alergare|baseball|handbal|înot|alpinism|maraton|snowboard|triatlon|volei|baschet|badminton|gimnastică|lupte|patinaj|caiac|canoe|atletism|biatlon|curling|haltere|sanie|pentatlon|decatlon|echitație|motociclism|automobilism|tir cu arcul|săritură în înălțime|săritură în lungime|tenis de masă|polo pe apă|patinaj artistic|aruncarea suliței'],
+  household:['Casă','lampă|canapea|chiuvetă|cuptor|castron|furculiță|lingură|cuțit|farfurie|scaun|masă|ceas|mătură|prosop|pernă|covor|oglindă|ceainic|pătură|perdea|găleată|sertar|scară|ciocan|lumânare|cadă|congelator|dulap|preș|bibliotecă|fotoliu|frigider|aspirator|tigaie|foarfecă|cratiță|pahar|cană|sobă|fereastră|balcon|mașină de spălat|cuptor cu microunde|ceas deșteptător|măsuță de cafea|fier de călcat|uscător de păr|prăjitor de pâine'],
+  jobs:['Meserii','bucătar|judecător|pilot|asistentă|brutar|actor|fermier|medic|avocat|dentist|profesor|pictor|instalator|măcelar|frizer|ospătar|cântăreț|scriitor|editor|croitor|marinar|soldat|casier|bancher|inginer|electrician|mecanic|tâmplar|cercetător|arhitect|bibliotecar|farmacist|pompier|contabil|jurnalist|fotograf|veterinar|polițist|poștaș|grădinar|zidar|cizmar|programator|vânzător|preot|dansator|șofer de autobuz|însoțitor de zbor'],
+  instruments:['Instrumente muzicale','tobă|harpă|lăută|oboi|tubă|flaut|pian|orgă|banjo|violoncel|chitară|vioară|violă|talger|goarnă|ukulele|trompetă|fagot|clarinet|trombon|mandolină|xilofon|acordeon|muzicuță|saxofon|tamburină|clavecin|contrabas|cimpoi|corn|triunghi|castaniete|sitar|țambal|cobză|fluier|bucium|caval|sintetizator|tulnic|vibrafon|timpan|chitară electrică|pian cu coadă|orgă electronică']
+ }
+};
+// Levels: all the wording and numbers in one place (easy to tune).
+const HG_LEVELS={
+  easy:  { label:'Easy',   desc:'Short, common words (4–6 letters) · category shown · first and last letter shown', min:4, max:6,  phrases:false, lives:8, showCat:true,  reveal:true,  hint:null,                         secs:60, base:10, lifeBonus:10 },
+  medium:{ label:'Medium', desc:'6–9 letters · category shown · one free hint (a letter)',                          min:6, max:9,  phrases:false, lives:6, showCat:true,  reveal:false, hint:{ cost:0, category:false },   secs:90, base:20, lifeBonus:15 },
+  hard:  { label:'Hard',   desc:'8+ letters or two-word phrases · category hidden · one hint (shows the category and a letter, costs a life)', min:8, max:99, phrases:true, lives:5, showCat:false, reveal:false, hint:{ cost:1, category:true }, secs:90, base:30, lifeBonus:20 }
+};
+// On-screen keyboards. Romanian has its own keys for ă â î ș ț (a is not ă).
+const HG_KEYS={
+  en:['qwertyuiop','asdfghjkl','zxcvbnm'],
+  ro:['qwertyuiop','asdfghjkl','zxcvbnm','ăâîșț']
+};
+
+// ════════ HANGMAN ════════
+// Guess the word letter by letter. English or Romanian, three levels, an
+// optional timer. No sound. The unfinished round is kept on this device
+// (org:hangSave); records go to the server (d.games.hangman).
+const HG_SAVE='org:hangSave', HG_QUEUE='org:hangQueue', HG_STREAK='org:hangStreak';
+const HG_LANGS={ en:'English', ro:'Română' };
+let _hg=null;
+const _hgSess={ wins:0, losses:0 };          // this visit only
+function hgNorm(c){ return String(c).toLowerCase().replace(/ş/g,'ș').replace(/ţ/g,'ț'); }
+function hgIsFixed(c){ return c===' ' || c==='-'; }
+function hgLetters(w){ return [...hgNorm(w)].filter(c=>!hgIsFixed(c)); }
+function hgInLevel(w, L){ const n=hgLetters(w).length, phrase=/[ -]/.test(w); return L.phrases ? (phrase || n>=L.min) : (!phrase && n>=L.min && n<=L.max); }
+function hgPrefs(){ const p=gmPrefs(); return { lang: HG_LANGS[p.hgLang]?p.hgLang:'en', level: HG_LEVELS[p.hgLevel]?p.hgLevel:'easy', timed: !!p.hgTimed, cat: p.hgCat||'mixed' }; }
+function hgPick(k,v){ const p=gmPrefs(); p[k]=v; if(k==='hgLang'){ const cats=HG_WORDS[v]; if(p.hgCat && p.hgCat!=='mixed' && !cats[p.hgCat]) p.hgCat='mixed'; } gmSavePrefs(p); hgSetup(); }
+// Words for a language + level + category ("mixed" = all), as "category:word".
+function hgPool(lang, level, cat){
+  const L=HG_LEVELS[level], out=[];
+  for(const [k,[,str]] of Object.entries(HG_WORDS[lang])) if(cat==='mixed' || cat===k)
+    for(const w of str.split('|')) if(hgInLevel(w, L)) out.push(k+':'+w);
+  return out;
+}
+// A shuffled queue per language/level/category: no word comes back until all have been played.
+function hgNextWord(lang, level, cat){
+  let Q={}; try{ Q=JSON.parse(localStorage.getItem(HG_QUEUE)||'{}')||{}; }catch(e){}
+  const key=lang+'|'+level+'|'+cat, pool=hgPool(lang, level, cat);
+  let q=(Array.isArray(Q[key])?Q[key]:[]).filter(x=>pool.includes(x));
+  if(!q.length){
+    q=pool.slice(); for(let i=q.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [q[i],q[j]]=[q[j],q[i]]; }
+    if(q.length>1 && q[q.length-1]===Q[key+'|last']) q.unshift(q.pop());           // not the same word twice in a row
+  }
+  const pick=q.pop(); Q[key]=q; Q[key+'|last']=pick;
+  try{ localStorage.setItem(HG_QUEUE, JSON.stringify(Q)); }catch(e){}
+  const i=pick.indexOf(':'); return { cat:pick.slice(0,i), word:pick.slice(i+1) };
+}
+function hgStreakGet(lang, level){ try{ return (JSON.parse(localStorage.getItem(HG_STREAK)||'{}')||{})[lang+'|'+level]||0; }catch(e){ return 0; } }
+function hgStreakSet(lang, level, n){ try{ const s=JSON.parse(localStorage.getItem(HG_STREAK)||'{}')||{}; s[lang+'|'+level]=n; localStorage.setItem(HG_STREAK, JSON.stringify(s)); }catch(e){} }
+function hgSaved(){ try{ const g=JSON.parse(localStorage.getItem(HG_SAVE)||'null'); return g && g.word && HG_LEVELS[g.level] && HG_WORDS[g.lang] ? g : null; }catch(e){ return null; } }
+function hgForget(){ try{ localStorage.removeItem(HG_SAVE); }catch(e){} }
+function hgSave(){
+  if(!_hg || _hg.done) return;
+  try{ localStorage.setItem(HG_SAVE, JSON.stringify({ lang:_hg.lang, level:_hg.level, cat:_hg.cat, wcat:_hg.wcat, word:_hg.word, timed:_hg.timed,
+    guessed:[..._hg.guessed], wrong:_hg.wrong, revealed:[..._hg.revealed], hintUsed:_hg.hintUsed, catShown:_hg.catShown, hintLife:_hg.hintLife, timeLeft:_hg.timeLeft, at:Date.now() })); }catch(e){}
+}
+function hgCatLabel(lang, k){ const c=HG_WORDS[lang][k]; return c?c[0]:k; }
+function hgSetup(){
+  const o=document.getElementById('gmWrap'); if(!o) return;
+  hgStop(); _gm.view='hgsetup';
+  const p=hgPrefs(), R=((_gm.rec||{}).hangman)||{}, r=((R[p.lang]||{})[p.level])||{};
+  const sv=hgSaved();
+  const cats=Object.entries(HG_WORDS[p.lang]);
+  o.innerHTML=gmTop('Hangman','',true)+
+    '<div class="gm-setup hg-setup">'+
+      (sv?'<button class="btn acc gm-go" onclick="hgResume()"><i class="ti ti-player-play"></i> Continue last game</button>'+
+        '<div class="gm-help">'+escHtml(HG_LANGS[sv.lang])+' · '+HG_LEVELS[sv.level].label+(sv.timed?' · timed':'')+' · '+sv.wrong.length+' wrong so far</div>':'')+
+      '<div class="gm-q">Language</div><div class="hg-seg">'+Object.entries(HG_LANGS).map(([k,v])=>'<button class="'+(p.lang===k?'on':'')+'" onclick="hgPick(\'hgLang\',\''+k+'\')">'+v+'</button>').join('')+'</div>'+
+      '<div class="gm-q">Level</div><div class="gm-levels">'+Object.entries(HG_LEVELS).map(([k,L])=>'<button class="'+(p.level===k?'on':'')+'" onclick="hgPick(\'hgLevel\',\''+k+'\')"><b>'+L.label+'</b><small>'+escHtml(L.desc)+'</small><em>'+L.lives+' lives</em></button>').join('')+'</div>'+
+      '<div class="gm-q">Category</div><div class="hg-cats">'+[['mixed','Mixed']].concat(cats.map(([k,[lab]])=>[k,lab])).map(([k,lab])=>'<button class="'+(p.cat===k?'on':'')+'" onclick="hgPick(\'hgCat\',\''+k+'\')">'+escHtml(lab)+'</button>').join('')+'</div>'+
+      '<label class="hg-timed"><input type="checkbox" '+(p.timed?'checked':'')+' onchange="hgPick(\'hgTimed\',this.checked)"> <span><b>Timed</b><small>'+Object.values(HG_LEVELS).map(L=>L.label+' '+L.secs+' s').join(' · ')+' per word — when the time runs out, the round is lost</small></span></label>'+
+      '<button class="btn '+(sv?'':'acc ')+'gm-go" onclick="hgStart()"><i class="ti ti-player-play"></i> '+(sv?'New game':'Start')+'</button>'+
+      '<div class="gm-recs hg-recs"><span>Best score <b>'+(r.best||0).toLocaleString('en-GB')+'</b></span><span>Best streak <b>'+(r.bestStreak||0)+'</b></span><span>Total wins <b>'+(R.wins||0)+'</b></span></div>'+
+      '<div class="gm-help">Records for '+escHtml(HG_LANGS[p.lang])+' · '+HG_LEVELS[p.level].label+'. Tap letters, or type them on a keyboard.'+(p.lang==='ro'?' Romanian letters ă, â, î, ș and ț have their own keys: guessing A doesn’t show Ă or Â.':'')+'</div>'+
+    '</div>';
+}
+function hgNew(lang, level, cat, timed, w){
+  const L=HG_LEVELS[level];
+  const chars=[...w.word].map(c=>({ ch:c, n:hgNorm(c), fixed:hgIsFixed(c) }));
+  const revealed=new Set();
+  if(L.reveal){ const idx=chars.map((c,i)=>c.fixed?-1:i).filter(i=>i>=0); revealed.add(idx[0]); revealed.add(idx[idx.length-1]); }
+  return { lang, level, cat, timed, wcat:w.cat, word:w.word, chars, guessed:new Set(), wrong:[], revealed, hintUsed:false, catShown:L.showCat, hintLife:0,
+    timeLeft: timed ? L.secs*1000 : null, done:false, won:false, shown:new Set(), tick:null, last:0, score:0 };
+}
+function hgStart(){
+  const p=hgPrefs(); hgForget();
+  _hg=hgNew(p.lang, p.level, p.cat, p.timed, hgNextWord(p.lang, p.level, p.cat));
+  hgLayout(); hgSave();
+}
+function hgResume(){
+  const g=hgSaved(); if(!g) return hgStart();
+  _hg=hgNew(g.lang, g.level, g.cat||'mixed', !!g.timed, { cat:g.wcat, word:g.word });
+  _hg.guessed=new Set(g.guessed||[]); _hg.wrong=g.wrong||[]; _hg.revealed=new Set(g.revealed||[]); _hg.hintUsed=!!g.hintUsed; _hg.catShown=!!g.catShown||HG_LEVELS[g.level].showCat;
+  _hg.hintLife=g.hintLife||0; if(_hg.timed) _hg.timeLeft=Math.max(1000, g.timeLeft||HG_LEVELS[g.level].secs*1000);
+  hgLayout();
+}
+function hgLivesLeft(){ return HG_LEVELS[_hg.level].lives - _hg.wrong.length - _hg.hintLife; }
+function hgIsShown(c,i){ return c.fixed || _hg.revealed.has(i) || _hg.guessed.has(c.n); }
+function hgLayout(){
+  const o=document.getElementById('gmWrap'); if(!o || !_hg) return;
+  _gm.view='hg';
+  const keys=HG_KEYS[_hg.lang];
+  o.innerHTML=gmTop('Hangman','<span class="hg-timer" id="hgTimer"'+(_hg.timed?'':' hidden')+'><i class="ti ti-clock"></i> <b></b></span>',true)+
+    '<div class="hg-play" id="hgPlay">'+
+      '<div class="hg-info">'+
+        '<span class="hg-cat" id="hgCat"></span>'+
+        '<span class="hg-lives" id="hgLives" aria-label="Lives"></span>'+
+      '</div>'+
+      '<div class="hg-fig"><svg id="hgSvg" viewBox="0 0 200 180" aria-hidden="true"></svg><div class="hg-party" id="hgParty" aria-hidden="true"></div></div>'+
+      '<div class="hg-word" id="hgWord" aria-live="polite"></div>'+
+      '<div class="hg-msg" id="hgMsg"></div>'+
+      '<div class="hg-kb" id="hgKb">'+keys.map((row,ri)=>'<div class="hg-row'+(ri===3?' extra':'')+'">'+[...row].map(c=>'<button class="hg-k" data-c="'+c+'" aria-label="'+c.toUpperCase()+'">'+c.toUpperCase()+'</button>').join('')+'</div>').join('')+'</div>'+
+      '<div class="hg-bar">'+
+        '<button class="hg-hint" id="hgHint" onclick="hgHint()"><i class="ti ti-bulb"></i> <span>Hint</span></button>'+
+        '<span class="hg-stats" id="hgStats"></span>'+
+      '</div>'+
+    '</div>';
+  // pointerdown: quick taps aren't eaten by the double-tap zoom guard.
+  o.querySelectorAll('.hg-k').forEach(b=>b.addEventListener('pointerdown', e=>{ e.preventDefault(); hgGuess(b.dataset.c); }));
+  _hg.shown=new Set(_hg.chars.map((c,i)=>hgIsShown(c,i)?i:-1).filter(i=>i>=0));
+  hgDraw(true);
+  if(_hg.timed && !_hg.done) hgTimerStart();
+}
+// The figure: as many parts as the level has lives (Easy draws finer steps).
+const HG_PARTS={
+  base:'<path d="M20 170 H110"/>', pole:'<path d="M45 170 V18"/>', beam:'<path d="M45 18 H130"/>', brace:'<path d="M45 48 L75 18"/>', rope:'<path d="M130 18 V40"/>',
+  head:'<circle cx="130" cy="56" r="16"/>', body:'<path d="M130 72 V118"/>', armL:'<path d="M130 84 L108 104"/>', armR:'<path d="M130 84 L152 104"/>',
+  legL:'<path d="M130 118 L112 150"/>', legR:'<path d="M130 118 L148 150"/>'
+};
+const HG_STEPS={
+  8:[['base','pole'],['beam','brace','rope'],['head'],['body'],['armL'],['armR'],['legL'],['legR']],
+  6:[['base','pole','beam','brace','rope'],['head'],['body'],['armL','armR'],['legL'],['legR']],
+  5:[['base','pole','beam','brace','rope'],['head'],['body'],['armL','armR'],['legL','legR']]
+};
+function hgFigure(lost, animateLast){
+  const steps=HG_STEPS[HG_LEVELS[_hg.level].lives]||HG_STEPS[6];
+  let out='';
+  steps.slice(0, lost).forEach((grp,i)=>{ const anim=animateLast && i===lost-1;
+    grp.forEach((k,j)=>{ out+=HG_PARTS[k].replace(/^<(\w+)/, '<$1 pathLength="1" class="'+(anim?'hg-new':'')+'" style="animation-delay:'+(anim?j*140:0)+'ms"'); }); });
+  // Faint guide of the whole figure so the shape is calm and readable.
+  return '<g class="hg-ghost">'+Object.values(HG_PARTS).join('')+'</g><g class="hg-lines">'+out+'</g>';
+}
+function hgDraw(first, wrongNow){
+  if(!_hg) return;
+  const L=HG_LEVELS[_hg.level], left=hgLivesLeft(), lost=L.lives-left;
+  const svg=document.getElementById('hgSvg'); if(svg) svg.innerHTML=hgFigure(lost, !!wrongNow);
+  // category
+  const c=document.getElementById('hgCat');
+  if(c) c.innerHTML=_hg.catShown||_hg.done ? '<i class="ti ti-tag"></i> '+escHtml(hgCatLabel(_hg.lang,_hg.wcat)) : '<i class="ti ti-eye-off"></i> Category hidden';
+  const lv=document.getElementById('hgLives');
+  if(lv) lv.innerHTML=Array.from({length:L.lives},(_,i)=>'<i class="'+(i<left?'on':'')+'"></i>').join('')+'<small>'+left+'</small>';
+  // word slots
+  const w=document.getElementById('hgWord');
+  if(w){
+    const words=[]; let cur=[];
+    _hg.chars.forEach((ch,i)=>{ if(ch.ch===' '){ words.push(cur); cur=[]; } else cur.push([ch,i]); }); words.push(cur);
+    w.innerHTML=words.map(g=>'<span class="hg-wd">'+g.map(([ch,i])=>{
+      if(ch.fixed) return '<span class="hg-s fix">'+escHtml(ch.ch)+'</span>';
+      const sh=hgIsShown(ch,i), isNew=sh && !_hg.shown.has(i) && !first;
+      const miss=_hg.done && !_hg.won && !sh;
+      return '<span class="hg-s'+(sh||miss?' up':'')+(isNew?' in':'')+(miss?' miss':'')+'">'+(sh||miss?escHtml(ch.ch.toUpperCase()):'')+'</span>';
+    }).join('')+'</span>').join('');
+    w.classList.toggle('won', _hg.done && _hg.won);
+    _hg.shown=new Set(_hg.chars.map((ch,i)=>hgIsShown(ch,i)?i:-1).filter(i=>i>=0));
+    if(wrongNow){ w.classList.remove('hg-shake'); void w.offsetWidth; w.classList.add('hg-shake'); }
+  }
+  // keys
+  document.querySelectorAll('.hg-k').forEach(b=>{ const k=b.dataset.c;
+    const ok=_hg.guessed.has(k), no=_hg.wrong.includes(k);
+    b.classList.toggle('ok', ok); b.classList.toggle('no', no); b.disabled=_hg.done||ok||no; });
+  // hint
+  const h=document.getElementById('hgHint');
+  if(h){ const can=hgHintOk(); h.hidden=!L.hint; h.disabled=!can; h.classList.toggle('used', _hg.hintUsed);
+    h.querySelector('span').textContent=_hg.hintUsed?'Hint used':(L.hint&&L.hint.cost?'Hint (−1 life)':'Hint'); }
+  const st=document.getElementById('hgStats');
+  if(st) st.innerHTML='Streak <b>'+hgStreakGet(_hg.lang,_hg.level)+'</b> · won <b>'+_hgSess.wins+'</b> · lost <b>'+_hgSess.losses+'</b>';
+  hgTimerShow();
+  if(_hg.done) hgEndPanel();
+}
+function hgHintOk(){ const L=HG_LEVELS[_hg.level]; return !!L.hint && !_hg.hintUsed && !_hg.done && hgLivesLeft() > (L.hint.cost||0); }
+function hgGuess(c){
+  if(!_hg || _hg.done) return;
+  c=hgNorm(c); if(!HG_KEYS[_hg.lang].join('').includes(c)) return;
+  if(_hg.guessed.has(c) || _hg.wrong.includes(c)) return;
+  const hit=_hg.chars.some(x=>x.n===c);
+  if(hit){ _hg.guessed.add(c); if(navigator.vibrate) navigator.vibrate(8); }
+  else { _hg.wrong.push(c); if(navigator.vibrate) navigator.vibrate([15,40,15]); }
+  hgCheckEnd();
+  hgDraw(false, !hit);
+  hgSave();
+}
+function hgHint(){
+  if(!_hg || !hgHintOk()) return;
+  const L=HG_LEVELS[_hg.level];
+  const hidden=[...new Set(_hg.chars.filter((c,i)=>!hgIsShown(c,i)).map(c=>c.n))];
+  if(!hidden.length) return;
+  _hg.hintUsed=true;
+  if(L.hint.category) _hg.catShown=true;
+  if(L.hint.cost){ _hg.hintLife+=L.hint.cost; }
+  _hg.guessed.add(hidden[Math.floor(Math.random()*hidden.length)]);
+  const m=document.getElementById('hgMsg'); if(m) m.textContent=L.hint.category?'Hint: the category and one letter are shown (one life used).':'Hint: one letter is shown.';
+  hgCheckEnd(); hgDraw(false, !!L.hint.cost); hgSave();
+}
+function hgCheckEnd(timeUp){
+  const all=_hg.chars.every((c,i)=>hgIsShown(c,i));
+  if(all) return hgFinish(true);
+  if(timeUp || hgLivesLeft()<=0) return hgFinish(false, timeUp);
+}
+function hgFinish(won, timeUp){
+  if(_hg.done) return;
+  _hg.done=true; _hg.won=won; _hg.timeUp=!!timeUp; hgTimerStop(); hgForget();
+  const L=HG_LEVELS[_hg.level], n=hgLetters(_hg.word).length;
+  let streak=hgStreakGet(_hg.lang,_hg.level);
+  if(won){
+    const secs=_hg.timed ? Math.max(0, Math.floor(_hg.timeLeft/1000)) : 0;
+    _hg.parts={ base:L.base*n, lives:hgLivesLeft()*L.lifeBonus, time:secs*2 };
+    _hg.score=_hg.parts.base+_hg.parts.lives+_hg.parts.time;
+    streak++; _hgSess.wins++;
+  } else { _hg.score=0; streak=0; _hgSess.losses++; }
+  hgStreakSet(_hg.lang,_hg.level,streak);
+  const prev=((((_gm.rec||{}).hangman||{})[_hg.lang]||{})[_hg.level])||{};
+  _hg.newBest = won && _hg.score>(prev.best||0); _hg.newStreak = won && streak>(prev.bestStreak||0);
+  gmPostRec('hangman', { lang:_hg.lang, level:_hg.level, won, score:_hg.score, streak });
+  if(won) hgParty();
+}
+function hgEndPanel(){
+  const m=document.getElementById('hgMsg'); if(!m) return;
+  const P=_hg.parts;
+  m.innerHTML=_hg.won
+    ? '<div class="hg-end win"><b>'+(_hg.newBest?'New best score! ':'Well done! ')+'+'+_hg.score.toLocaleString('en-GB')+' points</b>'+
+        '<small>'+P.base+' for the word'+(P.lives?' · '+P.lives+' for lives left':'')+(P.time?' · '+P.time+' for time left':'')+(_hg.newStreak?' · best streak!':'')+'</small>'
+    : '<div class="hg-end lose"><b>'+(_hg.timeUp?'Time’s up':'Out of lives')+' — the word was “'+escHtml(_hg.word.toUpperCase())+'”</b><small>The letters you missed are marked.</small>';
+  m.innerHTML+='<span class="hg-acts"><button class="btn acc" id="hgNext" onclick="hgStart()"><i class="ti ti-arrow-right"></i> Next word</button><button class="btn" onclick="hgSetup()">Change level</button></span></div>';
+}
+function hgParty(){
+  const p=document.getElementById('hgParty'); if(!p) return;
+  const cols=['#d4bf82','#a99cc6','#8fb996','#7fb0c4','#cc9a90'];
+  p.innerHTML=Array.from({length:18},(_,i)=>'<i style="left:'+(6+Math.random()*88)+'%;background:'+cols[i%5]+';animation-delay:'+(Math.random()*300|0)+'ms;--dx:'+((Math.random()*60-30)|0)+'px"></i>').join('');
+  setTimeout(()=>{ if(p) p.innerHTML=''; }, 2200);
+}
+// Timer (timed mode). It only counts while the app is on screen.
+function hgTimerStart(){ hgTimerStop(); _hg.last=performance.now(); _hg.tick=setInterval(hgTick, 200); }
+function hgTimerStop(){ if(_hg && _hg.tick){ clearInterval(_hg.tick); _hg.tick=null; } }
+function hgTick(){
+  if(!_hg || _hg.done || !_hg.timed) return hgTimerStop();
+  const now=performance.now(), dt=now-_hg.last; _hg.last=now;
+  if(document.hidden) return;
+  _hg.timeLeft-=Math.min(dt, 1000);
+  if(_hg.timeLeft<=0){ _hg.timeLeft=0; hgCheckEnd(true); hgDraw(false); return; }
+  hgTimerShow();
+}
+function hgTimerShow(){
+  const t=document.getElementById('hgTimer'); if(!t || !_hg || !_hg.timed) return;
+  const s=Math.ceil(Math.max(0,_hg.timeLeft)/1000); t.querySelector('b').textContent=gmTime(s); t.classList.toggle('low', s<=10 && !_hg.done);
+}
+function hgStop(){ if(_hg){ hgTimerStop(); hgSave(); } _hg=null; }
+document.addEventListener('keydown', e=>{
+  if(_gm.view!=='hg' || !_hg || !document.getElementById('gmWrap') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if(_hg.done && e.key==='Enter'){ e.preventDefault(); hgStart(); return; }
+  if(e.key && e.key.length===1){ const c=hgNorm(e.key); if(HG_KEYS[_hg.lang].join('').includes(c)){ e.preventDefault(); hgGuess(c); } }
+});
+document.addEventListener('visibilitychange', ()=>{
+  if(!_hg || _hg.done) return;
+  if(document.hidden) hgSave(); else if(_hg.timed) _hg.last=performance.now();     // the hidden time doesn't count
+});
 
 // ════════ SUDOKU ════════
 const SD_GIVENS={ beginner:38, advanced:30, expert:25 };
@@ -8976,7 +9381,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-03-entries';
+const APP_BUILD='2026-11-04-games';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
