@@ -1362,6 +1362,27 @@ select option:checked{background:#2E3A78;color:#fff}
 .sk-pad button small{font-size:10.5px;color:var(--txt3);min-height:12px}
 .sk-pad button.full{opacity:.35}
 .sk-pad button:active,.sk-tools button:active{transform:scale(.95)}
+/* Trading bot: emergency stop (IB-29) */
+.btc-card{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:10px}
+.btc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--txt2)}
+.btc-row .grow{flex:1;min-width:0}
+.btc-row b{color:var(--txt);font-weight:600}
+.btc-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex:none;box-shadow:0 0 0 3px rgba(74,222,128,.15)}
+.btc-dot.off{background:#94a3b8;box-shadow:none}
+.btc-card.paused{background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.5)}
+.btc-card.paused .btc-title{color:#fde68a;font-weight:650;font-size:14px}
+.btc-card.selling{background:rgba(248,113,113,.10);border-color:rgba(248,113,113,.55)}
+.btc-card.selling .btc-title{color:#fecaca}
+.btc-ack{font-size:12px;color:var(--txt2);display:inline-flex;align-items:center;gap:5px}
+.btc-ack.ok{color:#86efac}
+.btc-ask{display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5;color:var(--txt)}
+.btc-ask input{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--txt);font:inherit;font-size:16px}
+.btc-acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn.btc-red{background:rgba(220,38,38,.85);border-color:rgba(248,113,113,.9);color:#fff}
+.btc-twice{display:flex;gap:8px;align-items:flex-start;padding:9px 11px;border-radius:12px;background:rgba(220,38,38,.14);border:1px solid rgba(248,113,113,.6);color:#fecaca;font-size:12.5px;line-height:1.45;margin-bottom:10px}
+.btc-twice i{font-size:16px;flex:none;margin-top:1px}
+.btc-where{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:rgba(140,168,255,.12);color:#c7d2fe}
+.btc-where.pause{background:rgba(251,191,36,.16);color:#fde68a}
 /* Trading bot: groups (Crypto · Stocks · ETFs · Entries) and the user's entries (IB-28) */
 .bte-seg{display:flex;gap:3px;padding:3px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:10px}
 .bte-seg button{flex:1;min-width:0;padding:7px 4px;border:0;border-radius:9px;background:none;color:var(--txt2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:4px}
@@ -5223,6 +5244,71 @@ function btEventsHtml(newN){
       return '<div class="bt-ev'+(isNew?' new':'')+(e.kind==='alert'?' alert':'')+'"><i class="ti '+ic(e.kind)+'"></i><span><b>'+(multi&&e.botName?'<small class="bt-evbot">'+escHtml(e.botName)+'</small> ':'')+escHtml(e.title)+'</b>'+(e.body?'<small>'+escHtml(e.body)+'</small>':'')+'<em>'+escHtml(when)+'</em></span>'+(isNew?'<span class="bt-newtag">New</span>':'')+'</div>';
     }).join('')+'</div>';
 }
+// ── Emergency stop (IB-29) ──
+// The bot reads the switch every ~5 minutes; "bot confirmed" once a report
+// after the change shows status.paused matching it.
+let _btCtlAsk=false, _btCtlBusy=false, _btCtlPoll=null;
+function btCtlTime(iso){
+  const t=new Date(iso); if(isNaN(t)) return '';
+  const today=new Date().toDateString()===t.toDateString();
+  return (today?'':t.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' ')+t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+function btCtlHtml(b, bots){
+  const c=b.control||{ pause:false, sellAll:false }, ack=b.controlAck||{ ack:true };
+  const twice=bots.filter(x=>(x.places||[]).length>1);
+  const warn=twice.length?'<div class="btc-twice"><i class="ti ti-alert-octagon"></i><span>'+(twice.length===1&&bots.length===1?'This bot is':escHtml(twice.map(x=>x.name).join(', '))+(twice.length===1?' is':' are'))+
+    ' running in two places ('+[...new Set(twice.flatMap(x=>x.places))].map(escHtml).join(' and ')+'). Close the bot on the PC.</span></div>':'';
+  btCtlWatch(c.pause!==undefined && !ack.ack);
+  if(c.pause){
+    const waiting=!ack.ack;
+    return warn+'<div class="btc-card paused'+(c.sellAll?' selling':'')+'" role="status">'+
+      '<div class="btc-title"><i class="ti ti-player-pause"></i> Paused since '+escHtml(btCtlTime(c.since||c.updatedAt))+(c.reason?' — '+escHtml(c.reason):'')+(c.sellAll?' · and selling everything':'')+'</div>'+
+      '<div class="btc-row"><span class="btc-ack'+(waiting?'':' ok')+'"><i class="ti '+(waiting?'ti-loader-2':'ti-circle-check')+'"></i>'+(waiting?'Waiting for the bot… (it checks every 5 minutes)':'Bot confirmed'+(ack.at?' at '+escHtml(btCtlTime(ack.at)):''))+'</span>'+
+        (c.by==='claude'?'<span class="btc-ack">· set by Claude</span>':'')+'<span class="grow"></span>'+
+        (!c.sellAll?'<button class="btn sm btc-red" onclick="btCtlSet(true,true)"'+(_btCtlBusy?' disabled':'')+'><i class="ti ti-cash-banknote-off"></i> Sell everything</button>':'')+
+        '<button class="btn sm acc" onclick="btCtlSet(false,false)"'+(_btCtlBusy?' disabled':'')+'><i class="ti ti-player-play"></i> Resume</button></div>'+
+      '<div class="btc-ack">'+(c.sellAll?'Every bot and every open entry sells at its next check (stocks when their market is open), then stays paused. Waiting entries stay waiting.':'No new buys and no signal sells. Stop-losses stay active; entries can still sell by their own rules.')+' Paper money.</div>'+
+    '</div>';
+  }
+  const places=[...new Set(bots.map(x=>x.status&&x.status.runningOn).filter(Boolean))];
+  const anyRun=bots.some(x=>x.running);
+  const resumed=c.updatedAt && !ack.ack ? '<span class="btc-ack"><i class="ti ti-loader-2"></i> Resumed — waiting for the bot…</span>' : '';
+  return warn+'<div class="btc-card">'+
+    '<div class="btc-row"><span class="btc-dot'+(anyRun?'':' off')+'"></span><span class="grow"><b>'+(anyRun?'Bots running':'Bots not reporting')+'</b>'+(places.length?' · on '+escHtml(places.join(' and ')):'')+'</span>'+
+      (_btCtlAsk?'':'<button class="btn sm" onclick="_btCtlAsk=true;btRender()"><i class="ti ti-player-pause"></i> Pause</button>')+'</div>'+resumed+
+    (_btCtlAsk?'<div class="btc-ask"><b>Pause all bots?</b><span>No new buys and no signal sells. Stop-losses stay active. Paper money.</span>'+
+      '<input id="btcReason" type="text" maxlength="200" placeholder="Reason (optional)" aria-label="Reason">'+
+      '<div class="btc-acts"><button class="btn acc" onclick="btCtlSet(true,false)"><i class="ti ti-player-pause"></i> Pause</button>'+
+      '<button class="btn btc-red" onclick="btCtlSet(true,true)"><i class="ti ti-cash-banknote-off"></i> Pause and sell everything</button>'+
+      '<button class="btn" onclick="_btCtlAsk=false;btRender()">Cancel</button></div></div>':'')+
+  '</div>';
+}
+async function btCtlSet(pause, sellAll){
+  if(_btCtlBusy) return;
+  if(sellAll && !confirm('Sell everything in all bots and entries at the next check (≈5 min; stocks only when their market is open)?\n\nThe bots stay paused afterwards. Paper money.')) return;
+  const r=document.getElementById('btcReason');
+  const reason=pause ? ((r&&r.value.trim()) || (_bt&&_bt.control&&_bt.control.pause&&_bt.control.reason) || '') : '';
+  _btCtlBusy=true;
+  try{
+    const res=await fetch('/api/bot/control',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ pause, sellAll, reason }) });
+    const j=await res.json();
+    if(!res.ok) throw new Error(j.error||('Error '+res.status));
+    _bt.control=j.control; _bt.controlAck=j.ack; _btCtlAsk=false;
+    showToast(pause?(sellAll?'Selling everything at the next check.':'Paused. The bot picks it up within 5 minutes.'):'Resumed.');
+  }catch(e){ showToast('Couldn’t change it: '+escHtml(e.message||'no connection')); }
+  _btCtlBusy=false; btRender();
+}
+// While the bot hasn't confirmed, check again every 30 s (only while the widget is open).
+function btCtlWatch(on){
+  if(!on){ if(_btCtlPoll){ clearInterval(_btCtlPoll); _btCtlPoll=null; } return; }
+  if(_btCtlPoll) return;
+  _btCtlPoll=setInterval(async ()=>{
+    if(!document.getElementById('btBody')){ clearInterval(_btCtlPoll); _btCtlPoll=null; return; }
+    if(document.hidden || _btCtlAsk) return;
+    try{ const j=await (await fetch('/api/bot/control/state',{cache:'no-store'})).json();
+      if(j && j.ack && j.ack.ack){ await loadBot(); btRender(); } }catch(e){}
+  }, 30000);
+}
 function btRender(newN){
   const el=document.getElementById('btBody'); if(!el) return;
   if(newN===undefined) newN=0;
@@ -5245,7 +5331,8 @@ function btRender(newN){
   const enN=_btEn&&_btEn.entries?_btEn.entries.filter(x=>BT_EN_ACTIVE.includes(btEnState(x))).length:0;
   const seg='<div class="bte-seg" role="tablist">'+groups.map(g=>'<button role="tab" class="'+(_btGroup===g[0]?'on':'')+'" onclick="_btGroup=\''+g[0]+'\';btRender()"><i class="ti '+g[2]+'"></i>'+g[1]+' <small>'+bots.filter(x=>btGroupOf(x)===g[0]).length+'</small></button>').join('')+
     '<button role="tab" class="'+(_btGroup==='entries'?'on':'')+'" onclick="_btGroup=\'entries\';_btEnOpen=null;btRender()"><i class="ti ti-list-check"></i>Entries'+(enN?' <small>'+enN+'</small>':'')+'</button></div>';
-  if(_btGroup==='entries'){ el.innerHTML=seg+btEntriesHtml(); return; }
+  const ctl=btCtlHtml(b, bots);
+  if(_btGroup==='entries'){ el.innerHTML=ctl+seg+btEntriesHtml(); return; }
   const gb=bots.filter(x=>btGroupOf(x)===_btGroup);
   const cur=gb.find(x=>x.id===_btTab)||gb[0]; _btTab=cur.id; _btCur=cur;
   const tabs=gb.length>1?'<div class="bt-tabs" role="tablist">'+gb.map(x=>'<button role="tab" aria-selected="'+(x.id===cur.id)+'" class="'+(x.id===cur.id?'on':'')+'" onclick="_btTab=\''+escHtml(x.id)+'\';btRender()"><span class="bt-dot '+(x.running?'on':'off')+'"></span>'+escHtml(x.name)+(x.role==='practice'?' <small>practice</small>':'')+'</button>').join('')+'</div>':'';
@@ -5255,7 +5342,7 @@ function btRender(newN){
   const views=(sims.length||items.length)?'<div class="bt-views">'+[['overview','Overview','ti-layout-dashboard'],sims.length&&['sims','Simulations ('+sims.length+')','ti-chart-line'],items.length&&['items','Items ('+items.length+')','ti-coins']].filter(Boolean)
     .map(v=>'<button class="'+(_btView===v[0]?'on':'')+'" onclick="_btView=\''+v[0]+'\';btRender()"><i class="ti '+v[2]+'"></i> '+v[1]+'</button>').join('')+'</div>':'';
   const main=_btView==='sims'?btSimsHtml(cur):_btView==='items'?btItemsHtml(cur):btOverviewHtml(b,cur,newN);
-  el.innerHTML=seg+tabs+views+main+'<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
+  el.innerHTML=ctl+seg+tabs+views+main+'<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
   if(_btView==='overview') btChart();
   if(_btView==='sims') btSimChart();
 }
@@ -5561,7 +5648,9 @@ function btOverviewHtml(b,cur,newN){
   const items=cur.items||[];
   const secD=items.length?'<div class="slabel bt-sl"><i class="ti ti-coins"></i> Items</div><div class="bt-states">'+BT_STATES.map(s=>{ const n=items.filter(i=>i.state===s[0]).length; return n?'<button class="bt-stc" style="--c:'+s[2]+'" onclick="_btView=\'items\';_btItemsF=\''+s[3]+'\';btRender()"><b>'+n+'</b> '+s[1]+'</button>':''; }).join('')+'</div>':'';
   const closed=st.marketOpen===false?'<span class="bte-closed"><i class="ti ti-moon"></i> Market closed — waiting for the open</span>':'';
-  return '<div class="bt-head">'+run+'<span class="bt-modes">'+closed+btOrigin(st.dataOrigin)+'<span class="bt-mode '+(st.mode==='live'?'live':'')+'">'+(st.mode==='live'?'Real money':'Paper money')+'</span></span></div>'+
+  const where=(st.runningOn?'<span class="btc-where"><i class="ti ti-server"></i> runs on '+escHtml(st.runningOn)+'</span>':'')+
+    (st.paused?'<span class="btc-where pause"><i class="ti ti-player-pause"></i> paused'+(st.sellAll?' · selling':'')+'</span>':'');
+  return '<div class="bt-head">'+run+'<span class="bt-modes">'+where+closed+btOrigin(st.dataOrigin)+'<span class="bt-mode '+(st.mode==='live'?'live':'')+'">'+(st.mode==='live'?'Real money':'Paper money')+'</span></span></div>'+
     '<div class="bt-hero"><small>Value now</small><b>'+btMoney(st.equity)+'</b>'+
       '<span class="bt-pnl '+(up?'up':down?'down':'')+'">'+(up?'▲':down?'▼':'●')+' '+(st.pnl>0?'+':'')+btMoney(st.pnl)+' · '+btPct(st.pnlPct)+' <em>since the start ('+btMoney(st.budget)+')</em></span></div>'+
     (st.halted && st.note ? '<div class="bt-warn"><i class="ti ti-alert-triangle"></i> '+escHtml(st.note)+'</div>' : '')+
@@ -9381,7 +9470,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-04-games';
+const APP_BUILD='2026-11-10-emergency-stop';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
