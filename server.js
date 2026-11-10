@@ -1064,7 +1064,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-11-04-games';
+const BUILD_VERSION = '2026-11-10-emergency-stop';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -2884,6 +2884,8 @@ const MCP_TOOLS = [
     inputSchema:{ type:'object', required:['name'], properties:{ name:{type:'string', description:'Artist or band name'} } } },
   { name:'bot_status', description:'Status of every trading bot that reports to the Organizer (main and practice bots): value now, profit/loss, position, last report, recent trades and recent bot messages.',
     inputSchema:{ type:'object', properties:{} } },
+  { name:'bot_pause', description:'Emergency stop for the user\'s trading bots (PAPER MONEY — nothing real is traded). pause:true = no new buys and no signal sells (stop-losses stay active, entries can still sell by their rules); add sellAll:true to sell everything in all bots and open entries at the next check (≈5 min; stocks only when their market is open). pause:false resumes. Only when the user asks.',
+    inputSchema:{ type:'object', required:['pause'], properties:{ pause:{type:'boolean'}, sellAll:{type:'boolean'}, reason:{type:'string', description:'Short reason, shown in the Organizer'} } } },
   { name:'entries_list', description:'The user\'s trading-bot entries (their own buy/sell plans, PAPER MONEY ONLY — nothing real is bought): rules, state reported by the bot, value and profit/loss. Optional filter by state (waiting, open, partial, closed, expired, cancelled, error, pending = not reported yet).',
     inputSchema:{ type:'object', properties:{ state:{type:'string'} } } },
   { name:'entry_add', description:'Create a trading-bot entry — a PAPER MONEY plan the bot follows (never real money). symbol: BTC/EUR, ETH/EUR or a Yahoo symbol (AAPL, VWCE.DE). amount in €. buy: "now" or {price_below: number € or "$160", from_date, expires (YYYY-MM-DD)}. sell (at least one rule): {targets:["2x","+25%","€300","$350"], steps:[{at:"3x",sell:"50%"}], stop:"-10%", trailing:"-8%", after_days:90, on_date:"YYYY-MM-DD"}. Returns the stored entry or what is wrong.',
@@ -3080,12 +3082,18 @@ async function mcpCall(name, args){
       writeData(d);
       return mcpText({ ok:true, entry:r.spec, note:'If it was bought, the bot sells it (paper) at its next check.' });
     }
+    case 'bot_pause': {
+      if(typeof args.pause !== 'boolean') return mcpText({ refused:true, reason:'pause must be true or false.' });
+      const c = botControlSet(d, { pause:args.pause, sellAll:args.sellAll === true, reason:args.reason || (args.pause ? 'Paused by Claude' : '') }, 'claude');
+      writeData(d);
+      return mcpText({ ok:true, paperMoneyOnly:true, control:c, note: c.pause ? (c.sellAll ? 'The bots sell everything at their next check (≈5 min; stocks when their market is open) and stay paused.' : 'The bots stop buying and stop selling on signals at their next check (≈5 min). Stop-losses stay active.') : 'The bots trade by their rules again from their next check.' });
+    }
     case 'bot_status': {
       const b = botPublic(d);
       if(!b.connected) return mcpText('The trading bot is not connected yet (Settings → Private → Trading bot).');
       if(!b.bots.length) return mcpText('The bot is connected but has not reported yet.');
       const ev = await entriesView(d);
-      return mcpText({ entries: entryOneLine(ev), bots: b.bots.map(x => ({ id:x.id, name:x.name, role:x.role, symbol:x.symbol, timeframe:x.timeframe, market:x.market, marketOpen: x.status && x.status.marketOpen !== undefined ? x.status.marketOpen : true, currency: x.status && x.status.currency || null, contract:x.contract, simulations:x.simCount, items:x.itemCount,
+      return mcpText({ emergencyStop: { ...b.control, botConfirmed: b.controlAck.ack }, entries: entryOneLine(ev), bots: b.bots.map(x => ({ paused: !!(x.status && x.status.paused), runningOn: x.status && x.status.runningOn || null, runningTwice: x.places.length > 1 ? x.places : undefined, id:x.id, name:x.name, role:x.role, symbol:x.symbol, timeframe:x.timeframe, market:x.market, marketOpen: x.status && x.status.marketOpen !== undefined ? x.status.marketOpen : true, currency: x.status && x.status.currency || null, contract:x.contract, simulations:x.simCount, items:x.itemCount,
         running:x.running, lastReport: x.lastSeen ? new Date(x.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest'}) : null,
         ...(x.status||{}), change:x.perf, recentTrades: x.trades.slice(-5) })),
         recentMessages: b.events.slice(0,10).map(e => ({ bot:e.botName||e.bot||'main', kind:e.kind, title:e.title, body:e.body, at:new Date(e.at).toISOString() })) });
@@ -5083,6 +5091,10 @@ function botClean(st){
   if(st.currency !== undefined) o.currency = String(st.currency||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0, 5);
   if(st.marketOpen !== undefined) o.marketOpen = st.marketOpen !== false;
   if(st.priceSource !== undefined) o.priceSource = String(st.priceSource||'').slice(0, 40);
+  // Emergency stop (IB-29): is this bot honouring a pause, and where does it run.
+  if(st.paused !== undefined) o.paused = st.paused === true;
+  if(st.sellAll !== undefined) o.sellAll = st.sellAll === true;
+  if(st.runningOn !== undefined) o.runningOn = String(st.runningOn||'').replace(/[^\w .-]/g,'').slice(0, 20);
   o.mode = st.mode === 'live' ? 'live' : 'paper';
   o.position = (st.position && st.position !== 'cash') ? 'btc' : 'cash';   // 'btc' = holding the coin (any coin)
   o.halted = !!st.halted;
@@ -5110,7 +5122,9 @@ function botList(d){
   const bot = botMigrate(JSON.parse(JSON.stringify(d.bot || {})));
   const arr = Object.entries(bot.bots).map(([id, x]) => ({ id, name:x.name||id, role:x.role||'main', symbol:x.symbol||(x.status&&x.status.symbol)||'BTC/EUR',
     timeframe:x.timeframe||'', market:x.market||(x.status&&x.status.market)||'crypto', contract:x.contract||1, simCount:x.sims||0, itemCount:x.items||0, status:x.status||null, perf:botPerf(x), hist:(x.hist||[]).slice(-840), trades:x.trades||[], equity:x.equity||[], lastSeen:x.lastSeen||0,
-    running: !!(x.lastSeen && Date.now()-x.lastSeen < BOT_STALE_MS) }));
+    running: !!(x.lastSeen && Date.now()-x.lastSeen < BOT_STALE_MS),
+    // More than one place in the last 15 minutes = the same bot runs twice (e.g. PC and Northflank).
+    places: Object.entries(x.where||{}).filter(([k,t]) => Date.now()-t < BOT_TWICE_MS).map(([k]) => k) }));
   // Main bot(s) first, then practice ones, then by name.
   arr.sort((a,b) => (a.role==='main'?0:1)-(b.role==='main'?0:1) || (a.id==='main'?-1:b.id==='main'?1:0) || a.name.localeCompare(b.name));
   return arr;
@@ -5128,6 +5142,31 @@ function botPerf(x){
     overall: st.pnl != null ? { abs: st.pnl, pct: st.pnlPct } : null };
 }
 function botMain(d){ const l = botList(d); return l.find(x => x.id==='main') || l.find(x => x.role==='main') || l[0] || null; }
+// ── Emergency stop (IB-29) ──
+// d.bot.control = { pause, sellAll, reason, updatedAt, by }. The bot reads it
+// every ~5 minutes (GET /api/bot/control with its key) and keeps the last state
+// it knew if the Organizer doesn't answer. sellAll only counts while paused.
+const BOT_TWICE_MS = 15*60*1000;
+function botControl(d){
+  const c = (d.bot && d.bot.control) || {};
+  const pause = c.pause === true;
+  return { pause, sellAll: pause && c.sellAll === true, reason: String(c.reason||'').slice(0,200), updatedAt: c.updatedAt || null, by: c.by || null,
+    since: pause ? (c.since || c.updatedAt || null) : null };       // when the pause started (sell-all later keeps it)
+}
+function botControlSet(d, inp, by){
+  d.bot = botMigrate(d.bot || {});
+  const pause = inp && inp.pause === true, prev = botControl(d), now = new Date().toISOString();
+  d.bot.control = { since: pause ? (prev.pause ? prev.since || now : now) : null, pause, sellAll: pause && inp.sellAll === true, reason: pause ? String((inp && inp.reason) || '').trim().slice(0,200) : '',
+    updatedAt: now, by: by === 'claude' ? 'claude' : 'user' };
+  return botControl(d);
+}
+// Has the bot acted on the latest change? A report after updatedAt whose status.paused matches.
+function botControlAck(d){
+  const c = botControl(d); if(!c.updatedAt) return { ack:true, at:null };
+  const t = Date.parse(c.updatedAt);
+  const hit = botList(d).filter(x => x.lastSeen > t && x.status && !!x.status.paused === c.pause).sort((a,b) => a.lastSeen-b.lastSeen)[0];
+  return hit ? { ack:true, at:new Date(hit.lastSeen).toISOString() } : { ack:false, at:null };
+}
 function botPublic(d){
   const b = d.bot || {};
   const on = !!(d.settings && d.settings.botKey);
@@ -5138,7 +5177,8 @@ function botPublic(d){
     status:m.status||null, trades:m.trades||[], equity:m.equity||[], lastSeen:m.lastSeen||0, running:!!m.running,
     events: (b.log||[]).slice(-30).reverse(), openedAt: b.openedAt||0,
     unseen: (b.log||[]).filter(e => e.at > (b.openedAt||0)).length,
-    summary:{ on: sum.on !== false, time: sum.time || '08:00' } };
+    summary:{ on: sum.on !== false, time: sum.time || '08:00' },
+    control: botControl(d), controlAck: botControlAck(d) };
 }
 function botMoney(v){ return v==null ? '–' : v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
 function botPct(v){ return v==null ? '' : (v>0?'+':'')+(v*100).toFixed(2)+'%'; }
@@ -5349,6 +5389,8 @@ app.post('/api/bot/report', async (req, res) => {
   one.lastSeen = Date.now();
   one.contract = contract;
   if(b.status) one.status = botClean(b.status);
+  if(one.status && one.status.runningOn){ one.where = one.where || {}; one.where[one.status.runningOn] = Date.now();
+    for(const k of Object.keys(one.where)) if(Date.now() - one.where[k] > 24*3600e3) delete one.where[k]; }
   // The Organizer's own record of the bot's value, at most one point an hour
   // for ~35 days: the day / week / month changes come from it (and from the bot's equity list).
   if(one.status && one.status.equity != null){
@@ -5414,6 +5456,19 @@ app.get('/api/bot', async (req, res) => {
   const pub = botPublic(readData());
   for(const x of pub.bots){ const e = await botxGet(x.id); x.simulations = e.simulations || []; x.items = e.items || []; }
   res.json(pub);
+});
+// Emergency stop. The bot (its key) reads it; the app reads and sets it.
+app.get('/api/bot/control', (req, res) => {
+  if(!botKeyOk(req)) return res.status(401).json({ error:'Wrong or missing bot key.' });
+  const c = botControl(readData());
+  res.json({ control:{ pause:c.pause, sellAll:c.sellAll, reason:c.reason, updatedAt:c.updatedAt } });
+});
+app.get('/api/bot/control/state', (req, res) => { const d = readData(); res.json({ control: botControl(d), ack: botControlAck(d) }); });
+app.post('/api/bot/control', (req, res) => {
+  const b = req.body || {};
+  if(typeof b.pause !== 'boolean') return res.status(400).json({ error:'pause must be true or false.' });
+  const d = readData(); const c = botControlSet(d, b, 'user'); writeData(d);
+  res.json({ control: c, ack: botControlAck(d) });
 });
 // For the bot (its key): every spec, cancelled ones too — a cancelled bought entry means "sell it".
 app.get('/api/bot/entries', (req, res) => {
