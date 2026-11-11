@@ -1362,6 +1362,71 @@ select option:checked{background:#2E3A78;color:#fff}
 .sk-pad button small{font-size:10.5px;color:var(--txt3);min-height:12px}
 .sk-pad button.full{opacity:.35}
 .sk-pad button:active,.sk-tools button:active{transform:scale(.95)}
+/* Trading bot: menu, Overview, items fund, item detail (IB-31) */
+.btd-nav{display:flex;gap:3px;padding:3px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);margin-bottom:10px;overflow-x:auto;scrollbar-width:none}
+.btd-nav::-webkit-scrollbar{display:none}
+.btd-nav button{flex:1 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 7px;border:0;border-radius:9px;background:none;color:var(--txt2);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;position:relative;min-width:58px}
+.btd-nav button i{font-size:18px}
+.btd-nav button.on{background:rgba(247,147,26,.18);color:#fde4c4}
+.btd-nav button small{position:absolute;top:2px;right:6px;font-size:10px;min-width:15px;height:15px;line-height:15px;border-radius:8px;background:rgba(247,147,26,.85);color:#1a1205;padding:0 3px}
+.btd-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+@media (max-width:359px){ .btd-grid{grid-template-columns:1fr} }
+.btd-card{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 11px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--txt);font:inherit;cursor:pointer;min-width:0}
+.btd-card:active{transform:scale(.98)}
+.btd-card .btd-t{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12.5px;font-weight:650;color:var(--txt2)}
+.btd-card .btd-t small{color:var(--txt3);font-weight:500}
+.btd-card .btd-t .bte-closed{font-size:10px;padding:1px 6px}
+.btd-card > b{font-size:16px;font-variant-numeric:tabular-nums}
+.btd-card > span{font-size:12.5px;font-variant-numeric:tabular-nums}
+.btd-card > span.up{color:#4ade80}.btd-card > span.down{color:#f87171}
+.btd-card > b.up{color:#4ade80}.btd-card > b.down{color:#f87171}
+.btd-card > small{font-size:11.5px;color:var(--txt3);line-height:1.4}
+.btd-off{color:#fca5a5;font-style:normal}
+.btd-act,.btd-att{display:flex;flex-direction:column;gap:4px}
+.btd-act button,.btd-att button{display:flex;gap:9px;align-items:flex-start;text-align:left;padding:8px 10px;border-radius:11px;border:1px solid transparent;background:rgba(255,255,255,.03);color:var(--txt);font:inherit;font-size:12.5px;cursor:pointer}
+.btd-act button i{font-size:16px;color:var(--txt2);margin-top:1px}
+.btd-act span{display:flex;flex-direction:column;min-width:0}
+.btd-act b{font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.btd-act small{color:var(--txt3);font-size:11.5px}
+.btd-att button{background:rgba(251,146,60,.10);border-color:rgba(251,146,60,.4);color:#fed7aa;align-items:center}
+.btf-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.06);margin-top:4px}
+.btf-bar i{display:block;height:100%}
+.btf-bar i.av,.btf-leg i.av{background:#60a5fa}.btf-bar i.in,.btf-leg i.in{background:#F7931A}.btf-bar i.sa,.btf-leg i.sa{background:#4ade80}.btf-bar i.lo,.btf-leg i.lo{background:#64748b}
+.btf-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12px;color:var(--txt2)}
+.btf-leg span{display:inline-flex;align-items:center;gap:5px}
+.btf-leg i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.btf-leg b{color:var(--txt);font-variant-numeric:tabular-nums}
+.btf-foot{font-size:11.5px;color:var(--txt3);margin-top:5px;line-height:1.45}
+.btf-em{display:block;font-style:normal;font-size:11px;color:var(--txt3)}
+.btf-card{display:flex;flex-direction:column;gap:6px}
+.btf-part{display:flex;gap:7px;align-items:baseline;font-size:12px;color:var(--txt2);line-height:1.4}
+.btf-part b{flex:none;width:18px;height:18px;border-radius:5px;display:inline-grid;place-items:center;font-size:11px;background:rgba(255,255,255,.08);color:var(--txt)}
+.btf-spark{width:100%;height:26px;display:block}
+.btf-rm{margin-top:10px;font-size:12.5px;color:var(--txt2);padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.03)}
+.btf-rm summary{cursor:pointer}
+.btf-rm div{margin-top:6px;color:var(--txt3);line-height:1.5}
+.btf-h{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.btf-link{font-size:13px;color:#93c5fd;text-decoration:none;font-weight:600;align-self:flex-start;padding:4px 0}
+.btf-range{display:flex;gap:4px;align-items:center;margin-bottom:6px}
+.btf-range button{padding:5px 11px;border-radius:9px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--txt2);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.btf-range button.on{background:rgba(247,147,26,.18);color:#fde4c4;border-color:rgba(247,147,26,.5)}
+.btf-range span{margin-left:auto;font-size:11px;color:var(--txt3)}
+.btf-chart{width:100%;min-height:240px;border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden}
+.btf-chart.small{min-height:140px}
+.btf-key{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--txt3);margin:6px 0 2px}
+.btf-key span{display:inline-flex;align-items:center;gap:5px}
+.btf-key i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.btf-key i.dash{width:14px;height:0;border-radius:0;border-top:2px dashed #94a3b8}
+.btf-pcs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+@media (max-width:420px){ .btf-pcs{grid-template-columns:1fr} }
+.btf-pc{display:flex;flex-direction:column;gap:4px;padding:10px 11px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:12.5px}
+.btf-pc > b{font-size:13px;margin-bottom:2px}
+.btf-pc div{display:flex;justify-content:space-between;gap:10px}
+.btf-pc small{color:var(--txt3)}
+.btf-pc span{text-align:right;font-variant-numeric:tabular-nums}
+.btf-tp{display:flex;flex-direction:column;gap:6px}
+.btf-tpr{display:flex;flex-wrap:wrap;gap:3px 12px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.04);font-size:12px;color:var(--txt2)}
+.btf-tpr > b{color:var(--txt);width:100%}
 /* Trading bot: emergency stop (IB-29) */
 .btc-card{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:10px}
 .btc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--txt2)}
@@ -2407,6 +2472,7 @@ function agendaEventsOnDay(ds){
 
 // ─── MODAL ───────────────────────────────────────────────
 function closeModal(){
+  if(typeof btLwcClear==='function') btLwcClear();
   // The life timer ticks once a second; stop it as soon as its dialog goes.
   if(typeof _timerInt!=='undefined' && _timerInt){ clearInterval(_timerInt); _timerInt=null; }
   if(_mFit){ _mFit.disconnect(); _mFit=null; }
@@ -3475,6 +3541,7 @@ function openSettings(){
     '<button class="btn sm" style="width:100%;justify-content:center;margin-bottom:4px" onclick="testDelivery()"><i class="ti ti-stethoscope"></i> Test reminder delivery (both channels)</button>'+
     '<div style="font-size:10px;color:var(--txt3);line-height:1.6">Works when the app is closed. On iPhone it only works if the app was added to the Home Screen.</div>'+
     '<div class="slabel" style="margin-top:14px"><i class="ti ti-refresh"></i> App version & updates</div>'+
+    '<div style="margin:2px 0 8px;font-size:12px;line-height:1.5;color:var(--txt3)">About / licences: the Trading bot charts use <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a> Lightweight Charts™ (Apache License 2.0, © TradingView, Inc.).</div>'+
     '<div id="versionInfo" style="font-size:11px;color:var(--txt2);margin-bottom:6px">Checking\u2026</div>'+
     '<button class="btn sm" style="width:100%;justify-content:center" onclick="forceUpdate()"><i class="ti ti-reload"></i> Check for updates &amp; refresh</button>'+
     '<div style="font-size:10px;color:var(--txt3);margin-top:4px">Clears the cached app files and reloads. Use this after deploying a new version \u2014 phones in particular hold on to the old one.</div>'+
@@ -5220,9 +5287,10 @@ async function loadBot(){
 }
 // Opening the widget shows what's new (marked "New") and resets the counter.
 let _btSince=0, _btTab=null, _btCur=null;
-async function openBot(tab){
-  if(tab==='entries'){ _btGroup='entries'; _btEnOpen=null; _btEnForm=null; }
-  btEnLoad().then(()=>{ if(_btGroup==='entries') btRender(); });
+async function openBot(tab, item){
+  if(tab==='entries'){ _btMain='entries'; _btEnOpen=null; _btEnForm=null; }
+  if(tab==='items'){ _btMain='items'; _btItemPage=item||null; }
+  btEnLoad().then(()=>{ if(['entries','overview'].includes(btMainGet())) btRender(); });
   showModal('Trading bot', '<div id="btBody" class="bt-body"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading…</div></div>',
     '<span class="msp"></span><button class="btn acc" onclick="closeModal()">Done</button>');
   await loadBot();
@@ -5309,6 +5377,273 @@ function btCtlWatch(on){
       if(j && j.ack && j.ack.ack){ await loadBot(); btRender(); } }catch(e){}
   }, 30000);
 }
+// ── Trading bot: menu, Overview, items fund and item detail (IB-31) ──
+// Menu: Overview · Bots · Entries · Items · Simulations (last tab remembered).
+// Charts use TradingView Lightweight Charts™ (Apache-2.0), vendored in
+// /vendor and loaded only when a chart is first shown.
+let _btMain=null, _btItemPage=null, _btItemsO='all', _btRange='all';
+const BT_MAIN_KEY='org:btTab';
+function btMainGet(){ if(_btMain) return _btMain; let t=null; try{ t=localStorage.getItem(BT_MAIN_KEY); }catch(e){} return _btMain=t||'overview'; }
+function btMainSet(t){ _btMain=t; _btItemPage=null; _btEnOpen=null; _btEnForm=null; try{ localStorage.setItem(BT_MAIN_KEY,t); }catch(e){} btRender(); const b=document.getElementById('btBody'); if(b&&b.scrollIntoView) b.parentElement&&(b.parentElement.scrollTop=0); }
+// ── Lightweight Charts: lazy load, one list of live charts, cleaned up on every redraw / close ──
+let _btLwcP=null, _btCharts=[];
+function btLwc(){
+  if(window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
+  if(_btLwcP) return _btLwcP;
+  _btLwcP=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='/vendor/lightweight-charts.standalone.production.js'; s.async=true;
+    s.onload=()=>window.LightweightCharts?res(window.LightweightCharts):rej(new Error('no library')); s.onerror=()=>{ _btLwcP=null; rej(new Error('Chart library not available offline yet')); }; document.head.appendChild(s); });
+  return _btLwcP;
+}
+function btLwcClear(){ for(const c of _btCharts){ try{ c.remove(); }catch(e){} } _btCharts=[]; }
+// Prices: 2 decimals from 1 € up, up to 6 significant digits below (same rule as entries).
+function btFmtP(v){ if(v==null||!isFinite(v)) return ''; const a=Math.abs(v); return a>=1||a===0 ? v.toFixed(2) : (+v).toPrecision(6).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,''); }
+function btCss(n,f){ try{ return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||f; }catch(e){ return f; } }
+function btChartOpts(h, extra){
+  return Object.assign({ height:h, autoSize:false,
+    layout:{ background:{ type:'solid', color:'transparent' }, textColor:btCss('--txt2','#9aa3b8'), fontSize:11, attributionLogo:true },
+    grid:{ vertLines:{ visible:false }, horzLines:{ color:'rgba(255,255,255,.06)' } },
+    rightPriceScale:{ borderVisible:false }, timeScale:{ borderVisible:false, timeVisible:true, secondsVisible:false },
+    crosshair:{ horzLine:{ labelBackgroundColor:'#334155' }, vertLine:{ labelBackgroundColor:'#334155' } },
+    localization:{ priceFormatter:btFmtP, locale:'en-GB' }, handleScroll:{ vertTouchDrag:false } }, extra||{});
+}
+// Sorted, one point per second, positive values only (log scale).
+function btPts(arr, key, positive){
+  const m=new Map();
+  for(const p of arr||[]){ const t=Math.floor(Date.parse(p.t||p.time)/1000), v=p[key]; if(!isFinite(t)||v==null||!isFinite(v)||(positive&&v<=0)) continue; m.set(t,+v); }
+  return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(([time,value])=>({ time, value }));
+}
+// ── Data helpers ──
+function btFund(bots){ const x=bots.find(b=>b.itemsFund); return x?x.itemsFund:null; }
+function btAllItems(bots){ return bots.flatMap(b=>(b.items||[]).map(i=>Object.assign({ _bot:b.id }, i))); }
+function btSplit(i){ return i.strategy==='split'; }
+function btItemPnl(i){ return btSplit(i) && i.cost!=null ? (i.setAside||0)+(i.valueNow||0)-i.cost : i.pnl; }
+const BT_ISF=[['all','All'],['active','Active'],['partly','Partly sold'],['sold','Sold'],['dead','Worthless/unsellable']];
+function btItemF(i,f){ const s=i.state;
+  return f==='all' || (f==='active'&&['watching','bought','partly_sold'].includes(s)) || (f==='partly'&&s==='partly_sold') ||
+    (f==='sold'&&(s==='sold'||s==='target_hit')) || (f==='dead'&&(s==='worthless'||s==='unsellable')); }
+const BT_SPLIT_ST={ watching:['watching','#94a3b8'], bought:['open','#60a5fa'], partly_sold:['partly sold','#2dd4bf'], sold:['sold','#c084fc'], target_hit:['target hit','#4ade80'], worthless:['worthless','#f87171'], unsellable:['unsellable','#fb923c'] };
+function btStChip(s){ const m=BT_SPLIT_ST[s]||[s,'#94a3b8']; return '<span class="bte-chip" style="--c:'+m[1]+'">'+escHtml(m[0])+'</span>'; }
+function btDay(v){ const t=Date.parse(v); return isNaN(t)?'':new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+function btMult(v){ return v==null||!isFinite(v)?'–':'×'+(v>=100?Math.round(v).toLocaleString('en-GB'):(+v).toLocaleString('en-GB',{maximumFractionDigits:1})); }
+// The items fund as one stacked bar: available · in items (at value) · set aside · lost.
+function btFundBar(f){
+  const seg=[['av','Available',f.available],['in','In items',f.valueNow],['sa','Set aside',f.setAside],['lo','Lost',f.lost]].filter(s=>s[2]!=null&&s[2]>0);
+  const tot=seg.reduce((a,s)=>a+s[2],0)||1;
+  const conv=f.converted&&f.converted.count?' · converted: '+f.converted.count+' item'+(f.converted.count===1?'':'s'):'';
+  const maxN=f.size&&f.perItem?Math.floor(f.size/f.perItem):null;
+  return '<div class="btf-bar" role="img" aria-label="Items fund split">'+seg.map(s=>'<i class="'+s[0]+'" style="width:'+(s[2]/tot*100).toFixed(2)+'%"></i>').join('')+'</div>'+
+    '<div class="btf-leg">'+seg.map(s=>'<span><i class="'+s[0]+'"></i>'+s[1]+' <b>'+btMoney(s[2])+'</b></span>').join('')+'</div>'+
+    '<div class="btf-foot">Fund: '+btMoney(f.size)+(maxN!=null?' · '+(f.fromFund||0)+' of '+maxN+' items bought':'')+conv+(f.capital!=null?' · capital '+btMoney(f.capital):'')+'</div>';
+}
+function btFundNums(f){
+  const c=f.counts||{};
+  const st=[['open','open'],['partlySold','partly sold'],['sold','sold'],['worthless','worthless'],['unsellable','unsellable']].filter(k=>c[k[0]]).map(k=>c[k[0]]+' '+k[1]).join(' · ');
+  return '<div class="bt-grid three">'+
+    '<div class="bt-tile"><small>Available</small><b>'+btMoney(f.available)+'</b></div>'+
+    '<div class="bt-tile"><small>In items</small><b>'+btMoney(f.inItems)+'</b><em class="btf-em">value '+btMoney(f.valueNow)+'</em></div>'+
+    '<div class="bt-tile"><small>Set aside</small><b>'+btMoney(f.setAside)+'</b></div>'+
+    '<div class="bt-tile '+btCls(f.pnlRealized)+'"><small>Realized</small><b>'+btSigned(f.pnlRealized)+'</b></div>'+
+    '<div class="bt-tile '+btCls(f.pnlUnrealized)+'"><small>Unrealized</small><b>'+btSigned(f.pnlUnrealized)+'</b></div>'+
+    '<div class="bt-tile '+btCls(f.pnlTotal)+'"><small>Total P&amp;L</small><b>'+btSigned(f.pnlTotal)+'</b><em class="btf-em">'+(f.pnlPct!=null?btPct(f.pnlPct):'')+'</em></div></div>'+
+    '<div class="btf-foot">'+(st?escHtml(st)+' · ':'')+(f.cycles||0)+' cycle'+(f.cycles===1?'':'s')+' done'+(f.lost?' · '+btMoney(f.lost)+' lost':'')+'</div>';
+}
+// A small price line for an item card (plain SVG; the full chart is in the detail).
+function btSpark(series){
+  const p=(series||[]).map(x=>x.price).filter(v=>v!=null&&v>0); if(p.length<2) return '';
+  const lg=p.map(v=>Math.log(v)), mn=Math.min(...lg), mx=Math.max(...lg), r=mx-mn||1, W=100, H=26;
+  const d=lg.map((v,i)=>(i/(lg.length-1)*W).toFixed(1)+','+(H-(v-mn)/r*(H-2)-1).toFixed(1)).join(' ');
+  const up=p[p.length-1]>=p[0];
+  return '<svg class="btf-spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+d+'" fill="none" stroke="'+(up?'#4ade80':'#f87171')+'" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>';
+}
+function btPartLine(i,p){
+  if(p.id==='A') return '<div class="btf-part"><b>A</b><span>2× ladder · '+btMoney(p.amount)+' · cycle '+(p.cycles||0)+
+    (p.state!=='open'?' · '+escHtml(p.state):(p.nextTrigger&&p.nextTrigger.price!=null?' · next cycle at '+btPrice(p.nextTrigger.price):''))+'</span></div>';
+  return '<div class="btf-part"><b>B</b><span>€1 target · '+btMoney(p.amount)+' · '+
+    (p.state==='sold'&&p.sell?'sold at '+btPrice(p.sell.price)+' → '+btMoney(p.sell.value):p.state!=='open'?escHtml(p.state):(p.multipleToTarget!=null?'price must rise '+btMult(p.multipleToTarget):'waiting for €1'))+'</span></div>';
+}
+function btSplitCard(i){
+  const pnl=btItemPnl(i), pct=i.cost?pnl/i.cost:null;
+  return '<button class="bte-card btf-card'+(i.state==='unsellable'||i.state==='worthless'?' err':'')+'" onclick="btItemOpen(\''+escHtml(i.id)+'\')">'+
+    '<div class="bte-row"><span class="bte-sym">'+escHtml(i.symbol||i.id)+'</span>'+(i.network?'<span class="bte-chip" style="--c:#a78bfa">'+escHtml(i.network)+'</span>':'')+btStChip(i.state)+
+      (i.origin==='converted'?'<span class="bte-chip" style="--c:#94a3b8">converted'+(i.switchedAt?' on '+btDay(i.switchedAt):'')+' · was '+btMoney(i.cost)+'</span>':'')+'</div>'+
+    (i.name?'<div class="bte-name">'+escHtml(i.name)+'</div>':'')+
+    '<div class="bte-nums"><div><small>Cost</small><b>'+btMoney(i.cost)+'</b></div><div><small>Value now · set aside</small><b>'+btMoney(i.valueNow)+'<br>'+btMoney(i.setAside||0)+'</b></div>'+
+      '<div><small>P&amp;L</small><b class="'+btCls(pnl)+'">'+btSigned(pnl)+(pct!=null?'<br>'+btPct(pct):'')+'</b></div></div>'+
+    (i.parts||[]).map(p=>btPartLine(i,p)).join('')+btSpark(i.series)+'</button>';
+}
+// ── Items tab ──
+function btItemsTab(bots){
+  const fund=btFund(bots), all=btAllItems(bots), split=all.filter(btSplit);
+  if(!fund && !split.length){ const ib=bots.find(b=>(b.items||[]).length); _btCur=ib; return ib?btItemsHtml(ib):'<div class="cc-empty">No items yet.</div>'; }
+  if(_btItemPage){ const it=all.find(i=>i.id===_btItemPage); if(it) return btItemPageHtml(it, split); _btItemPage=null; }
+  const f=_btItemsF in {all:1,active:1,partly:1,sold:1,dead:1}?_btItemsF:'all'; _btItemsF=f;
+  const o=_btItemsO;
+  const okO=i=>o==='all'||(btSplit(i)&&i.origin===o);
+  const chips='<div class="bt-chips wrap">'+BT_ISF.map(x=>'<button class="'+(x[0]===f?'on':'')+'" onclick="_btItemsF=\''+x[0]+'\';btRender()">'+x[1]+' <b>'+all.filter(i=>btItemF(i,x[0])&&okO(i)).length+'</b></button>').join('')+'</div>'+
+    (split.length?'<div class="bt-chips">'+[['all','All'],['fund','From the fund'],['converted','Converted']].map(x=>'<button class="'+(x[0]===o?'on':'')+'" onclick="_btItemsO=\''+x[0]+'\';btRender()">'+x[1]+'</button>').join('')+'</div>':'');
+  const list=all.filter(i=>btItemF(i,f)&&okO(i));
+  const legacy=list.filter(i=>!btSplit(i));
+  const head=fund?'<div class="slabel bt-sl"><i class="ti ti-pig-money"></i> Items fund <span class="bt-modes" style="margin-left:auto">'+btOrigin('live')+'<span class="bt-mode">Paper money</span></span></div>'+btFundNums(fund)+btFundBar(fund):'';
+  const rm=fund&&fund.removed&&fund.removed.count?'<details class="btf-rm"><summary>'+fund.removed.count+' items removed'+(fund.removed.at?' on '+btDay(fund.removed.at):'')+': <b class="'+btCls(fund.removed.pnlRealized)+'">'+btSigned(fund.removed.pnlRealized)+'</b> realized</summary><div>'+fund.removed.names.map(escHtml).join(' · ')+'</div></details>':'';
+  return head+chips+
+    '<div class="bte-list">'+list.filter(btSplit).map(btSplitCard).join('')+'</div>'+
+    (legacy.length?'<div class="slabel bt-sl"><i class="ti ti-history"></i> Older items</div>'+btLegacyList(legacy):'')+
+    (!list.length?'<div class="cc-empty">No items here.</div>':'')+rm+
+    '<div class="bt-hypnote"><i class="ti ti-info-circle"></i> Paper money only. Most new tokens lose most of their value. Reaching €1 from a fraction of a cent is extremely rare.</div>';
+}
+// Older (legacy) items keep today's card layout.
+function btLegacyList(list){
+  const st=s=>{ const x=BT_STATES.find(k=>k[0]===s)||[s,s,'#94a3b8']; return '<span class="bt-ist" style="--c:'+x[2]+'">'+escHtml(x[1])+'</span>'; };
+  return '<div class="bt-items">'+list.map(i=>{ const open=_btItemOpen===i.id;
+    return '<div class="bt-item'+(open?' open':'')+'"><button class="bt-irow" onclick="_btItemOpen='+(open?'null':'\''+escHtml(i.id)+'\'')+';btRender()">'+
+      '<span class="bt-in"><b>'+escHtml(i.name||i.symbol||i.id)+'</b><small>'+escHtml(i.symbol||'')+(i.source?' · '+escHtml(i.source):'')+'</small></span>'+st(i.state)+
+      '<span class="bt-ip"><small>'+(i.buy&&i.buy.price!=null?btPrice(i.buy.price)+' → ':'')+btPrice(i.priceNow)+'</small><b class="'+btCls(i.pnl)+'">'+(i.pnlPct!=null?btPct(i.pnlPct):btSigned(i.pnl))+'</b></span></button>'+
+      (open?btItemDetail(i):'')+'</div>'; }).join('')+'</div>';
+}
+function btItemOpen(id){ _btItemPage=id; btRender(); const m=document.querySelector('#modal .mbody, #modal .mb, #btBody'); const sc=document.getElementById('btBody'); if(sc&&sc.parentElement) sc.parentElement.scrollTop=0; }
+// ── One item, full screen inside the widget ──
+function btItemPageHtml(i, split){
+  const pnl=btItemPnl(i), total=(i.setAside||0)+(i.valueNow||0);
+  const fees=(i.takeProfits||[]).reduce((a,t)=>a+(t.fee||0)+((t.rebuy&&t.rebuy.fee)||0),0)+((i.buy&&i.buy.fee)||0)+(i.parts||[]).reduce((a,p)=>a+((p.sell&&p.sell.fee)||0),0);
+  const pA=(i.parts||[]).find(p=>p.id==='A'), pB=(i.parts||[]).find(p=>p.id==='B');
+  const reached=split.filter(x=>(x.takeProfits||[]).some(t=>t.part==='A')||((x.parts||[]).find(p=>p.id==='A')||{}).cycles>0).length;
+  const far=pB&&pB.multipleToTarget!=null&&pB.multipleToTarget>100;
+  const card=(p)=>{ if(!p) return '';
+    const rows=[['Amount',btMoney(p.amount)],['Quantity',p.qty!=null?(+p.qty).toLocaleString('en-GB',{maximumFractionDigits:2}):'–'],['Value now',btMoney(p.valueNow)],['State',escHtml(p.state)]];
+    if(p.id==='A') rows.push(['Cycles done',String(p.cycles||0)],['Next cycle',p.nextTrigger?btMoney(p.nextTrigger.value)+' · price '+btPrice(p.nextTrigger.price):'–'],['Set aside',btMoney(p.setAside||0)]);
+    else rows.push(['Target','€1 per unit'],['Distance',p.multipleToTarget!=null?'price must rise '+btMult(p.multipleToTarget):'–'],['Sale',p.sell?btDay(p.sell.time)+' at '+btPrice(p.sell.price)+' → '+btMoney(p.sell.value):'not yet']);
+    return '<div class="btf-pc"><b>Part '+p.id+' · '+(p.id==='A'?'2× ladder':'€1 target')+'</b>'+rows.map(r=>'<div><small>'+r[0]+'</small><span>'+r[1]+'</span></div>').join('')+'</div>'; };
+  const tps=(i.takeProfits||[]).slice().reverse();
+  return '<button class="sh-chip bte-back" onclick="_btItemPage=null;btRender()"><i class="ti ti-arrow-left"></i> All items</button>'+
+    '<div class="btf-h"><div class="bte-row"><span class="bte-sym">'+escHtml(i.symbol||i.id)+'</span>'+(i.network?'<span class="bte-chip" style="--c:#a78bfa">'+escHtml(i.network)+'</span>':'')+btStChip(i.state)+btOrigin(i.dataOrigin)+'<span class="bt-mode">Paper money</span></div>'+
+      (i.name?'<div class="bte-name">'+escHtml(i.name)+'</div>':'')+
+      (i.origin==='converted'?'<div class="bte-name">Converted to this strategy'+(i.switchedAt?' on '+btDay(i.switchedAt):'')+' · original cost '+btMoney(i.cost)+'</div>':'')+
+      (i.url?'<a class="btf-link" href="'+escHtml(i.url)+'" target="_blank" rel="noopener">Open on DexScreener ↗</a>':'')+'</div>'+
+    '<div class="btf-range">'+[['1d','1D'],['1w','1W'],['all','All']].map(r=>'<button class="'+(_btRange===r[0]?'on':'')+'" onclick="btItemRange(\''+r[0]+'\')">'+r[1]+'</button>').join('')+'<span>Log scale</span></div>'+
+    '<div id="btItemChart" class="btf-chart"><div class="cc-empty"><i class="ti ti-loader-2"></i> Loading chart…</div></div>'+
+    '<div class="btf-key"><span><i style="background:#4ade80"></i>first buy</span><span><i style="background:#eab308"></i>part A cycle</span><span><i style="background:#f87171"></i>part B sold / write-off</span>'+(i.origin==='converted'?'<span><i style="background:#94a3b8"></i>switch</span>':'')+'<span><i class="dash"></i>next A trigger · buy price</span></div>'+
+    (far?'<div class="btf-foot">€1 is '+btMult(pB.multipleToTarget)+' away — too far to draw.</div>':'')+
+    '<div class="btf-pcs">'+card(pA)+card(pB)+'</div>'+
+    '<div class="slabel bt-sl"><i class="ti ti-repeat"></i> Cycle history</div>'+
+    (tps.length?'<div class="btf-tp">'+tps.map(t=>'<div class="btf-tpr"><b>'+t.part+(t.part==='A'?' · cycle '+t.cycle:' · sold')+'</b><span>'+btDay(t.time)+' '+(Date.parse(t.time)?new Date(Date.parse(t.time)).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'')+'</span>'+
+      '<span>sold at '+btPrice(t.price)+' → '+btMoney(t.value)+'</span><span>set aside <b>'+btMoney(t.setAside)+'</b></span>'+(t.rebuy?'<span>rebought at '+btPrice(t.rebuy.price)+'</span>':'')+'</div>').join('')+'</div>':'<div class="cc-empty">No cycles yet.</div>')+
+    '<div class="slabel bt-sl"><i class="ti ti-sum"></i> Totals</div>'+
+    '<div class="bt-grid three"><div class="bt-tile"><small>Original cost</small><b>'+btMoney(i.cost)+'</b></div><div class="bt-tile"><small>Set aside</small><b>'+btMoney(i.setAside||0)+'</b></div><div class="bt-tile"><small>Value now</small><b>'+btMoney(i.valueNow)+'</b></div>'+
+      '<div class="bt-tile '+btCls(pnl)+'"><small>Total (aside + now)</small><b>'+btMoney(total)+'</b></div><div class="bt-tile"><small>Multiple</small><b>'+(i.cost?(total/i.cost).toFixed(2)+'×':'–')+'</b></div><div class="bt-tile"><small>Costs paid</small><b>'+btMoney(fees)+'</b></div></div>'+
+    '<div class="bt-hypnote"><i class="ti ti-alert-triangle"></i> Paper money only. Most new tokens lose most of their value. Reaching €1 from a fraction of a cent is extremely rare.'+
+      (split.length?' <b>'+reached+' of '+split.length+'</b> split items ('+Math.round(reached/split.length*100)+'%) have reached 2× at least once.':'')+'</div>';
+}
+function btItemRange(r){ _btRange=r; document.querySelectorAll('.btf-range button').forEach((b,k)=>b.classList.toggle('on',['1d','1w','all'][k]===r)); const c=_btCharts[0]; if(c) btApplyRange(c, r); }
+function btApplyRange(chart, r){
+  const ts=chart.timeScale(); const last=chart._btLast;
+  if(r==='all' || !last){ ts.fitContent(); return; }
+  try{ ts.setVisibleRange({ from: last-(r==='1d'?86400:7*86400), to: last }); }catch(e){ ts.fitContent(); }
+}
+async function btItemChart(i){
+  const el=document.getElementById('btItemChart'); if(!el) return;
+  let L; try{ L=await btLwc(); }catch(e){ el.innerHTML='<div class="bt-nochart">'+escHtml(e.message)+'</div>'; return; }
+  if(!document.getElementById('btItemChart') || _btItemPage!==i.id) return;
+  const data=btPts(i.series,'price',true);
+  if(data.length<2){ el.innerHTML='<div class="bt-nochart">No price history yet.</div>'; return; }
+  el.innerHTML='';
+  const chart=L.createChart(el, btChartOpts(240, { width: el.clientWidth||320, rightPriceScale:{ borderVisible:false, mode: L.PriceScaleMode.Logarithmic } }));
+  _btCharts.push(chart); chart._btLast=data[data.length-1].time;
+  const s=chart.addSeries(L.LineSeries, { color:'#F7931A', lineWidth:2, priceLineVisible:false, priceFormat:{ type:'custom', formatter:btFmtP, minMove:1e-12 } });
+  s.setData(data);
+  // Markers sit on the nearest chart point.
+  const near=ts=>{ let b=data[0].time, d=Infinity; for(const p of data){ const x=Math.abs(p.time-ts); if(x<d){ d=x; b=p.time; } } return b; };
+  const sec=v=>Math.floor(Date.parse(v)/1000);
+  const mk=[];
+  if(i.buy&&i.buy.time&&isFinite(sec(i.buy.time))) mk.push({ time:near(sec(i.buy.time)), position:'belowBar', color:'#4ade80', shape:'arrowUp', text:'buy' });
+  if(i.switchedAt&&isFinite(sec(i.switchedAt))) mk.push({ time:near(sec(i.switchedAt)), position:'aboveBar', color:'#94a3b8', shape:'square', text:'switch' });
+  for(const t of i.takeProfits||[]){ const ts=sec(t.time); if(!isFinite(ts)) continue;
+    mk.push(t.part==='A' ? { time:near(ts), position:'aboveBar', color:'#eab308', shape:'circle', text:'A'+(t.cycle||'') } : { time:near(ts), position:'aboveBar', color:'#f87171', shape:'arrowDown', text:'B sold' }); }
+  const pB=(i.parts||[]).find(p=>p.id==='B');
+  if(i.state==='worthless'||(pB&&pB.state==='worthless')) mk.push({ time:data[data.length-1].time, position:'aboveBar', color:'#f87171', shape:'arrowDown', text:'written off' });
+  mk.sort((a,b)=>a.time-b.time);
+  if(mk.length) L.createSeriesMarkers(s, mk);
+  const pA=(i.parts||[]).find(p=>p.id==='A');
+  if(pA&&pA.state==='open'&&pA.nextTrigger&&pA.nextTrigger.price>0) s.createPriceLine({ price:pA.nextTrigger.price, color:'#eab308', lineWidth:1, lineStyle:L.LineStyle.Dashed, axisLabelVisible:true, title:'next A' });
+  const bp=i.buy&&i.buy.price>0?i.buy.price:null;
+  if(bp) s.createPriceLine({ price:bp, color:'#94a3b8', lineWidth:1, lineStyle:L.LineStyle.Dashed, axisLabelVisible:true, title:'buy' });
+  const now=data[data.length-1].value;
+  if(now*100>=1) s.createPriceLine({ price:1, color:'#4ade80', lineWidth:1, lineStyle:L.LineStyle.Solid, axisLabelVisible:true, title:'€1' });
+  btApplyRange(chart, _btRange);
+  btChartResize(chart, el);
+}
+function btChartResize(chart, el){
+  if(!window.ResizeObserver) return;
+  const ro=new ResizeObserver(()=>{ try{ chart.applyOptions({ width: el.clientWidth }); }catch(e){ ro.disconnect(); } });
+  ro.observe(el); const rm=chart.remove.bind(chart); chart.remove=()=>{ ro.disconnect(); rm(); };
+}
+// ── Overview ──
+function btDashHtml(b, bots){
+  const fund=btFund(bots), all=btAllItems(bots), E=_btEn||{}, en=(E.entries||[]);
+  const enBought=en.filter(x=>x.rep&&x.rep.buy);
+  const enBase=enBought.reduce((a,x)=>a+(x.amount||0),0), enT=E.totals||{};
+  let base=0, val=0, real=0, unreal=0;
+  for(const x of bots){ const s=x.status||{}; base+=s.budget||0; val+=s.equity||0;
+    const r=s.pnlRealized!=null?s.pnlRealized:0; real+=r; unreal+=s.pnlUnrealized!=null?s.pnlUnrealized:((s.pnl||0)-r); }
+  base+=enBase; val+=enBase+(enT.pnl||0); real+=enT.realized||0; unreal+=enT.unrealized||0;
+  if(fund){ base+=fund.capital!=null?fund.capital:(fund.size||0); val+=(fund.capital!=null?fund.capital:(fund.size||0))+(fund.pnlTotal||0); real+=fund.pnlRealized||0; unreal+=fund.pnlUnrealized||0; }
+  const pnl=val-base;
+  // Day / week: bots' own history, plus the fund's series.
+  const chg=k=>{ let sum=0, any=false; for(const x of bots){ const c=x.perf&&x.perf[k]; if(c&&c.abs!=null){ sum+=c.abs; any=true; } }
+    if(fund&&fund.series&&fund.series.length>1){ const ser=fund.series.map(p=>({ t:Date.parse(p.t), v:(p.value||0)+(p.setAside||0) })).filter(p=>isFinite(p.t)).sort((a,b)=>a.t-b.t);
+      const last=ser[ser.length-1], ago=last.t-(k==='day'?864e5:6048e5), old=ser.filter(p=>p.t<=ago).pop(); if(old){ sum+=last.v-old.v; any=true; } }
+    return any?sum:null; };
+  const d1=chg('day'), w1=chg('week');
+  const hero='<div class="bt-hero"><small>All paper money · value now</small><b>'+btMoney(val)+'</b>'+
+    '<span class="bt-pnl '+btCls(pnl)+'">'+(pnl>0.004?'▲':pnl<-0.004?'▼':'●')+' '+btSigned(pnl)+' · '+(base?btPct(pnl/base):'–')+' <em>on '+btMoney(base)+' put in</em></span></div>'+
+    '<div class="bt-grid">'+'<div class="bt-tile '+btCls(real)+'"><small>Realized <span>(closed)</span></small><b>'+btSigned(real)+'</b></div><div class="bt-tile '+btCls(unreal)+'"><small>Unrealized <span>(open)</span></small><b>'+btSigned(unreal)+'</b></div>'+
+    '<div class="bt-tile '+btCls(d1)+'"><small>Last 24 h</small><b>'+(d1==null?'–':btSigned(d1))+'</b></div><div class="bt-tile '+btCls(w1)+'"><small>7 days</small><b>'+(w1==null?'–':btSigned(w1))+'</b></div></div>';
+  // Group cards
+  const cards=BT_GROUPS.filter(g=>bots.some(x=>btGroupOf(x)===g[0])).map(g=>{ const gb=bots.filter(x=>btGroupOf(x)===g[0]);
+    const v=gb.reduce((a,x)=>a+((x.status||{}).equity||0),0), bb=gb.reduce((a,x)=>a+((x.status||{}).budget||0),0), p=v-bb;
+    const hold=gb.filter(x=>(x.status||{}).position==='btc').length, off=gb.filter(x=>!x.running).length, closed=gb.some(x=>(x.status||{}).marketOpen===false);
+    return '<button class="btd-card" onclick="_btGroup=\''+g[0]+'\';btMainSet(\'bots\')"><span class="btd-t"><i class="ti '+g[2]+'"></i>'+g[1]+' <small>'+gb.length+'</small>'+(closed?'<span class="bte-closed">market closed</span>':'')+'</span>'+
+      '<b>'+btMoney(v)+'</b><span class="'+btCls(p)+'">'+btSigned(p)+(bb?' · '+btPct(p/bb):'')+'</span><small>'+hold+' holding'+(off?' · <em class="btd-off">'+off+' not running</em>':'')+'</small></button>'; });
+  if(en.length){ const c=E.counts||{}; cards.push('<button class="btd-card" onclick="btMainSet(\'entries\')"><span class="btd-t"><i class="ti ti-list-check"></i>Entries <small>'+en.length+'</small></span><b class="'+btCls(enT.pnl)+'">'+btSigned(enT.pnl||0)+'</b><small>'+Object.keys(c).filter(k=>c[k]).map(k=>c[k]+' '+escHtml((BT_EN_ST[k]||[k])[0])).join(' · ')+'</small></button>'); }
+  if(fund){ const fc=fund.counts||{}; cards.push('<button class="btd-card" onclick="btMainSet(\'items\')"><span class="btd-t"><i class="ti ti-pig-money"></i>Items fund</span><b class="'+btCls(fund.pnlTotal)+'">'+btSigned(fund.pnlTotal)+'</b>'+
+    '<small>'+btMoney(fund.available)+' available · '+btMoney(fund.inItems)+' in items · '+btMoney(fund.setAside)+' set aside</small><small>'+[fc.open&&fc.open+' open',fc.partlySold&&fc.partlySold+' partly sold',fc.sold&&fc.sold+' sold',(fc.worthless||0)+(fc.unsellable||0)?((fc.worthless||0)+(fc.unsellable||0))+' lost':''].filter(Boolean).join(' · ')+' · '+(fund.cycles||0)+' cycles</small></button>'); }
+  // Recent activity: trades and bot messages from everything, newest first.
+  const act=[];
+  for(const x of bots) for(const t of (x.trades||[]).slice(-10)){ const ms=Date.parse(t.time); if(isFinite(ms)) act.push({ ms, ic:t.side==='buy'?'ti-arrow-down-left':'ti-arrow-up-right', title:(x.role==='practice'?x.name+': ':'')+(t.side==='buy'?'Bought':'Sold')+' at '+btPrice(t.price)+(t.quote!=null?' · '+btMoney(t.quote):''), sub:t.reason||'', go:'_btGroup=\''+btGroupOf(x)+'\';_btTab=\''+escHtml(x.id)+'\';btMainSet(\'bots\')' }); }
+  for(const e of (b.events||[]).slice(0,30)) act.push({ ms:e.at, ic:e.kind==='target'?'ti-target-arrow':e.kind==='alert'?'ti-alert-triangle':e.kind==='sim'?'ti-chart-line':'ti-arrows-exchange', title:e.title, sub:e.body||'',
+    go: e.item?'_btItemPage=\''+escHtml(e.item)+'\';_btMain=\'items\';btRender()': /\bEntry\b/.test(e.title||'')?'btMainSet(\'entries\')':'btMainSet(\'bots\')' });
+  act.sort((a,b)=>b.ms-a.ms);
+  const recent=act.length?'<div class="slabel bt-sl"><i class="ti ti-activity"></i> Recent activity</div><div class="btd-act">'+act.slice(0,10).map(a=>'<button onclick="'+a.go+'"><i class="ti '+a.ic+'"></i><span><b>'+escHtml(a.title)+'</b><small>'+btAgo(a.ms)+(a.sub?' · '+escHtml(String(a.sub).slice(0,80)):'')+'</small></span></button>').join('')+'</div>':'';
+  // Needs attention
+  const att=[];
+  const off=bots.filter(x=>!x.running); if(off.length) att.push('<button onclick="btMainSet(\'bots\')"><i class="ti ti-plug-x"></i> Not reporting: '+escHtml(off.map(x=>x.name).join(', '))+'</button>');
+  const enErr=en.filter(x=>btEnState(x)==='error'); if(enErr.length) att.push('<button onclick="btMainSet(\'entries\')"><i class="ti ti-alert-triangle"></i> '+enErr.length+' entr'+(enErr.length===1?'y':'ies')+' in error</button>');
+  const uns=all.filter(i=>i.state==='unsellable'); if(uns.length) att.push('<button onclick="_btItemsF=\'dead\';btMainSet(\'items\')"><i class="ti ti-lock"></i> Unsellable: '+escHtml(uns.map(i=>i.symbol||i.id).join(', '))+'</button>');
+  if(fund&&fund.available!=null&&fund.available<(fund.perItem||10)) att.push('<button onclick="btMainSet(\'items\')"><i class="ti ti-pig-money"></i> Items fund: '+btMoney(fund.available)+' left — no money for new items</button>');
+  return hero+
+    '<div class="btd-grid">'+cards.join('')+'</div>'+
+    (fund?'<div class="slabel bt-sl"><i class="ti ti-pig-money"></i> Items fund</div>'+btFundBar(fund):'')+
+    '<div class="slabel bt-sl"><i class="ti ti-chart-area-line"></i> Total value</div><div id="btDashChart" class="btf-chart small"></div>'+
+    (att.length?'<div class="slabel bt-sl"><i class="ti ti-alert-circle"></i> Needs attention</div><div class="btd-att">'+att.join('')+'</div>':'')+
+    recent+
+    '<div class="bt-cfg"><span class="bt-mode">Paper money</span> '+btOrigin('live')+' Totals add every bot’s budget, the bought entries'+(fund?' and the items fund (100 € + the original cost of converted items)':'')+'.</div>';
+}
+// Total value over time: bots' equity histories + the items fund, each carried forward between points.
+async function btDashChart(bots){
+  const el=document.getElementById('btDashChart'); if(!el) return;
+  const fund=btFund(bots);
+  const lines=bots.map(x=>btPts(x.equity,'equity',false)).filter(a=>a.length);
+  if(fund&&fund.series&&fund.series.length) lines.push(btPts(fund.series.map(p=>({ t:p.t, v:(p.value||0)+(p.setAside||0) })),'v',false));
+  const times=[...new Set(lines.flatMap(a=>a.map(p=>Math.floor(p.time/3600)*3600)))].sort((a,b)=>a-b);
+  if(times.length<2){ el.innerHTML='<div class="bt-nochart">Not enough history yet.</div>'; return; }
+  const data=times.map(t=>({ time:t, value: lines.reduce((sum,a)=>{ let v=a[0].value; for(const p of a){ if(p.time<=t+3599) v=p.value; else break; } return sum+v; },0) }));
+  let L; try{ L=await btLwc(); }catch(e){ el.innerHTML='<div class="bt-nochart">'+escHtml(e.message)+'</div>'; return; }
+  if(!document.getElementById('btDashChart')) return;
+  el.innerHTML='';
+  const chart=L.createChart(el, btChartOpts(140, { width:el.clientWidth||320, grid:{ vertLines:{ visible:false }, horzLines:{ visible:false } } }));
+  _btCharts.push(chart);
+  const s=chart.addSeries(L.AreaSeries, { lineColor:'#F7931A', topColor:'rgba(247,147,26,.28)', bottomColor:'rgba(247,147,26,0)', lineWidth:2, priceLineVisible:false, priceFormat:{ type:'custom', formatter:v=>btFmtP(v), minMove:0.01 } });
+  s.setData(data); chart.timeScale().fitContent(); btChartResize(chart, el);
+}
 function btRender(newN){
   const el=document.getElementById('btBody'); if(!el) return;
   if(newN===undefined) newN=0;
@@ -5325,26 +5660,31 @@ function btRender(newN){
     el.innerHTML='<div class="bt-empty"><i class="ti ti-clock"></i><div><b>Waiting for the first report</b><p>The key is set. Start the bot on the PC (porneste-bot.bat) — it reports within a minute.</p></div></div>';
     return;
   }
-  // Crypto · Stocks · ETFs (only the groups that have bots) and Entries.
-  const groups=BT_GROUPS.filter(g=>bots.some(x=>btGroupOf(x)===g[0]));
-  if(_btGroup!=='entries' && !groups.some(g=>g[0]===_btGroup)){ const t=bots.find(x=>x.id===_btTab); _btGroup=t?btGroupOf(t):groups[0][0]; }
-  const enN=_btEn&&_btEn.entries?_btEn.entries.filter(x=>BT_EN_ACTIVE.includes(btEnState(x))).length:0;
-  const seg='<div class="bte-seg" role="tablist">'+groups.map(g=>'<button role="tab" class="'+(_btGroup===g[0]?'on':'')+'" onclick="_btGroup=\''+g[0]+'\';btRender()"><i class="ti '+g[2]+'"></i>'+g[1]+' <small>'+bots.filter(x=>btGroupOf(x)===g[0]).length+'</small></button>').join('')+
-    '<button role="tab" class="'+(_btGroup==='entries'?'on':'')+'" onclick="_btGroup=\'entries\';_btEnOpen=null;btRender()"><i class="ti ti-list-check"></i>Entries'+(enN?' <small>'+enN+'</small>':'')+'</button></div>';
+  // Menu (IB-31): Overview · Bots · Entries · Items · Simulations. Items and
+  // Simulations only appear when the bot sends them.
   const ctl=btCtlHtml(b, bots);
-  if(_btGroup==='entries'){ el.innerHTML=ctl+seg+btEntriesHtml(); return; }
+  const fund=btFund(bots), itemsAll=btAllItems(bots), simsBot=bots.find(x=>(x.simulations||[]).length);
+  let M=btMainGet();
+  const menu=[['overview','Overview','ti-layout-dashboard'],['bots','Bots','ti-robot'],['entries','Entries','ti-list-check'],(itemsAll.length||fund)&&['items','Items','ti-coins'],simsBot&&['sims','Simulations','ti-chart-line']].filter(Boolean);
+  if(!menu.some(m=>m[0]===M)) M=_btMain='overview';
+  const enN=_btEn&&_btEn.entries?_btEn.entries.filter(x=>BT_EN_ACTIVE.includes(btEnState(x))).length:0;
+  const nav='<div class="btd-nav" role="tablist">'+menu.map(m=>'<button role="tab" aria-selected="'+(M===m[0])+'" class="'+(M===m[0]?'on':'')+'" onclick="btMainSet(\''+m[0]+'\')"><i class="ti '+m[2]+'"></i><span>'+m[1]+'</span>'+(m[0]==='entries'&&enN?'<small>'+enN+'</small>':'')+'</button>').join('')+'</div>';
+  const honest='<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
+  btLwcClear();
+  if(M==='overview'){ el.innerHTML=ctl+nav+btDashHtml(b,bots)+honest; btDashChart(bots); return; }
+  if(M==='entries'){ el.innerHTML=ctl+nav+btEntriesHtml(); return; }
+  if(M==='items'){ el.innerHTML=ctl+nav+btItemsTab(bots)+honest; if(_btItemPage){ const it=itemsAll.find(i=>i.id===_btItemPage); if(it) btItemChart(it); } return; }
+  if(M==='sims'){ _btCur=simsBot; el.innerHTML=ctl+nav+btSimsHtml(simsBot)+honest; btSimChart(); return; }
+  // Bots: Crypto · Stocks · ETFs (only the groups that have bots), then one tab per bot.
+  const groups=BT_GROUPS.filter(g=>bots.some(x=>btGroupOf(x)===g[0]));
+  if(!groups.some(g=>g[0]===_btGroup)){ const t=bots.find(x=>x.id===_btTab); _btGroup=t?btGroupOf(t):groups[0][0]; }
+  const seg=groups.length>1?'<div class="bte-seg" role="tablist">'+groups.map(g=>'<button role="tab" class="'+(_btGroup===g[0]?'on':'')+'" onclick="_btGroup=\''+g[0]+'\';btRender()"><i class="ti '+g[2]+'"></i>'+g[1]+' <small>'+bots.filter(x=>btGroupOf(x)===g[0]).length+'</small></button>').join('')+'</div>':'';
   const gb=bots.filter(x=>btGroupOf(x)===_btGroup);
   const cur=gb.find(x=>x.id===_btTab)||gb[0]; _btTab=cur.id; _btCur=cur;
   const tabs=gb.length>1?'<div class="bt-tabs" role="tablist">'+gb.map(x=>'<button role="tab" aria-selected="'+(x.id===cur.id)+'" class="'+(x.id===cur.id?'on':'')+'" onclick="_btTab=\''+escHtml(x.id)+'\';btRender()"><span class="bt-dot '+(x.running?'on':'off')+'"></span>'+escHtml(x.name)+(x.role==='practice'?' <small>practice</small>':'')+'</button>').join('')+'</div>':'';
-  // Inside a bot: Overview · Simulations · Items (the last two only when the bot sends them).
-  const sims=cur.simulations||[], items=cur.items||[];
-  if(_btView==='sims'&&!sims.length || _btView==='items'&&!items.length) _btView='overview';
-  const views=(sims.length||items.length)?'<div class="bt-views">'+[['overview','Overview','ti-layout-dashboard'],sims.length&&['sims','Simulations ('+sims.length+')','ti-chart-line'],items.length&&['items','Items ('+items.length+')','ti-coins']].filter(Boolean)
-    .map(v=>'<button class="'+(_btView===v[0]?'on':'')+'" onclick="_btView=\''+v[0]+'\';btRender()"><i class="ti '+v[2]+'"></i> '+v[1]+'</button>').join('')+'</div>':'';
-  const main=_btView==='sims'?btSimsHtml(cur):_btView==='items'?btItemsHtml(cur):btOverviewHtml(b,cur,newN);
-  el.innerHTML=ctl+seg+tabs+views+main+'<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
-  if(_btView==='overview') btChart();
-  if(_btView==='sims') btSimChart();
+  _btView='overview';
+  el.innerHTML=ctl+nav+seg+tabs+btOverviewHtml(b,cur,newN)+honest;
+  btChart();
 }
 // ── Groups and entries (IB-28) ──
 // Bots are grouped Crypto · Stocks · ETFs; "Entries" holds the user's own
@@ -5646,7 +5986,7 @@ function btOverviewHtml(b,cur,newN){
   }
   // D. Items by state
   const items=cur.items||[];
-  const secD=items.length?'<div class="slabel bt-sl"><i class="ti ti-coins"></i> Items</div><div class="bt-states">'+BT_STATES.map(s=>{ const n=items.filter(i=>i.state===s[0]).length; return n?'<button class="bt-stc" style="--c:'+s[2]+'" onclick="_btView=\'items\';_btItemsF=\''+s[3]+'\';btRender()"><b>'+n+'</b> '+s[1]+'</button>':''; }).join('')+'</div>':'';
+  const secD=items.length?'<div class="slabel bt-sl"><i class="ti ti-coins"></i> Items</div><div class="bt-states">'+BT_STATES.map(s=>{ const n=items.filter(i=>i.state===s[0]).length; return n?'<button class="bt-stc" style="--c:'+s[2]+'" onclick="_btItemsF=\''+(BT_ISF.some(f=>f[0]===s[3])?s[3]:'all')+'\';btMainSet(\'items\')"><b>'+n+'</b> '+s[1]+'</button>':''; }).join('')+'</div>':'';
   const closed=st.marketOpen===false?'<span class="bte-closed"><i class="ti ti-moon"></i> Market closed — waiting for the open</span>':'';
   const where=(st.runningOn?'<span class="btc-where"><i class="ti ti-server"></i> runs on '+escHtml(st.runningOn)+'</span>':'')+
     (st.paused?'<span class="btc-where pause"><i class="ti ti-player-pause"></i> paused'+(st.sellAll?' · selling':'')+'</span>':'');
@@ -9470,7 +9810,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-10-emergency-stop';
+const APP_BUILD='2026-11-11-items-fund';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
@@ -9503,7 +9843,7 @@ function openFromQs(qs){
     const q=new URLSearchParams(qs||'');
     if(q.get('dev')){ setTimeout(()=>openDev().then(()=>dvOpen(q.get('dev'),false)), 400); return true; }
     if(q.get('concerts')){ setTimeout(()=>openConcerts(), 400); return true; }
-    if(q.get('bot')){ setTimeout(()=>openBot(q.get('tab')||undefined), 400); return true; }
+    if(q.get('bot')){ setTimeout(()=>openBot(q.get('tab')||undefined, q.get('item')||undefined), 400); return true; }
     const d=q.get('d');
     if(d){ openOnDate(d, q.get('ev')); if(q.get('alert') && q.get('ev')) setTimeout(()=>openAlerts(q.get('ev'), d), 500); return true; }
   }catch(e){}
@@ -9531,7 +9871,7 @@ function handleOpenParams(){
     }
     if(q.get('bot')){
       history.replaceState({}, '', location.pathname);
-      setTimeout(()=>openBot(q.get('tab')||undefined), 400);
+      setTimeout(()=>openBot(q.get('tab')||undefined, q.get('item')||undefined), 400);
       return;
     }
     const d=q.get('d');
@@ -9551,7 +9891,7 @@ if('serviceWorker' in navigator){
     if(e.data && e.data.type==='OPEN_DATE' && e.data.date){ openOnDate(e.data.date, e.data.id); if(e.data.alert && e.data.id) setTimeout(()=>openAlerts(e.data.id, e.data.date), 250); }
     if(e.data && e.data.type==='ALERTS_CHANGED') loadAlerts();
     if(e.data && e.data.type==='OPEN_CONCERTS') openConcerts();
-    if(e.data && e.data.type==='OPEN_BOT') openBot(e.data.tab);
+    if(e.data && e.data.type==='OPEN_BOT') openBot(e.data.tab, e.data.item||undefined);
     if(e.data && e.data.type==='OPEN_DEV' && e.data.id) openDev().then(()=>dvOpen(e.data.id,false));
   });
 }
@@ -9807,7 +10147,8 @@ function alBotCard(g, focus){
     '<div class="ec-actions">'+
       '<button class="ea grn" onclick="alClear(\''+k+'\')"><i class="ti ti-checks"></i>Clear</button>'+
       '<button class="ea ylw" onclick="alSnoozeMenu(this)"><i class="ti ti-alarm-snooze"></i>Snooze</button>'+
-      (a.tab==='entries' ? '<button class="ea" onclick="closeModal();openBot(\'entries\')"><i class="ti ti-list-check"></i>Open entries</button>'
+      (a.tab==='items' && a.item ? '<button class="ea" onclick="closeModal();openBot(\'items\',\''+escHtml(a.item)+'\')"><i class="ti ti-coins"></i>Open item</button>'
+        : a.tab==='entries' ? '<button class="ea" onclick="closeModal();openBot(\'entries\')"><i class="ti ti-list-check"></i>Open entries</button>'
         : '<button class="ea" onclick="closeModal();'+(a.bot?'_btTab=\''+escHtml(a.bot)+'\';':'')+'openBot()"><i class="ti ti-currency-bitcoin"></i>Open bot</button>')+
     '</div>'+
     '<div class="al-snooze" hidden>'+[[10,'10 min'],[30,'30 min'],[60,'1 hour'],[180,'3 hours'],['tm','Tomorrow 9:00']].map(s=>'<button class="sh-chip" onclick="alSnooze(\''+k+'\',\''+s[0]+'\')">'+s[1]+'</button>').join('')+'</div>'+
