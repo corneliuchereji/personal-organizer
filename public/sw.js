@@ -6,18 +6,21 @@
 // data and then saved it back over newer data. A caching service worker
 // would reintroduce exactly that, so /api/* always goes to the network.
 
-const CACHE = 'organizer-shell-v20';
+const CACHE = 'organizer-shell-v21';
 const SHELL = [
   '/',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  // TradingView Lightweight Charts (Apache-2.0), vendored so the bot charts draw offline.
+  '/vendor/lightweight-charts.standalone.production.js'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(SHELL).catch(() => {})) // a missing file must not block install
+      // One by one: a single missing file must not leave the whole shell uncached.
+      .then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {}))))
       .then(() => self.skipWaiting())
   );
 });
@@ -143,7 +146,7 @@ self.addEventListener('notificationclick', event => {
   // The bot's morning summary (no alert behind it) opens the Trading bot widget.
   // A Dev tracker notice (task done / tests failing) opens that task.
   const qs = d.dev ? '?dev=' + encodeURIComponent(d.dev) : d.concert ? '?concerts=1'
-    : (d.bot && d.tab) ? '?bot=1&tab=' + encodeURIComponent(d.tab)     // e.g. an entry bought / sold → the Entries tab
+    : (d.bot && d.tab) ? '?bot=1&tab=' + encodeURIComponent(d.tab) + (d.item ? '&item=' + encodeURIComponent(d.item) : '')   // entries, or one item's detail     // e.g. an entry bought / sold → the Entries tab
     : (d.bot && !d.alertId) ? '?bot=1'
     : d.date ? ('?d=' + encodeURIComponent(d.date) + (d.id ? '&ev=' + encodeURIComponent(d.id) : '') + (d.alertId ? '&alert=1' : '')) : '';
   const target = new URL('/' + qs, self.location.origin).href;
@@ -165,7 +168,7 @@ self.addEventListener('notificationclick', event => {
           // An already-open window is told which day to show, rather than
           // being navigated — reloading would lose any unsaved state.
           try {
-            c.postMessage(d.dev ? { type:'OPEN_DEV', id: d.dev } : d.concert ? { type:'OPEN_CONCERTS' } : (d.bot && d.tab) ? { type:'OPEN_BOT', tab: d.tab } : (d.bot && !d.alertId) ? { type:'OPEN_BOT' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null, alert: !!d.alertId });
+            c.postMessage(d.dev ? { type:'OPEN_DEV', id: d.dev } : d.concert ? { type:'OPEN_CONCERTS' } : (d.bot && d.tab) ? { type:'OPEN_BOT', tab: d.tab, item: d.item || null } : (d.bot && !d.alertId) ? { type:'OPEN_BOT' } : { type:'OPEN_DATE', date: d.date || null, id: d.id || null, alert: !!d.alertId });
           } catch (e) {}
           return c.focus();
         }
@@ -217,6 +220,8 @@ self.addEventListener('fetch', event => {
         }
         return res;
       })
-      .catch(() => caches.match(req).then(hit => hit || caches.match('/')))
+      // Offline: the cached copy; only page loads fall back to the app shell
+      // (a script must never receive the HTML page instead).
+      .catch(() => caches.match(req).then(hit => hit || (req.mode === 'navigate' ? caches.match('/') : Response.error())))
   );
 });
