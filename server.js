@@ -1064,7 +1064,7 @@ app.post('/api/telegram/register-webhook', async (req, res) => {
 // Reports which build is actually running. Deploy problems are otherwise
 // invisible — the app looks fine while serving stale code — so this gives
 // a definitive answer instead of inferring it from behaviour.
-const BUILD_VERSION = '2026-11-10-emergency-stop';
+const BUILD_VERSION = '2026-11-11-items-fund';
 // ═══════════════════════════════════════════════════
 // WEB PUSH — notifications that arrive when the app is closed, without
 // depending on Telegram. VAPID keys are generated once and kept in
@@ -3093,7 +3093,8 @@ async function mcpCall(name, args){
       if(!b.connected) return mcpText('The trading bot is not connected yet (Settings → Private → Trading bot).');
       if(!b.bots.length) return mcpText('The bot is connected but has not reported yet.');
       const ev = await entriesView(d);
-      return mcpText({ emergencyStop: { ...b.control, botConfirmed: b.controlAck.ack }, entries: entryOneLine(ev), bots: b.bots.map(x => ({ paused: !!(x.status && x.status.paused), runningOn: x.status && x.status.runningOn || null, runningTwice: x.places.length > 1 ? x.places : undefined, id:x.id, name:x.name, role:x.role, symbol:x.symbol, timeframe:x.timeframe, market:x.market, marketOpen: x.status && x.status.marketOpen !== undefined ? x.status.marketOpen : true, currency: x.status && x.status.currency || null, contract:x.contract, simulations:x.simCount, items:x.itemCount,
+      let fundLine = null; try{ const mx = await botxGet('main'); fundLine = botFundLine(mx.itemsFund); }catch(e){}
+      return mcpText({ ...(fundLine ? { itemsFund: fundLine } : {}), emergencyStop: { ...b.control, botConfirmed: b.controlAck.ack }, entries: entryOneLine(ev), bots: b.bots.map(x => ({ paused: !!(x.status && x.status.paused), runningOn: x.status && x.status.runningOn || null, runningTwice: x.places.length > 1 ? x.places : undefined, id:x.id, name:x.name, role:x.role, symbol:x.symbol, timeframe:x.timeframe, market:x.market, marketOpen: x.status && x.status.marketOpen !== undefined ? x.status.marketOpen : true, currency: x.status && x.status.currency || null, contract:x.contract, simulations:x.simCount, items:x.itemCount,
         running:x.running, lastReport: x.lastSeen ? new Date(x.lastSeen).toLocaleString('en-GB',{timeZone:'Europe/Bucharest'}) : null,
         ...(x.status||{}), change:x.perf, recentTrades: x.trades.slice(-5) })),
         recentMessages: b.events.slice(0,10).map(e => ({ bot:e.botName||e.bot||'main', kind:e.kind, title:e.title, body:e.body, at:new Date(e.at).toISOString() })) });
@@ -5017,7 +5018,7 @@ function botNum(v){ const n = +v; return isFinite(n) ? n : null; }
 // save): Redis key organizer:botx:<bot id>, or a file — like note pictures.
 // Replaced whenever a report brings them; a report without them keeps the old ones.
 const BOT_ORIGINS = ['live','cached','historical','hypothetical'];
-const BOT_ITEM_STATES = ['watching','bought','sold','target_hit','unsellable','worthless'];
+const BOT_ITEM_STATES = ['watching','bought','sold','target_hit','unsellable','worthless','partly_sold'];
 const BOTX_DIR = path.join(DATA_DIR, 'bot-extra');
 const _botx = new Map();                      // bot id -> { simulations, items, at }
 async function botxPut(id, obj){
@@ -5072,8 +5073,59 @@ function botCleanItems(arr){
     priceNow: botNum(x.priceNow), valueNow: botNum(x.valueNow), pnl: botNum(x.pnl), pnlPct: botNum(x.pnlPct), realized: !!x.realized,
     targets: (Array.isArray(x.targets) ? x.targets : []).slice(0, 12).filter(t => t && typeof t === 'object').map(t => ({ label: bStr(t.label, 20), price: botNum(t.price), reached: !!t.reached })),
     signals: x.signals && typeof x.signals === 'object' ? { volumeChange24h: botNum(x.signals.volumeChange24h), momentum7d: botNum(x.signals.momentum7d), liquidity: botNum(x.signals.liquidity), ageDays: botNum(x.signals.ageDays) } : null,
-    series: (Array.isArray(x.series) ? x.series : []).slice(-120).filter(p => p && typeof p === 'object').map(p => ({ t: bTime(p.t), price: botNum(p.price) })),
-    dataOrigin: bOrigin(x.dataOrigin) }));
+    series: (Array.isArray(x.series) ? x.series : []).slice(-500).filter(p => p && typeof p === 'object').map(p => ({ t: bTime(p.t), price: botNum(p.price) })),
+    dataOrigin: bOrigin(x.dataOrigin), ...botCleanSplit(x) }));
+}
+// Items strategy v2 (IB-30/31): split items have parts A (2× ladder) and B (€1 target).
+// Missing strategy = 'legacy': the item renders exactly as before.
+const BOT_PART_STATES = ['open','sold','worthless','unsellable'];
+function botCleanSplit(x){
+  const o = {};
+  o.strategy = x.strategy === 'split' ? 'split' : 'legacy';
+  if(x.network != null) o.network = bStr(x.network, 20).toLowerCase().replace(/[^a-z0-9-]/g,'');
+  if(x.address != null) o.address = bStr(x.address, 100).replace(/[^\w.:-]/g,'');
+  if(typeof x.url === 'string' && /^https:\/\/[^\s"'<>]{4,300}$/.test(x.url)) o.url = x.url;
+  if(o.strategy !== 'split') return o;
+  o.origin = x.origin === 'converted' ? 'converted' : 'fund';
+  if(x.switchedAt) o.switchedAt = bTime(x.switchedAt);
+  o.cost = botNum(x.cost); o.setAside = botNum(x.setAside);
+  const trig = t => t && typeof t === 'object' ? { value: botNum(t.value), price: botNum(t.price) } : null;
+  o.parts = (Array.isArray(x.parts) ? x.parts : []).slice(0, 2).filter(p => p && (p.id === 'A' || p.id === 'B')).map(p => ({
+    id: p.id, rule: bStr(p.rule, 20), amount: botNum(p.amount), qty: botNum(p.qty), valueNow: botNum(p.valueNow),
+    state: BOT_PART_STATES.includes(p.state) ? p.state : 'open', setAside: botNum(p.setAside),
+    ...(p.id === 'A' ? { cycles: Math.max(0, parseInt(p.cycles)||0), nextTrigger: trig(p.nextTrigger) }
+                     : { triggerPrice: botNum(p.triggerPrice) ?? 1, multipleToTarget: botNum(p.multipleToTarget),
+                         sell: p.sell && typeof p.sell === 'object' ? { time: bTime(p.sell.time), price: botNum(p.sell.price), value: botNum(p.sell.value), fee: botNum(p.sell.fee) } : null }) }));
+  o.takeProfits = (Array.isArray(x.takeProfits) ? x.takeProfits : []).slice(-50).filter(t => t && typeof t === 'object').map(t => ({
+    time: bTime(t.time), part: t.part === 'B' ? 'B' : 'A', cycle: Math.max(0, parseInt(t.cycle)||0), price: botNum(t.price), qtySold: botNum(t.qtySold),
+    value: botNum(t.value), fee: botNum(t.fee), setAside: botNum(t.setAside),
+    rebuy: t.rebuy && typeof t.rebuy === 'object' ? { price: botNum(t.rebuy.price), qty: botNum(t.rebuy.qty), cost: botNum(t.rebuy.cost), fee: botNum(t.rebuy.fee) } : null }));
+  return o;
+}
+// The items fund summary (main bot only). Kept apart with the items (botx).
+function botCleanFund(f){
+  if(!f || typeof f !== 'object') return null;
+  const n = botNum, cnt = v => Math.max(0, parseInt(v)||0);
+  const names = a => (Array.isArray(a) ? a : []).slice(0, 30).map(x => bStr(x, 60));
+  const c = f.counts && typeof f.counts === 'object' ? f.counts : {};
+  return {
+    strategy: bStr(f.strategy, 30), startedAt: bTime(f.startedAt), size: n(f.size), perItem: n(f.perItem),
+    parts: (Array.isArray(f.parts) ? f.parts : []).slice(0, 4).map(p => ({ id: bStr(p && p.id, 4), amount: n(p && p.amount), rule: bStr(p && p.rule, 20) })),
+    available: n(f.available), capital: n(f.capital), inItems: n(f.inItems), valueNow: n(f.valueNow), setAside: n(f.setAside), lost: n(f.lost),
+    pnlRealized: n(f.pnlRealized), pnlUnrealized: n(f.pnlUnrealized), pnlTotal: n(f.pnlTotal), pnlPct: n(f.pnlPct),
+    cycles: cnt(f.cycles), itemsActive: cnt(f.itemsActive), itemsTotal: cnt(f.itemsTotal), fromFund: cnt(f.fromFund),
+    counts: { open: cnt(c.open), partlySold: cnt(c.partlySold), sold: cnt(c.sold), worthless: cnt(c.worthless), unsellable: cnt(c.unsellable) },
+    converted: f.converted && typeof f.converted === 'object' ? { at: bTime(f.converted.at), count: cnt(f.converted.count), names: names(f.converted.names), costOriginal: n(f.converted.costOriginal), valueAtSwitch: n(f.converted.valueAtSwitch) } : null,
+    series: (Array.isArray(f.series) ? f.series : []).slice(-400).filter(p => p && typeof p === 'object').map(p => ({ t: bTime(p.t), value: n(p.value), setAside: n(p.setAside), available: n(p.available) })),
+    removed: f.removed && typeof f.removed === 'object' ? { at: bTime(f.removed.at), count: cnt(f.removed.count), names: names(f.removed.names), pnlRealized: n(f.removed.pnlRealized) } : null,
+    note: bStr(f.note, 300) };
+}
+function botFundLine(f){
+  if(!f) return null;
+  const m = v => v == null ? '–' : botMoney(v), sg = v => v == null ? '–' : (v >= 0 ? '+' : '−') + botMoney(Math.abs(v));
+  const n = f.counts ? f.counts.open + f.counts.partlySold : f.itemsActive;
+  return 'Items fund: '+m(f.available)+' available · '+m(f.inItems)+' in '+n+' items (value '+m(f.valueNow)+') · '+m(f.setAside)+' set aside · '+f.cycles+' cycles · P&L '+sg(f.pnlTotal)+
+    ' · '+f.fromFund+' bought from the fund, '+(f.converted ? f.converted.count : 0)+' converted';
 }
 function botClean(st){
   st = st || {};
@@ -5398,10 +5450,11 @@ app.post('/api/bot/report', async (req, res) => {
     if(!h.length || now - h[h.length-1][0] >= 55*60000) h.push([now, one.status.equity]); else h[h.length-1][1] = one.status.equity;
     if(h.length > 840) one.hist = h.slice(-840);
   }
-  if(Array.isArray(b.simulations) || Array.isArray(b.items) || Array.isArray(b.entries)){
+  if(Array.isArray(b.simulations) || Array.isArray(b.items) || Array.isArray(b.entries) || (b.itemsFund && typeof b.itemsFund === 'object')){
     const x = { ...(await botxGet(bid)) };
     if(Array.isArray(b.simulations)) x.simulations = botCleanSims(b.simulations);
     if(Array.isArray(b.items)) x.items = botCleanItems(b.items);
+    if(b.itemsFund && typeof b.itemsFund === 'object') x.itemsFund = botCleanFund(b.itemsFund);
     // Entries (IB-28): replaced on every report that brings them.
     if(Array.isArray(b.entries)){ x.entries = botCleanEntries(b.entries); x.entriesAt = Date.now(); one.entries = x.entries.length; }
     x.simulations = x.simulations || []; x.items = x.items || [];
@@ -5426,27 +5479,28 @@ app.post('/api/bot/report', async (req, res) => {
     const title = String(e.title||'Trading bot').slice(0,120), body = String(e.body||'').slice(0,300);
     // Every event goes into the widget's own list; the widget shows how many
     // arrived since it was last opened (bot.openedAt).
-    bot.log.push({ id, bot:bid, botName:one.name, kind, title, body, at:Date.now() });
+    bot.log.push({ id, bot:bid, botName:one.name, kind, title, body, at:Date.now(), ...(typeof e.item === 'string' ? { item:e.item.slice(0,64) } : {}) });
     if(!BOT_PUSH) continue;
     // The user's own entries always notify (they were made on purpose) and open the Entries tab.
     const isEntry = !!e.entry || /\bEntry\b/.test(title);
+    const itemId = typeof e.item === 'string' ? e.item.slice(0, 64) : null;        // an item's event opens its detail
     if(kind === 'trade' && one.role === 'practice' && !isEntry) continue;          // practice bots trade quietly
-    if(kind === 'sim'){ info.push({ title, body }); continue; }       // information only: no bell, no badge
+    if(kind === 'sim'){ info.push({ title, body, item:itemId }); continue; }       // information only: no bell, no badge
     const evId = 'bot-'+id;
     const shown = one.role === 'practice' ? one.name+': '+title : title;
     const a = recordAlert(d, { ev:{ id:evId, _type:'task' }, key:evId, ds:getToday(), mins:0 }, shown.slice(0,120), body);
-    a.type = 'bot'; a.kind = kind; a.bot = bid; if(isEntry) a.tab = 'entries';
+    a.type = 'bot'; a.kind = kind; a.bot = bid; if(isEntry) a.tab = 'entries'; if(itemId){ a.tab = 'items'; a.item = itemId; }
     made.push(a);
   }
   bot.log = bot.log.slice(-100);
   bot.seen = [...seen].slice(-300);
   writeData(d);
   for(const a of made){
-    try{ await sendWebPush(a.title, a.body, { bot:1, ...(a.tab ? { tab:a.tab } : {}), date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 24*3600, urgency: a.kind==='trade' ? 'normal' : 'high' }); }
+    try{ await sendWebPush(a.title, a.body, { bot:1, ...(a.tab ? { tab:a.tab } : {}), ...(a.item ? { item:a.item } : {}), date:a.date, id:a.evId, tag:'bot-'+a.evId, alertId:a.id, badge: alertsCount(d) }, { ttl: 24*3600, urgency: a.kind==='trade' ? 'normal' : 'high' }); }
     catch(e){ console.log('Bot push failed:', e.message); }
   }
   for(const x of info){
-    try{ await sendWebPush(x.title, x.body, { bot:1, tag:'bot-sim-'+bid, noBadge:true }, { ttl: 12*3600 }); }catch(e){}
+    try{ await sendWebPush(x.title, x.body, { bot:1, tag:'bot-sim-'+bid, noBadge:true, ...(x.item ? { tab:'items', item:x.item } : {}) }, { ttl: 12*3600 }); }catch(e){}
   }
   res.json({ ok:true, bot:bid, contract, notified: made.length + info.length, logged: fresh.length,
     stored:{ simulations: one.sims||0, items: one.items||0, entries: one.entries||0 } });
@@ -5454,7 +5508,7 @@ app.post('/api/bot/report', async (req, res) => {
 // What the widget shows. Same visibility as the calendar itself; the key is never included.
 app.get('/api/bot', async (req, res) => {
   const pub = botPublic(readData());
-  for(const x of pub.bots){ const e = await botxGet(x.id); x.simulations = e.simulations || []; x.items = e.items || []; }
+  for(const x of pub.bots){ const e = await botxGet(x.id); x.simulations = e.simulations || []; x.items = e.items || []; if(e.itemsFund) x.itemsFund = e.itemsFund; }
   res.json(pub);
 });
 // Emergency stop. The bot (its key) reads it; the app reads and sets it.
@@ -5830,7 +5884,7 @@ function alertsList(d){
   for(const a of (d.alerts||[])){
     const s = alertState(d, a, now); if(s!=='active' && s!=='snoozed') continue;
     if(a.type==='bot'){
-      const row = { id:a.id, evId:a.evId, date:a.date, type:'bot', kind:a.kind||'', bot:a.bot||'', ...(a.tab ? { tab:a.tab } : {}), title:a.title, body:a.body, at:a.at, snooze:a.snooze||0, name:a.title, time:'' };
+      const row = { id:a.id, evId:a.evId, date:a.date, type:'bot', kind:a.kind||'', bot:a.bot||'', ...(a.tab ? { tab:a.tab } : {}), ...(a.item ? { item:a.item } : {}), title:a.title, body:a.body, at:a.at, snooze:a.snooze||0, name:a.title, time:'' };
       (s==='active' ? active : snoozed).push(row);
       continue;
     }
