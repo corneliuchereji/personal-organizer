@@ -1368,6 +1368,7 @@ select option:checked{background:#2E3A78;color:#fff}
 .btd-nav button{flex:1 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 7px;border:0;border-radius:9px;background:none;color:var(--txt2);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;position:relative;min-width:58px}
 .btd-nav button i{font-size:18px}
 .btd-nav button.on{background:rgba(247,147,26,.18);color:#fde4c4}
+.btd-nav button small.err{background:#ef4444;color:#fff}
 .btd-nav button small{position:absolute;top:2px;right:6px;font-size:10px;min-width:15px;height:15px;line-height:15px;border-radius:8px;background:rgba(247,147,26,.85);color:#1a1205;padding:0 3px}
 .btd-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
 @media (max-width:359px){ .btd-grid{grid-template-columns:1fr} }
@@ -5667,8 +5668,9 @@ function btRender(newN){
   let M=btMainGet();
   const menu=[['overview','Overview','ti-layout-dashboard'],['bots','Bots','ti-robot'],['entries','Entries','ti-list-check'],(itemsAll.length||fund)&&['items','Items','ti-coins'],simsBot&&['sims','Simulations','ti-chart-line']].filter(Boolean);
   if(!menu.some(m=>m[0]===M)) M=_btMain='overview';
-  const enN=_btEn&&_btEn.entries?_btEn.entries.filter(x=>BT_EN_ACTIVE.includes(btEnState(x))).length:0;
-  const nav='<div class="btd-nav" role="tablist">'+menu.map(m=>'<button role="tab" aria-selected="'+(M===m[0])+'" class="'+(M===m[0]?'on':'')+'" onclick="btMainSet(\''+m[0]+'\')"><i class="ti '+m[2]+'"></i><span>'+m[1]+'</span>'+(m[0]==='entries'&&enN?'<small>'+enN+'</small>':'')+'</button>').join('')+'</div>';
+  // Badge only when an entry needs you (error); running entries show no number.
+  const enN=_btEn&&_btEn.entries?_btEn.entries.filter(x=>btEnState(x)==='error').length:0;
+  const nav='<div class="btd-nav" role="tablist">'+menu.map(m=>'<button role="tab" aria-selected="'+(M===m[0])+'" class="'+(M===m[0]?'on':'')+'" onclick="btMainSet(\''+m[0]+'\')"><i class="ti '+m[2]+'"></i><span>'+m[1]+'</span>'+(m[0]==='entries'&&enN?'<small class="err" title="Needs attention">'+enN+'</small>':'')+'</button>').join('')+'</div>';
   const honest='<div class="bt-honest">Practice and simulation results are not a recommendation to invest.</div>';
   btLwcClear();
   if(M==='overview'){ el.innerHTML=ctl+nav+btDashHtml(b,bots)+honest; btDashChart(bots); return; }
@@ -9810,7 +9812,7 @@ window.addEventListener('load', ()=>{
 // Browsers (phones especially) cache the app shell and keep running an old
 // build after a deploy. This shows what's actually running and provides a
 // reliable way to drop the cache and pick up the newest version.
-const APP_BUILD='2026-11-11-items-fund';
+const APP_BUILD='2026-11-13-entries-badge';
 // ─── OPENING FROM A NOTIFICATION ─────────────────────────
 // A reminder can be for tomorrow (or later), so tapping it has to move the
 // view to THAT day — opening on today showed a different day's events and
